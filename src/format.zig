@@ -4,17 +4,27 @@ pub const doc = @import("doc.zig");
 
 const Allocator = std.mem.Allocator;
 const DocList = doc.DocList;
-const Doc = doc.Doc;
+pub const Doc = doc.Doc;
 
 pub const FmtConfig = struct {
-  max_width: u32 = 80,
+  width: u32 = 80,
   indent: u8 = 2,
+  writer: enum (u3) {
+    file,
+    out,
+    mem,
+  } = .out,
 };
 
 pub const Format = struct {
   cfg: FmtConfig,
   split_groups: IDSet = .empty,
   al: Allocator,
+  mem_writer: std.Io.Writer.Allocating,
+  out_writer: std.fs.File.Writer,
+  writer: *std.Io.Writer = undefined,
+
+  var WriteBuf: [1024]u8 = undefined;
 
   const Self = @This();
   
@@ -38,7 +48,24 @@ pub const Format = struct {
   const Stack = std.ArrayList(StackData);
 
   pub fn init(al: Allocator, cfg: FmtConfig) Self {
-    return .{.al = al, .cfg = cfg};
+    return .{
+      .al = al,
+      .cfg = cfg,
+      .mem_writer = std.Io.Writer.Allocating.init(al),
+      .out_writer = std.fs.File.Writer.init(std.fs.File.stdout(), &WriteBuf),
+    };
+  }
+
+  fn setWriter(self: *Self) void {
+    switch (self.cfg.writer) {
+      .file => @panic("todo: file writer"),
+      .out => {
+        self.writer = &self.out_writer.interface;
+      }, 
+      .mem => {
+        self.writer = &self.mem_writer.writer;
+      },
+    }
   }
 
   inline fn stackPush(self: *Self, s: *Stack, sm: StackData) void {
@@ -122,18 +149,18 @@ pub const Format = struct {
   }
 
   fn print(self: *Self, t: []const u8) void {
-    _ = self;
-    std.debug.print("{s}", .{t});
+    _ = self.writer.write(t) catch unreachable;
   }
 
   fn printn(self: *Self, t: []const u8, n: usize) void {
-    _ = self;
     for (0..n) |_| {
-      std.debug.print("{s}", .{t});
+      _ = self.writer.write(t) catch unreachable;
     }
   }
 
   pub fn fmt(self: *Self, d: *Doc) void {
+    self.setWriter();
+    defer self.writer.flush() catch {};
     var stack = Stack.initCapacity(self.al, 1) catch unreachable;
     self.stackPush(&stack, .{.indent = 0, .mode = .split, .doc = d});
     var column = @as(u32, 0);
@@ -183,7 +210,7 @@ pub const Format = struct {
             var new = self.copyStack(&stack);
             self.copyDocsToStack(_d.docs, &new, sm.indent, .flat);
             if (self.fits(
-                @as(i32, @intCast(self.cfg.max_width)) - @as(i32, @intCast(column)),
+                @as(i32, @intCast(self.cfg.width)) - @as(i32, @intCast(column)),
                 &new
               ))
             {
@@ -206,6 +233,20 @@ pub const Format = struct {
           self.stackPush(&stack, _sm);
         }
       }
+    }
+  }
+
+  pub fn getFmtString(self: *Self) [] const u8 {
+    switch (self.cfg.writer) {
+      .mem => {
+        var str = self.mem_writer.toArrayList().items;
+        // FIXME: hack to remove trailing line
+        if (str.len >= 2 and str[str.len - 1] == '\n') {
+          return str[0..str.len - 1];
+        }
+        return str;
+      },
+      else => return "",
     }
   }
 };
