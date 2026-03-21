@@ -281,7 +281,7 @@ pub const DocBuilder = struct {
   }
 
   pub fn indent(self: *@This(), docs: []*Doc) *Doc {
-    return Doc.new(.{.indent = Group{.doc = docs}}, self.al);
+    return Doc.new(.{.indent = Seq{.docs = docs}}, self.al);
   }
 
   pub fn ifsplit(self: *@This(), g: u32, split: *Doc, flat: *Doc) *Doc {

@@ -330,7 +330,7 @@ pub const Translate = struct {
         // avoiding adding a '.' in front of `()`
         if (tk_seq.items[j + 1][0] != '(') {
           tmp.text(".")._();
-        } 
+        }
       }
     }
     sb.extend(tmp.finish());
@@ -382,7 +382,7 @@ pub const Translate = struct {
           .rbrack => {
             self.flushTkSeq(&tk_seq, sb);
             var lhs_sb = sb_stack.pop().?;
-            const is_complex = self.isComplexDoc(sb);
+            var is_complex = self.isComplexDoc(sb);
             if (!is_complex) {
               // see if we can group the call
               var found = false;
@@ -400,22 +400,27 @@ pub const Translate = struct {
               if (found) {
                 last = chain;
                 const fun = lhs_sb.docs.items[idx];
-                lhs_sb.docs.items = lhs_sb.docs.items[0..idx];
-                var args = lhs_sb;
-                // replace normlines with space since args isn't complex
-                for (sb.docs.items, 0..) |doc, k| {
-                  if (doc.is(.line)) {
-                    if (doc.line.ty == .norm) {
-                      sb.docs.items[k] = self.db.text(" ");
+                var tmp = self.db.seqb().appends(fun).extends(lhs_sb.docs.items[idx..]);
+                defer _ = tmp.finish();
+                is_complex = self.isComplexDoc(tmp);
+                if (!is_complex) {
+                  lhs_sb.docs.items = lhs_sb.docs.items[0..idx];
+                  var args = lhs_sb;
+                  // replace normlines with space since args isn't complex
+                  for (sb.docs.items, 0..) |doc, k| {
+                    if (doc.is(.line)) {
+                      if (doc.line.ty == .norm) {
+                        sb.docs.items[k] = self.db.text(" ");
+                      }
                     }
                   }
+                  args.group(
+                    self.db.seqb().appends(fun).text("(")
+                    .extends(sb.finish()).text(")").finish()
+                  )._();
+                  sb = args;
+                  continue;
                 }
-                args.group(
-                  self.db.seqb().appends(fun).text("(")
-                  .extends(sb.finish()).text(")").finish()
-                )._();
-                sb = args;
-                continue;
               }
             }
             if (!chains[i - 1].isLbrack()) {
@@ -471,6 +476,58 @@ pub const Translate = struct {
     return sb_args;
   }
 
+  fn tVarDeclProto(self: *Self, vd: Ast.full.VarDecl) TranslateError!*SeqBuilder {
+    var sb = self.db.seqb();
+    var tmp = self.db.seqb();
+    if (vd.visib_token) |idx| {
+      sb.text(self._token(idx)).space()._();
+    }
+    if (vd.extern_export_token) |idx| {
+      sb.text(self._token(idx)).space()._();
+      if (vd.lib_name) |_idx| {
+        sb.text(self._token(_idx)).space()._();
+      }
+    }
+    if (vd.threadlocal_token) |idx| {
+      sb.text(self._token(idx)).space()._();
+    }
+    if (vd.comptime_token) |idx| {
+      sb.text(self._token(idx)).space()._();
+    }
+    sb.text(self._token(vd.ast.mut_token))
+    .space().text(self._token(vd.ast.mut_token + 1))._();
+    if (vd.ast.type_node.unwrap()) |_n| {
+      sb.text(": ")._();
+      sb.append(try self.t(_n));
+    }
+    if (vd.ast.align_node.unwrap()) |_n| {
+      tmp.normline().text("align(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    if (vd.ast.addrspace_node.unwrap()) |_n| {
+      tmp.normline().text("addrspace(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    if (vd.ast.section_node.unwrap()) |_n| {
+      tmp.normline().text("linksection(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    sb.append(self.db.indent(tmp.finish()));
+    return sb;
+  }
+
+  fn tVarDecl(self: *Self, vd: Ast.full.VarDecl) TranslateError!*SeqBuilder {
+    var sb = try self.tVarDeclProto(vd);
+    if (vd.ast.init_node.unwrap()) |_n| {
+      sb.text(" = ")._();
+      sb.append(try self.t(_n));
+    }
+    return sb;
+  }
+
   fn t(self: *Self, n: Node.Index) !*Doc {
     const tag = self.tree.nodeTag(n);
     assert(tag != self.tree.nodeTag(Node.Index.root));
@@ -478,25 +535,15 @@ pub const Translate = struct {
       .identifier, .number_literal, .string_literal => {
         return self.db.text(self._token(self.tree.nodeMainToken(n)));
       },
-      .simple_var_decl => {
-        const vd = self.tree.simpleVarDecl(n);
-        var sb = self.db.seqb();
-        const mut = self._token(vd.ast.mut_token);
-        // TODO: initial components after mut token
-        assert(vd.ast.align_node.unwrap() == null);
-        const name = self._token(vd.ast.mut_token + 1);
-        // TODO: components after mut token
-        sb.text(mut).space().text(name)._();
-        if (vd.ast.type_node.unwrap()) |_n| {
-          sb.text(": ")._();
-          sb.append(try self.t(_n));
-        }
-        if (vd.ast.init_node.unwrap()) |_n| {
-          sb.space().text("=").space()._();
-          sb.append(try self.t(_n));
-        }
-        // TODO: check for comments
+      .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => {
+        const vd = self.tree.fullVarDecl(n).?;
+        var sb = try self.tVarDecl(vd);
         return self.db.group(sb.text(";").hardline().finish());
+      },
+      .enum_literal => {
+        const tk = self._token(self.tree.nodeMainToken(n));
+        var sb = self.db.seqb().text(".").text(tk);
+        return sb.finishSeq();
       },
       .call_one, .call_one_comma, .call, .call_comma => {
         const call = self.getCallInfo(n);

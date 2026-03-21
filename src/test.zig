@@ -256,6 +256,288 @@ test "vardecl 3" {
   ).diff(res, true);
 }
 
+test "vardecl 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
+  \\const buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
+  \\const buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
+  \\var buffer align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
+  \\var buffer align(64) linksection(".my_custom_section") = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  var res = try format(src, .{}, al);
+  const oh = OhSnap{};
+  try oh.snap(@src(),
+    \\var buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\var buffer
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\var buffer
+    \\  align(64)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+  ).diff(res, true);
+  // using width: 100
+  res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\var buffer align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
+    \\var buffer
+    \\  align(64)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\var buffer
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\var buffer
+    \\  align(64)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\var buffer
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\var buffer
+    \\  align(64)
+    \\  linksection(".my_custom_section") = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+  ).diff(res, true);
+}
+
+test "vardecl 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\const buffer: [1024]u8 align(64) = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
+  \\const buffer: [1024]u8 align(64) = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
+  \\var buffer align(64) = undefined;
+  \\var buffer align(64) = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
+  \\var a align(b) = c;
+  \\var a: b align(c) = d;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  var res = try format(src, .{}, al);
+  const oh = OhSnap{};
+  try oh.snap(@src(),
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\var buffer align(64) = undefined;
+    \\var buffer
+    \\  align(64) = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\var a align(b) = c;
+    \\var a: b align(c) = d;
+  ).diff(res, true);
+  // using width: 100
+  res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const buffer: [1024]u8
+    \\  align(64) = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\var buffer align(64) = undefined;
+    \\var buffer
+    \\  align(64) = text(
+    \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
+    \\);
+    \\var a align(b) = c;
+    \\var a: b align(c) = d;
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\var buffer align(64) = undefined;
+    \\var buffer
+    \\  align(64) = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\var a align(b) = c;
+    \\var a: b align(c) = d;
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\const buffer: [1024]u8
+    \\  align(64) = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\var buffer
+    \\  align(64) = undefined;
+    \\var buffer
+    \\  align(64) = text(
+    \\  self.token_token.token2_token()
+    \\  .token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
+    \\var a align(b) = c;
+    \\var a: b align(c) = d;
+  ).diff(res, true);
+}
+
 test "vardecl.chains 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -1166,5 +1448,26 @@ test "vardecl.chains 10" {
     \\  .finish(),
     \\)
     \\._();
+  ).diff(res, true);
+}
+
+test "vardecl.chains 11" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ const y = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // default width: 80
+  const res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\const y = text(
+    \\  self.token_token_token_token_token_token_token_token_token_token(
+    \\    rhs,
+    \\    abc,
+    \\    lhs,
+    \\  ),
+    \\);
   ).diff(res, true);
 }
