@@ -1,20 +1,12 @@
 const std = @import("std");
 const util = @import("util.zig");
+pub const config = @import("config.zig");
 pub const doc = @import("doc.zig");
 
 const Allocator = std.mem.Allocator;
 const DocList = doc.DocList;
 pub const Doc = doc.Doc;
-
-pub const FmtConfig = struct {
-  width: u32 = 80,
-  indent: u8 = 2,
-  writer: enum (u3) {
-    file,
-    out,
-    mem,
-  } = .out,
-};
+pub const FmtConfig = config.FmtConfig;
 
 pub const Format = struct {
   cfg: FmtConfig,
@@ -24,7 +16,7 @@ pub const Format = struct {
   out_writer: std.fs.File.Writer,
   writer: *std.Io.Writer = undefined,
 
-  var WriteBuf: [1024]u8 = undefined;
+  var WriteBuf: [4096]u8 = undefined;
 
   const Self = @This();
   
@@ -127,7 +119,13 @@ pub const Format = struct {
               } else {
                 width -= 1;
               }
-            }
+            },
+            .chain => {
+              // soft is "" in flat mode (len = 0)
+              if (sm.mode == .split) {
+                return true;
+              }
+            },
           }
         },
         .seq => |*d| {
@@ -174,6 +172,13 @@ pub const Format = struct {
         .line => |*_d| {
           switch (_d.ty) {
             .soft => {
+              if (sm.mode == .split) {
+                self.print("\n");
+                self.printn(" ", sm.indent);
+                column = @intCast(sm.indent);
+              }
+            },
+            .chain => {
               if (sm.mode == .split) {
                 self.print("\n");
                 self.printn(" ", sm.indent);

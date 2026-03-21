@@ -1,12 +1,12 @@
 const std = @import("std");
-const fmt = @import("format.zig");
+const d = @import("doc.zig");
 const util = @import("util.zig");
+const config = @import("config.zig");
 
 const log = std.log.scoped(.translate);
 const assert = std.debug.assert;
 
-const d = fmt.doc;
-const Format = fmt.Format;
+const FmtConfig = config.FmtConfig;
 const Doc = d.Doc;
 const SeqBuilder = d.SeqBuilder;
 const DocBuilder = d.DocBuilder;
@@ -14,19 +14,21 @@ const Allocator = std.mem.Allocator;
 const Ast = std.zig.Ast;
 const Node = Ast.Node;
 const NodeIndexList = std.ArrayList(Node.Index);
+const StrList = std.ArrayList([]const u8);
 
 pub const Translate = struct {
   al: Allocator,
   decls: []NodeData,
   tree: Ast,
   db: DocBuilder,
+  cfg: FmtConfig,
   _in_call_args: u32 = 0,
 
   const Self = @This();
   const NodeData = struct{tag: Node.Tag, idx: Node.Index};
   const TranslateError = error{Translate};
 
-  pub fn init(src: [:0]const u8, al: Allocator, mode: Ast.Mode) !Self {
+  pub fn init(src: [:0]const u8, al: Allocator, mode: Ast.Mode, cfg: FmtConfig) !Self {
     const tree = try Ast.parse(al, src, mode);
     const _decls = tree.rootDecls();
     var decls = util.allocSlice(NodeData, _decls.len, al);
@@ -38,6 +40,7 @@ pub const Translate = struct {
       .al = al,
       .tree = tree,
       .decls = decls,
+      .cfg = cfg,
       .db = DocBuilder.init(al),
     };
   }
@@ -110,34 +113,14 @@ pub const Translate = struct {
     };
   }
 
-  const ComplexityThreshold = 3;
-
-  /// whether this call node has complex arguments
-  inline fn callHasComplexArgs(self: *Self, n: Node.Index) bool {
-    return self.countArgs(n) > ComplexityThreshold;
-  }
-
-  /// whether this call arg node is complex
-  inline fn isComplexCallArg(self: *Self, n: Node.Index) bool {
-    return self.countComponents(n) > ComplexityThreshold;
-  }
-
-  /// whether this field access node is complex
-  inline fn isComplexFieldLHS(self: *Self, n: Node.Index) bool {
-    return self.countComponents(n) > ComplexityThreshold;
-  }
-
-  /// whether this call node is complex
-  inline fn isComplexCall(self: *Self, n: Node.Index) bool {
-    if (!self.isCallTag(n)) return false;
-    return self.countComponents(n) > ComplexityThreshold;
-  }
-
   /// simple abstraction over method call chains
   const Chain = union(enum) {
     call: Call,
     ident: Ident,
     expr: Node.Index,
+    lbrack,
+    rbrack,
+    comma,
   
     pub const Call = struct {
       idx: Node.Index,
@@ -153,6 +136,22 @@ pub const Translate = struct {
         .ident => true,
         else => false,
       };
+    }
+
+    pub inline fn is(self: Chain, k: anytype) bool {
+      return self == k;
+    }
+ 
+    pub inline fn isLbrack(self: Chain) bool {
+      return self.is(.lbrack);
+    }
+ 
+    pub inline fn isRbrack(self: Chain) bool {
+      return self.is(.rbrack);
+    }
+ 
+    pub inline fn isCall(self: Chain) bool {
+      return self.is(.call);
     }
   };
 
@@ -186,7 +185,7 @@ pub const Translate = struct {
     }
   }
 
-  fn _collectChainsStep(self: *Self, n: Node.Index, list: *ChainList) !void {
+  fn _collectDeepChainsStep(self: *Self, n: Node.Index, list: *ChainList) !void {
     switch (self.tree.nodeTag(n)) {
       .identifier => {
         const ident = Chain{.ident = .{.idx = self.tree.nodeMainToken(n)}};
@@ -194,19 +193,31 @@ pub const Translate = struct {
       },
       .call, .call_comma => {
         const call = self.tree.callFull(n);
-        try self._collectChainsStep(call.ast.fn_expr, list);
-        const c_call = Chain{.call = .{.idx = n, .params = call.ast.params}};
-        util.listAppend(c_call, list, self.al);
+        try self._collectDeepChainsStep(call.ast.fn_expr, list);
+        util.listAppend(Chain{.lbrack={}}, list, self.al);
+        for (call.ast.params, 0..) |p, i| {
+          try self._collectDeepChainsStep(p, list);
+          if (i < call.ast.params.len - 1) {
+            util.listAppend(Chain{.comma={}}, list, self.al);
+          }
+        }
+        util.listAppend(Chain{.rbrack={}}, list, self.al);
       },
       .call_one, .call_one_comma => {
         const fn_expr, const params = self.getCallOneInfo(n);
-        try self._collectChainsStep(fn_expr, list);
-        const c_call = Chain{.call = .{.idx = n, .params = params}};
-        util.listAppend(c_call, list, self.al);
+        try self._collectDeepChainsStep(fn_expr, list);
+        util.listAppend(Chain{.lbrack={}}, list, self.al);
+        for (params, 0..) |p, i| {
+          try self._collectDeepChainsStep(p, list);
+          if (i < params.len - 1) {
+            util.listAppend(Chain{.comma={}}, list, self.al);
+          }
+        }
+        util.listAppend(Chain{.rbrack={}}, list, self.al);
       },
       .field_access => {
         const lhs, const _rhs = self.tree.nodeData(n).node_and_token;
-        try self._collectChainsStep(lhs, list);
+        try self._collectDeepChainsStep(lhs, list);
         const ident = Chain{.ident = .{.idx = _rhs}};
         util.listAppend(ident, list, self.al);
       },
@@ -221,7 +232,7 @@ pub const Translate = struct {
     switch (self.tree.nodeTag(n)) {
       .field_access => {
         const _n, const rhs = self.tree.nodeData(n).node_and_token;
-        self._collectChainsStep(_n, &list) catch return null;
+        self._collectDeepChainsStep(_n, &list) catch return null;
         const ident = Chain{.ident = .{.idx = rhs}};
         util.listAppend(ident, &list, self.al);
       },
@@ -230,27 +241,205 @@ pub const Translate = struct {
     return if (list.items.len > 0) list.items else null;
   }
 
-  fn isComplexParam(self: *Self, param: Node.Index) bool {
-    return switch (self.tree.nodeTag(param)) {
-      .identifier, .string_literal, .number_literal => false,
-      else => true,
-    };
+  fn flattenCallChain(self: *Self, call: Ast.full.Call) ?[]Chain {
+    // foo.bar(..) | <expr>.bar(..)
+    // `--> [foo, bar, (..)] | [<expr>, bar, (..)]
+    var list = ChainList.empty;
+    if (self.collectMethodChains(call.ast.fn_expr)) |segments| {
+      util.listAppendSlice(Chain, segments, &list, self.al);
+      util.listAppend(Chain{.lbrack={}}, &list, self.al);
+      for (call.ast.params, 0..) |p, i| {
+        if (self.isCallTag(p)) {
+          if (self.collectMethodChains(p)) |_segments| {
+            util.listAppendSlice(Chain, _segments, &list, self.al);
+            continue;
+          }
+        }
+        util.listAppend(Chain{.expr=p}, &list, self.al);
+        if (i < call.ast.params.len - 1) {
+          util.listAppend(Chain{.comma={}}, &list, self.al);
+        } 
+      }
+      util.listAppend(Chain{.rbrack={}}, &list, self.al);
+    }
+    return if (list.items.len > 0) list.items else null;
   }
 
-  fn shouldSoftline(self: *Self, params: []const Node.Index) bool {
-    if (params.len > 0) {
-      if (params.len == 1) {
-        if (self.countComponents(params[0]) <= ComplexityThreshold) {
-          return false;
+  fn _computeDocComplexity(self: *Self, doc: *Doc) usize {
+    var total = @as(usize, 0);
+    switch (doc.*) {
+      .text => |*_n| {
+        total += _n.s.len;
+        total += @intFromBool(std.mem.indexOfAny(u8, _n.s, "()") != 0);
+      },
+      .line => |*_n| {
+        switch (_n.ty) {
+          .chain => total += 3,
+          .soft => total += 2,
+          .norm => total += 1,
+          .hard => total += 0,
         }
+      },
+      .seq => |*_n| {
+        total += self._computeDocsComplexity(_n.docs);
+      },
+      .indent => |*_n| {
+        total += self._computeDocsComplexity(_n.docs);
+        total += self.cfg.indent;
+      },
+      .group => |*_n| {
+        total += self._computeDocsComplexity(_n.docs);
+      },
+      .ifsplit => |*_n| {
+        const a = self._computeDocComplexity(_n.split);
+        const b = self._computeDocComplexity(_n.split);
+        total += @max(a, b);
+      },
+    }
+    return total;
+  }
+
+  fn _computeDocsComplexity(self: *Self, docs: []*Doc) usize {
+    var total = @as(usize, 0);
+    // FIXME: for now, we use a naive width approach
+    for (docs) |doc| {
+      total += self._computeDocComplexity(doc);
+    }
+    return total;
+  }
+
+  fn isComplexDoc(self: *Self, sb: *SeqBuilder) bool {
+    // if we find the doc to be complex, we add softlines
+    return self._computeDocsComplexity(sb.docs.items) > self.cfg.width;
+  }
+
+  fn flushTkSeq(self: *Self, tk_seq: *StrList, sb: *SeqBuilder) void {
+    if (tk_seq.items.len == 0) return;
+    var tmp = self.db.seqb();
+    for (tk_seq.items, 0..) |txt, j| {
+      if (txt[0] == '.') {
+        tmp.chainline()._();
+        tmp.text(txt)._();
+        continue;
       }
-      for (params) |param| {
-        if (self.isComplexParam(param)) {
-          return true;
-        }
+      tmp.text(txt)._();
+      // only add '.' when we begin the next chain
+      if (j < tk_seq.items.len - 1) {
+        // since empty chain calls (e.g. foo.bar()) are
+        // also stored in tk_seq, we look out for by
+        // avoiding adding a '.' in front of `()`
+        if (tk_seq.items[j + 1][0] != '(') {
+          tmp.text(".")._();
+        } 
       }
     }
-    return false;
+    sb.extend(tmp.finish());
+    tk_seq.clearRetainingCapacity();
+  }
+
+  fn tCallChain(self: *Self, call: Ast.full.Call) TranslateError!?*Doc {
+    if (self.flattenCallChain(call)) |chains| {
+      var sb = self.db.seqb();
+      const id = d.genGroupID();
+      assert(chains[0].isIdent());
+      var sb_stack: std.ArrayList(*SeqBuilder) = .empty;
+      var tk_seq: StrList = .empty;
+      var last = chains[0];
+      util.listAppend(self._token(last.ident.idx), &tk_seq, self.al);
+      var i = @as(usize, 1);
+      while (i < chains.len) : (i += 1) {
+        const chain = chains[i];
+        switch (chain) {
+          .ident => |_n| {
+            if (last.isRbrack()) {
+              // if last is '(', then we're at the start of a new chain
+              // add the chain connector -> '.'
+              util.listAppend(@as([]const u8, "."), &tk_seq, self.al);
+            }
+            util.listAppend(self._token(_n.idx), &tk_seq, self.al);
+          },
+          .lbrack => {
+            if (chains[i+1].isRbrack()) {
+              // we can inline chains that have empty calls,
+              // so we do that here
+              util.listAppend(@as([]const u8, "()"), &tk_seq, self.al);
+              self.flushTkSeq(&tk_seq, sb);
+              last = chains[i+1];
+              i += 1;
+              continue;
+            }
+            self.flushTkSeq(&tk_seq, sb);
+            sb.text("(")._();
+            util.listAppend(sb, &sb_stack, self.al);
+            // reset for args
+            sb = self.db.seqb();
+          },
+          .comma => {
+            self.flushTkSeq(&tk_seq, sb);
+            sb.text(",")._();
+            sb.normline()._();
+          },
+          .rbrack => {
+            self.flushTkSeq(&tk_seq, sb);
+            var lhs_sb = sb_stack.pop().?;
+            const is_complex = self.isComplexDoc(sb);
+            if (!is_complex) {
+              // see if we can group the call
+              var found = false;
+              var idx = lhs_sb.docs.items.len - 1;
+              while (idx > 0) : (idx -= 1) {
+                const x = lhs_sb.docs.items[idx];
+                // the first text after '(' is the function's name
+                if (x.is(.text)) {
+                  if (!std.mem.eql(u8, x.text.s, "(")) {
+                    found = true;
+                    break; 
+                  }
+                }
+              }
+              if (found) {
+                last = chain;
+                const fun = lhs_sb.docs.items[idx];
+                lhs_sb.docs.items = lhs_sb.docs.items[0..idx];
+                var args = lhs_sb;
+                // replace normlines with space since args isn't complex
+                for (sb.docs.items, 0..) |doc, k| {
+                  if (doc.is(.line)) {
+                    if (doc.line.ty == .norm) {
+                      sb.docs.items[k] = self.db.text(" ");
+                    }
+                  }
+                }
+                args.group(
+                  self.db.seqb().appends(fun).text("(")
+                  .extends(sb.finish()).text(")").finish()
+                )._();
+                sb = args;
+                continue;
+              }
+            }
+            if (!chains[i - 1].isLbrack()) {
+              sb.ifsplit(id, self.db.text(","), self.db.text(""))._();
+            }
+            var args = lhs_sb;
+            args.indent(
+              self.db.seqb().softlineIf(is_complex)
+              .extends(sb.finish()).finish()
+            )._();
+            args.softlineIf(is_complex).text(")")._();
+            sb = args;
+          },
+          .expr => |_n| {
+            sb.append(try self.t(_n));
+          },
+          .call => unreachable,
+        }
+        last = chain;
+      }
+      assert(sb_stack.items.len == 0);
+      return self.db.groupi(id, sb.finish());
+    }
+    return null;
   }
 
   fn tCallArgs(
@@ -311,55 +500,9 @@ pub const Translate = struct {
       },
       .call_one, .call_one_comma, .call, .call_comma => {
         const call = self.getCallInfo(n);
-        var sb = self.db.seqb();
+        if (try self.tCallChain(call)) |doc| return doc;
         const id = d.genGroupID();
-        if (self.collectMethodChains(call.ast.fn_expr)) |segments| {
-          // foo.bar(..) | <expr>.bar(..)
-          // `--> [foo, bar, (..)] | [<expr>, bar, (..)]
-          assert(segments[0].isIdent());
-          sb.text(self._token(segments[0].ident.idx))._();
-          var rest = self.db.seqb();
-          for (segments[1..]) |comp| {
-            switch (comp) {
-              .ident => |ident| {
-                if (segments.len > 2) {
-                  rest.softline().text(".").text(self._token(ident.idx))._();
-                } else {
-                  rest.text(".").text(self._token(ident.idx))._();
-                }
-              },
-              .call => |_call| {
-                const _id = d.genGroupID();
-                var tmp = self.db.seqb();
-                tmp.text("(")._();
-                const _tag = self.tree.nodeTag(_call.idx);
-                const _should_softline = _call.params.len > 0;
-                var args = try self.tCallArgs(
-                  _id, _tag, _call.params,
-                  _should_softline,
-                );
-                tmp.indent(args.finish())._();
-                tmp.softlineIf(_should_softline).text(")")._();
-                rest.group(tmp.finish())._();
-              },
-              .expr => |expr| {
-                rest.softline().text(".").append(try self.t(expr));
-              },
-            }
-          }
-          const should_softline = self.shouldSoftline(call.ast.params);
-          rest.text("(")._();
-          var sb_args = try self.tCallArgs(id, tag, call.ast.params, should_softline);
-          rest.indent(sb_args.finish())._();
-          if (self._in_call_args > 0) {
-            rest.softlineIf(should_softline).text(")")._();
-            sb.indent(rest.finish())._();
-          } else {
-            sb.indent(rest.finish())._();
-            sb.softlineIf(should_softline).text(")")._();
-          }
-          return self.db.groupi(id, sb.finish());
-        }
+        var sb = self.db.seqb();
         const expr = try self.t(call.ast.fn_expr);
         sb.appends(expr).text("(")._();
         const should_softline = call.ast.params.len > 0;

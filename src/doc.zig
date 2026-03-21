@@ -21,12 +21,13 @@ pub const Line = struct {
   ty: Ty,
 
   pub const Ty = enum (u4) {
-    soft, hard, norm,
+    soft, hard, norm, chain,
     pub fn str(self: Ty) []const u8 {
       return switch (self) {
         .soft => "<soft>",
         .hard => "<hard>",
         .norm => "<norm>",
+        .chain => "<chain>",
       };
     }
   };
@@ -51,6 +52,26 @@ pub const Doc = union(enum) {
     const n = util.box(value, al);
     n.* = value;
     return n;
+  }
+
+  pub fn is(d: *const Doc, ty: anytype) bool {
+    return d.* == ty;
+  }
+
+  pub fn isGroup(d: *const Doc) bool {
+    return switch (d.*) {
+      .group => true,
+      else => false,
+    };
+  }
+
+  pub fn isChainLine(d: *const Doc) bool {
+    return switch (d.*) {
+      .line => |l| {
+        return l.ty == .chain;
+      },
+      else => false,
+    };
   }
 };
 
@@ -108,8 +129,18 @@ pub const SeqBuilder = struct {
     return self.line(.norm);
   }
 
+  pub fn chainline(self: *@This()) *@This() {
+    return self.line(.chain);
+  }
+
   pub fn group(self: *@This(), docs: []*Doc) *@This() {
     const g = Doc.new(.{.group = Group{.id = getID(), .docs = docs}}, self.al);
+    util.listAppend(g, &self.docs, self.al);
+    return self;
+  }
+
+  pub fn groupi(self: *@This(), id: u32, docs: []*Doc) *@This() {
+    const g = Doc.new(.{.group = Group{.id = id, .docs = docs}}, self.al);
     util.listAppend(g, &self.docs, self.al);
     return self;
   }
@@ -154,7 +185,6 @@ pub const SeqBuilder = struct {
   pub fn finish(self: *@This()) []*Doc {
     if (self.done) @panic("Builder already consumed");
     defer {
-      self.db.len -= 1;
       self.done = true;
     }
     return self.docs.items;
@@ -163,7 +193,6 @@ pub const SeqBuilder = struct {
   pub fn finishSeq(self: *@This()) *Doc {
     if (self.done) @panic("Builder already consumed");
     defer {
-      self.db.len -= 1;
       self.done = true;
     }
     return Doc.new(.{.seq = Seq{.docs = self.docs.items}}, self.al);
@@ -195,7 +224,7 @@ pub const DocBuilder = struct {
   builders: [BUILDERS_LEN]SeqBuilder = undefined,
   len: usize = 0,
 
-  const BUILDERS_LEN = 1024;
+  const BUILDERS_LEN = 4096;
 
   pub fn init(al: Allocator) @This() {
     return .{.al = al};

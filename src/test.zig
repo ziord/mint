@@ -5,12 +5,9 @@ const OhSnap = @import("ohsnap");
 
 const Allocator = std.mem.Allocator;
 
-fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
-  var t = try ts.Translate.init(src, al, .zig);
-  return t.translate();
-}
-
-fn format(doc: *fmt.Doc, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
+fn format(src: [:0]const u8, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
+  var t = try ts.Translate.init(src, al, .zig, cfg);
+  const doc = try t.translate();
   var f = fmt.Format.init(al, cfg);
   f.fmt(doc);
   return f.getFmtString();
@@ -23,15 +20,14 @@ test "vardecl 1" {
   \\var x = foo(abc, bar, baz);
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var x = foo(abc, bar, baz);
   ).diff(res, true);
   // using width: 10
-  res = try format(doc, .{.writer = .mem, .width = 10}, al);
+  res = try format(src, .{.width = 10}, al);
   try oh.snap(@src(),
     \\var x = foo(
     \\  abc,
@@ -59,9 +55,8 @@ test "vardecl 2" {
   \\ const f: []Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\const y = box(abc, bar, baz);
@@ -78,7 +73,7 @@ test "vardecl 2" {
     \\const f: []Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
     \\const y = box(abc, bar, baz);
     \\const a: ?Foo = box(
@@ -160,9 +155,8 @@ test "vardecl 3" {
   \\ const g: [:Bar] const Foo = box(abc, bar, baz);
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
@@ -179,7 +173,7 @@ test "vardecl 3" {
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
@@ -199,7 +193,7 @@ test "vardecl 3" {
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
     \\const g: [*:Bar]Foo = box(
     \\  abc,
@@ -248,11 +242,7 @@ test "vardecl 3" {
     \\  Dxe,
     \\  box(),
     \\) = box(abc, bar, baz);
-    \\const g: [*:Bar]const Foo = x.box(
-    \\    abc(),
-    \\    bar,
-    \\    baz,
-    \\);
+    \\const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
     \\const Foo = box(
     \\  abc,
     \\  bar,
@@ -266,7 +256,7 @@ test "vardecl 3" {
   ).diff(res, true);
 }
 
-test "vardecl 4" {
+test "vardecl.chains 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src = 
@@ -274,157 +264,143 @@ test "vardecl 4" {
   \\ var ky = self.group(self.seqb().text("Group(").indent(self.seqb().softline().text(id).text(",").normline().appends(_d).finish()).softline().text(")").finish());
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\      )
-    \\      .softline()
-    \\      .text(")")
-    \\      .finish(),
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\      )
-    \\      .softline()
-    \\      .text(")")
-    \\      .finish(),
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\      )
-    \\      .softline()
-    \\      .text(")")
-    \\      .finish(),
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
 }
 
-test "vardecl 5" {
+test "vardecl.chains 2" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src = 
   \\ var ky = self.group(self.seqb() .text("Group(") .indent(self.seqb().softline() .text(id) .text(",") .normline() .appends(_d).finish() ) .softline().text(")").finish());
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\      )
-    \\      .softline()
-    \\      .text(")")
-    \\      .finish(),
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\      )
-    \\      .softline()
-    \\      .text(")")
-    \\      .finish(),
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\      )
-    \\      .softline()
-    \\      .text(")")
-    \\      .finish(),
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
 }
 
-test "vardecl 6" {
+test "vardecl.chains 3" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src = 
@@ -453,125 +429,112 @@ test "vardecl 6" {
   \\         );
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\        self
-    \\          .seqb()
-    \\          .text("IfSplit(")
-    \\          .indent(
-    \\            self
-    \\              .seqb()
-    \\              .softline()
-    \\              .text(id)
-    \\              .text(",")
-    \\              .normline()
-    \\              .appends(_ds)
-    \\              .text(",")
-    \\              .normline()
-    \\              .appends(_df)
-    \\              .finish(),
-    \\          ),
-    \\      )
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\    self.seqb()
+    \\    .text("IfSplit(")
+    \\    .indent(
+    \\      self.seqb()
     \\      .softline()
-    \\      .text(")")
+    \\      .text(id)
+    \\      .text(",")
+    \\      .normline()
+    \\      .appends(_ds)
+    \\      .text(",")
+    \\      .normline()
+    \\      .appends(_df)
     \\      .finish(),
+    \\    ),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\        self
-    \\          .seqb()
-    \\          .text("IfSplit(")
-    \\          .indent(
-    \\            self
-    \\              .seqb()
-    \\              .softline()
-    \\              .text(id)
-    \\              .text(",")
-    \\              .normline()
-    \\              .appends(_ds)
-    \\              .text(",")
-    \\              .normline()
-    \\              .appends(_df)
-    \\              .finish(),
-    \\          ),
-    \\      )
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\    self.seqb()
+    \\    .text("IfSplit(")
+    \\    .indent(
+    \\      self.seqb()
     \\      .softline()
-    \\      .text(")")
+    \\      .text(id)
+    \\      .text(",")
+    \\      .normline()
+    \\      .appends(_ds)
+    \\      .text(",")
+    \\      .normline()
+    \\      .appends(_df)
     \\      .finish(),
+    \\    ),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
-    \\    self
-    \\      .seqb()
-    \\      .text("Group(")
-    \\      .indent(
-    \\        self
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(id)
-    \\          .text(",")
-    \\          .normline()
-    \\          .appends(_d)
-    \\          .finish(),
-    \\        self
-    \\          .seqb()
-    \\          .text("IfSplit(")
-    \\          .indent(
-    \\            self
-    \\              .seqb()
-    \\              .softline()
-    \\              .text(id)
-    \\              .text(",")
-    \\              .normline()
-    \\              .appends(_ds)
-    \\              .text(",")
-    \\              .normline()
-    \\              .appends(_df)
-    \\              .finish(),
-    \\          ),
-    \\      )
+    \\  self.seqb()
+    \\  .text("Group(")
+    \\  .indent(
+    \\    self.seqb()
+    \\    .softline()
+    \\    .text(id)
+    \\    .text(",")
+    \\    .normline()
+    \\    .appends(_d)
+    \\    .finish(),
+    \\    self.seqb()
+    \\    .text("IfSplit(")
+    \\    .indent(
+    \\      self.seqb()
     \\      .softline()
-    \\      .text(")")
+    \\      .text(id)
+    \\      .text(",")
+    \\      .normline()
+    \\      .appends(_ds)
+    \\      .text(",")
+    \\      .normline()
+    \\      .appends(_df)
     \\      .finish(),
+    \\    ),
+    \\  )
+    \\  .softline()
+    \\  .text(")")
+    \\  .finish(),
     \\);
   ).diff(res, true);
 }
 
-test "vardecl 7" {
+test "vardecl.chains 4" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src = 
@@ -588,92 +551,73 @@ test "vardecl 7" {
   \\          )._();
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
-    \\var sb = self
-    \\  .db
-    \\  .seqb()
-    \\  .appends(lhs)
-    \\  .sb
-    \\  .ifsplit(
-    \\    id,
-    \\    self
-    \\      .db
-    \\      .indent(
-    \\        self.db.seqb().softline().text(".").text(self._token(rhs)).finish(),
-    \\      ),
-    \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
-    \\  )
-    \\  ._();
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
-    \\var sb = self
-    \\  .db
-    \\  .seqb()
-    \\  .appends(lhs)
-    \\  .sb
-    \\  .ifsplit(
-    \\    id,
-    \\    self
-    \\      .db
-    \\      .indent(
-    \\        self
-    \\          .db
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(".")
-    \\          .text(self._token(rhs))
-    \\          .finish(),
-    \\      ),
-    \\    self
-    \\      .db
-    \\      .seqb()
-    \\      .text(".")
-    \\      .text(self._token(rhs))
-    \\      .finish(),
-    \\  )
-    \\  ._();
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
-    \\var sb = self
-    \\  .db
-    \\  .seqb()
-    \\  .appends(lhs)
-    \\  .sb
-    \\  .ifsplit(
-    \\    id,
-    \\    self
-    \\      .db
-    \\      .indent(
-    \\        self
-    \\          .db
-    \\          .seqb()
-    \\          .softline()
-    \\          .text(".")
-    \\          .text(
-    \\            self._token(rhs),
-    \\          )
-    \\          .finish(),
-    \\      ),
-    \\    self
-    \\      .db
-    \\      .seqb()
-    \\      .text(".")
-    \\      .text(self._token(rhs))
-    \\      .finish(),
-    \\  )
-    \\  ._();
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
   ).diff(res, true);
 }
 
-test "vardecl 8" {
+test "vardecl.chains 5" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src = 
@@ -682,9 +626,8 @@ test "vardecl 8" {
   \\ var ky = selfgroup(selfseqb(),text("Group("),indent(  selfseqb(),  softline(),  text(id),  text(","), normline(), appends(_d, finish()), selfseqb(), text("IfSplit(", selfseqb()), indent( selfseqb(),   softline(),   text(id), text(","), normline(), appends(_ds), text(","), normline(), appends(_df), finish()), ),softline(),text(")"),finish());
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var sb = self.db.seqb().appends(lhs);
@@ -720,7 +663,7 @@ test "vardecl 8" {
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb().appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
@@ -755,12 +698,10 @@ test "vardecl 8" {
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
-    \\var sb = self
-    \\  .db
-    \\  .seqb()
-    \\  .appends(lhs);
+    \\var sb = self.db.seqb()
+    \\.appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
     \\var ky = selfgroup(
     \\  selfseqb(),
@@ -797,7 +738,7 @@ test "vardecl 8" {
   ).diff(res, true);
 }
 
-test "vardecl 9" {
+test "vardecl.chains 6" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src = 
@@ -806,55 +747,424 @@ test "vardecl 9" {
   \\ var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, xlong_arg2));
   ;
   const al = arena.allocator();
-  const doc = try translate(src, al);
   // default width: 80
-  var res = try format(doc, .{.writer = .mem}, al);
+  var res = try format(src, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, long_arg2));
     \\var q = fox()()
-    \\  .hahah(a, b, "yes")
-    \\  .bar(
-    \\    compute_something(long_arg1, xlong_arg2),
-    \\);
+    \\.hahah(a, b, "yes")
+    \\.bar(compute_something(long_arg1, xlong_arg2));
   ).diff(res, true);
   // using width: 60
-  res = try format(doc, .{.writer = .mem, .width = 60}, al);
+  res = try format(src, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()()
-    \\  .hahah(a, b, "yes")
-    \\  .bar(
-    \\    compute_something(long_arg1, long_arg2),
-    \\);
+    \\.hahah(a, b, "yes")
+    \\.bar(compute_something(long_arg1, long_arg2));
     \\var q = fox()()
-    \\  .hahah(a, b, "yes")
-    \\  .bar(
-    \\    compute_something(long_arg1, xlong_arg2),
-    \\);
+    \\.hahah(a, b, "yes")
+    \\.bar(compute_something(long_arg1, xlong_arg2));
   ).diff(res, true);
   // using width: 30
-  res = try format(doc, .{.writer = .mem, .width = 30}, al);
+  res = try format(src, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var q = fox()()
-    \\  .hahah(a, b, "yes")
-    \\  .bar(abc());
+    \\.hahah(a, b, "yes")
+    \\.bar(abc());
     \\var q = fox()()
-    \\  .hahah(a, b, "yes")
-    \\  .bar(
-    \\    compute_something(
-    \\      long_arg1,
-    \\      long_arg2,
-    \\    ),
+    \\.hahah(a, b, "yes")
+    \\.bar(
+    \\  compute_something(
+    \\    long_arg1,
+    \\    long_arg2,
+    \\  ),
     \\);
     \\var q = fox()()
-    \\  .hahah(a, b, "yes")
-    \\  .bar(
-    \\    compute_something(
-    \\      long_arg1,
-    \\      xlong_arg2,
-    \\    ),
+    \\.hahah(a, b, "yes")
+    \\.bar(
+    \\  compute_something(
+    \\    long_arg1,
+    \\    xlong_arg2,
+    \\  ),
     \\);
+  ).diff(res, true);
+}
+
+test "vardecl.chains 7" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ var sb = self.db.seqb().appends(compute_value(lhs, rhs));
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  var res = try format(src, .{}, al);
+  const oh = OhSnap{};
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb()
+    \\.appends(
+    \\  compute_value(lhs, rhs),
+    \\);
+  ).diff(res, true);
+}
+
+test "vardecl.chains 8" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ var sb = self.db.seqb().appends(lhs) 
+  \\          .sb.ifsplit(
+  \\            id,
+  \\            self.db.indent(
+  \\              self.db.seqb().softline()
+  \\              .text(".")
+  \\              .text(self._token(rhs))
+  \\              .finish()
+  \\            ))
+  \\          .sb.ifsplit(
+  \\            id,
+  \\            self.db.indent(
+  \\              self.db.seqb().softline()
+  \\              .text(".")
+  \\              .text(self._token(rhs))
+  \\              .finish()
+  \\            )
+  \\          )._();
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
+    \\)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\)
+    \\._();
+  ).diff(res, true);
+}
+
+test "vardecl.chains 9" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ var sb = self.db.xyz().pkzy.aaa.seqb().appends(lhs) 
+  \\          .sb.ifsplit(
+  \\            id,
+  \\            self.db.indent(
+  \\              self.db.seqb().softline()
+  \\              .text(".")
+  \\              .text(self._token(rhs))
+  \\              .finish()
+  \\            ),
+  \\            self.db.seqb().text(".").text(self._token(rhs)).finish(),
+  \\ )._();
+  ;
+  const al = arena.allocator();
+  var res = try format(src, .{.width = 100}, al);
+  const oh = OhSnap{};
+  // using width: 100
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  ),
+    \\  self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+}
+
+test "vardecl.chains 10" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ var sb = self.db.xyz().pkzy.aaa.seqb().appends(lhs) 
+  \\          .sb.ifsplit(
+  \\            id,
+  \\            self.db.indent(
+  \\              self.db.seqb().softline()
+  \\              .text(".")
+  \\              .text(self._token(rhs))
+  \\              .finish()
+  \\            ).
+  \\            self.db.seqb().text(".").text(self._token(rhs)).finish()
+  \\ )._();
+  ;
+  const al = arena.allocator();
+  var res = try format(src, .{.width = 100}, al);
+  const oh = OhSnap{};
+  // using width: 100
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish())
+    \\  .self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  res = try format(src, .{.width = 90}, al); 
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  )
+    \\  .self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  )
+    \\  .self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  )
+    \\  .self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var sb = self.db.xyz()
+    \\.pkzy.aaa.seqb()
+    \\.appends(lhs)
+    \\.sb.ifsplit(
+    \\  id,
+    \\  self.db.indent(
+    \\    self.db.seqb()
+    \\    .softline()
+    \\    .text(".")
+    \\    .text(self._token(rhs))
+    \\    .finish(),
+    \\  )
+    \\  .self.db.seqb()
+    \\  .text(".")
+    \\  .text(self._token(rhs))
+    \\  .finish(),
+    \\)
+    \\._();
   ).diff(res, true);
 }
