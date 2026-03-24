@@ -38,3 +38,7 @@ pub inline fn listAppendSlice(comptime T: type, val: []T, list: *std.ArrayList(T
     std.posix.exit(1);
   };
 }
+
+pub fn todo(comptime s: []const u8) noreturn {
+  @panic("Todo: " ++ s ++ "!");
+}

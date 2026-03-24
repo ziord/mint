@@ -50,7 +50,7 @@ pub const Format = struct {
 
   fn setWriter(self: *Self) void {
     switch (self.cfg.writer) {
-      .file => @panic("todo: file writer"),
+      .file => util.todo("file writer"),
       .out => {
         self.writer = &self.out_writer.interface;
       }, 

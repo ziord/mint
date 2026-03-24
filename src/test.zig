@@ -1471,3 +1471,769 @@ test "vardecl.chains 11" {
     \\);
   ).diff(res, true);
 }
+
+test "fundecl 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype,) A(T) {
+  \\  var x = 5;
+  \\    print("just testing!");
+  \\   var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\   x = 5; 
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype) A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\  x = 5;
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\fn foo(
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  ...,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\  x = 5;
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\fn foo(
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  ...,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\  x = 5;
+    \\}
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\fn foo(
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  ...,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(
+    \\    bar(1, 2),
+    \\  );
+    \\  x = 5;
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ fn foo2(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype, noalias y: u2, k: anytype, ...) A(T) {
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn foo2(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ...,
+    \\) A(T) {}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\fn foo2(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ...,
+    \\) A(T) {}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\fn foo2(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ...,
+    \\) A(T) {}
+  ).diff(res, true);
+}
+
+test "fundecl 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...,) A(T) {
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\fn foo3(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  ...,
+    \\) A(T) {}
+  ).diff(res, true);
+}
+
+test "fundecl 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ pub fn foo4(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub fn foo4(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\pub fn foo4(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\pub fn foo4(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+}
+
+test "fundecl 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ inline fn foo5(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
+  \\ }
+  \\ pub inline fn foo6(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\inline fn foo5(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+    \\
+    \\pub inline fn foo6(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\inline fn foo5(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+    \\
+    \\pub inline fn foo6(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\inline fn foo5(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+    \\
+    \\pub inline fn foo6(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+}
+
+test "fundecl 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ export fn foo7(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
+  \\ }
+  \\ pub export fn foo8(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\export fn foo7(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+    \\
+    \\pub export fn foo8(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\export fn foo7(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+    \\
+    \\pub export fn foo8(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\export fn foo7(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+    \\
+    \\pub export fn foo8(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T) {}
+  ).diff(res, true);
+}
+
+test "fundecl 7" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ extern fn foo9(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
+  \\ pub extern fn foo10(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\extern fn foo9(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T);
+    \\
+    \\pub extern fn foo10(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T);
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\extern fn foo9(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T);
+    \\
+    \\pub extern fn foo10(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T);
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\extern fn foo9(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T);
+    \\
+    \\pub extern fn foo10(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) A(T);
+  ).diff(res, true);
+}
+
+test "fundecl 8" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ pub fn fantasticFooBar(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
+  \\    var x = 5;
+  \\    print("just testing!");
+  \\   var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\)
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar(
+    \\  comptime T: type,
+    \\  x: std.ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\)
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 9" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ pub fn fantasticFooBar(comptime T: anytype, x: anytype, comptime x: anytype, noalias y: anytype, k: anytype) align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
+  \\    var x = 5;
+  \\    print("just testing!");
+  \\   var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar(
+    \\  comptime T: anytype,
+    \\  x: anytype,
+    \\  comptime x: anytype,
+    \\  noalias y: anytype,
+    \\  k: anytype,
+    \\) align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar(
+    \\  comptime T: anytype,
+    \\  x: anytype,
+    \\  comptime x: anytype,
+    \\  noalias y: anytype,
+    \\  k: anytype,
+    \\)
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar(
+    \\  comptime T: anytype,
+    \\  x: anytype,
+    \\  comptime x: anytype,
+    \\  noalias y: anytype,
+    \\  k: anytype,
+    \\)
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 10" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ pub fn fantasticFooBar() align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
+  \\    var x = 5;
+  \\    print("just testing!");
+  \\   var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar()
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar()
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\pub fn fantasticFooBar()
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 11" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ pub fn fan() align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
+  \\    var x = 5;
+  \\    print("just testing!");
+  \\   var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub fn fan() align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\pub fn fan()
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\pub fn fan()
+    \\align(64)
+    \\addrspace(.generic)
+    \\callconv(.c)
+    \\linksection(".my_custom_section")
+    \\A(T) {
+    \\  var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 12" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ const T = fn (a: anytype, comptime T: type, x: i32);
+  \\ const T = fn abc(a: anytype, comptime T: type, x: i32);
+  \\ const T = fn (a: anytype, comptime T: type, x: i32) void;
+  \\ const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const T = fn (a: anytype, comptime T: type, x: i32);
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32);
+    \\const T = fn (a: anytype, comptime T: type, x: i32) void;
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\const T = fn (a: anytype, comptime T: type, x: i32);
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32);
+    \\const T = fn (a: anytype, comptime T: type, x: i32) void;
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\const T = fn (a: anytype, comptime T: type, x: i32);
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32);
+    \\const T = fn (a: anytype, comptime T: type, x: i32) void;
+    \\const T = fn abc(
+    \\  a: anytype,
+    \\  comptime T: type,
+    \\  x: i32,
+    \\) []const u8;
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\const T = fn (
+    \\  a: anytype,
+    \\  comptime T: type,
+    \\  x: i32,
+    \\);
+    \\const T = fn abc(
+    \\  a: anytype,
+    \\  comptime T: type,
+    \\  x: i32,
+    \\);
+    \\const T = fn (
+    \\  a: anytype,
+    \\  comptime T: type,
+    \\  x: i32,
+    \\) void;
+    \\const T = fn abc(
+    \\  a: anytype,
+    \\  comptime T: type,
+    \\  x: i32,
+    \\) []const u8;
+  ).diff(res, true);
+}
+
+test "fundecl 13" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ fn foo(bar: T) void {
+  \\   comptime const x, var y = expr;
+  \\   comptime const x, const y = expr;
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  comptime const x, var y = expr;
+    \\  comptime const x, const y = expr;
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  comptime const x, var y = expr;
+    \\  comptime const x, const y = expr;
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  comptime const x, var y = expr;
+    \\  comptime const x, const y = expr;
+    \\}
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  comptime const x, var y = expr;
+    \\  comptime const x, const y = expr;
+    \\}
+  ).diff(res, true);
+}

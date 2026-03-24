@@ -89,6 +89,14 @@ pub const SeqBuilder = struct {
     _ = self;
   }
 
+  pub inline fn isEmpty(self: *@This()) bool {
+    return self.docs.items.len == 0;
+  }
+
+  pub inline fn isNotEmpty(self: *@This()) bool {
+    return self.docs.items.len != 0;
+  }
+
   pub fn copy(self: *@This()) @This() {
     var cpy = DocList.initCapacity(self.al, self.docs.items.len) catch unreachable;
     cpy.appendSliceAssumeCapacity(self.docs.items);
@@ -188,6 +196,11 @@ pub const SeqBuilder = struct {
       self.done = true;
     }
     return self.docs.items;
+  }
+
+  pub fn reset(self: *@This()) void {
+    self.done = false;
+    self.docs = .empty;
   }
 
   pub fn finishSeq(self: *@This()) *Doc {

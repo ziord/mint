@@ -23,6 +23,7 @@ pub const Translate = struct {
   db: DocBuilder,
   cfg: FmtConfig,
   _in_call_args: u32 = 0,
+  _in_block: u32 = 0,
 
   const Self = @This();
   const NodeData = struct{tag: Node.Tag, idx: Node.Index};
@@ -43,6 +44,22 @@ pub const Translate = struct {
       .cfg = cfg,
       .db = DocBuilder.init(al),
     };
+  }
+
+  fn isVarDecl(tag: Node.Tag) bool {
+    return switch (tag) {
+      .simple_var_decl, .global_var_decl,
+      .local_var_decl, .aligned_var_decl => true,
+      else => false,
+    };
+  }
+
+  fn getDeclSep(self: *Self) *Doc {
+    var sb = self.db.seqb();
+    for (0..self.cfg.decl_line_seps) |_| {
+      sb.hardline()._();
+    }
+    return sb.finishSeq();
   }
 
   inline fn _token(self: *Self, i: Ast.TokenIndex) [] const u8 {
@@ -196,10 +213,10 @@ pub const Translate = struct {
         try self._collectDeepChainsStep(call.ast.fn_expr, list);
         util.listAppend(Chain{.lbrack={}}, list, self.al);
         for (call.ast.params, 0..) |p, i| {
-          try self._collectDeepChainsStep(p, list);
-          if (i < call.ast.params.len - 1) {
+          if (i > 0) {
             util.listAppend(Chain{.comma={}}, list, self.al);
           }
+          try self._collectDeepChainsStep(p, list);
         }
         util.listAppend(Chain{.rbrack={}}, list, self.al);
       },
@@ -208,10 +225,10 @@ pub const Translate = struct {
         try self._collectDeepChainsStep(fn_expr, list);
         util.listAppend(Chain{.lbrack={}}, list, self.al);
         for (params, 0..) |p, i| {
-          try self._collectDeepChainsStep(p, list);
-          if (i < params.len - 1) {
+          if (i > 0) {
             util.listAppend(Chain{.comma={}}, list, self.al);
           }
+          try self._collectDeepChainsStep(p, list);
         }
         util.listAppend(Chain{.rbrack={}}, list, self.al);
       },
@@ -255,10 +272,10 @@ pub const Translate = struct {
             continue;
           }
         }
-        util.listAppend(Chain{.expr=p}, &list, self.al);
-        if (i < call.ast.params.len - 1) {
+        if (i > 0) {
           util.listAppend(Chain{.comma={}}, &list, self.al);
         } 
+        util.listAppend(Chain{.expr=p}, &list, self.al);
       }
       util.listAppend(Chain{.rbrack={}}, &list, self.al);
     }
@@ -458,8 +475,7 @@ pub const Translate = struct {
     sb_args.softlineIf(should_softline)._();
     self._in_call_args += 1;
     for (params, 0..) |_n, i| {
-      sb_args.append(try self.t(_n));
-      if (i < params.len - 1) {
+      if (i > 0) {
         sb_args.text(",")._();
         if (should_softline) {
           sb_args.normline()._();
@@ -467,6 +483,7 @@ pub const Translate = struct {
           sb_args.space()._();
         }
       }
+      sb_args.append(try self.t(_n));
     }
     self._in_call_args -= 1;
     if ((params.len > 0 and should_softline) or tag == .call_one_comma) {
@@ -474,6 +491,91 @@ pub const Translate = struct {
       sb_args.ifsplit(id, self.db.text(","), self.db.softline())._();
     }
     return sb_args;
+  }
+
+  fn tFnParams(
+    self: *Self,
+    id: u32,
+    fn_tkn: Ast.TokenIndex,
+    params: []const Node.Index,
+  ) TranslateError!*SeqBuilder {
+    var _sb_prms = self.db.seqb();
+    var tkn = fn_tkn + 1;
+    if (self.tree.tokenTag(tkn) == .identifier) {
+      tkn += 1;
+    }
+    assert(self.tree.tokenTag(tkn) == .l_paren);
+    tkn += 1;
+    self._in_call_args += 1;
+    var tmp = self.db.seqb();
+    var i = @as(usize, 0);
+    while (true) : (tkn += 1) {
+      switch (self.tree.tokenTag(tkn)) {
+        .doc_comment => {
+          util.todo("doc comment");
+        },
+        .keyword_noalias, .keyword_comptime => {
+          tmp.text(self._token(tkn)).space()._();
+        },
+        .keyword_anytype => {
+          tmp.text(self._token(tkn))._();
+        },
+        .identifier => {
+          const prev = self.tree.tokenTag(tkn - 1);
+          if (
+            prev == .l_paren or
+            prev == .comma or
+            prev == .keyword_comptime or
+            prev == .keyword_noalias
+          ) {
+            tmp.text(self._token(tkn))._();
+          } else if (i < params.len) {
+            const p = params[i];
+            tmp.append(try self.t(p));
+            tkn = self.tree.lastToken(p);
+            i += 1;
+          }
+        },
+        .colon => {
+          tmp.text(": ")._();
+        },
+        .comma => {
+          if (self.tree.tokenTag(tkn + 1) != .r_paren) {
+            tmp.text(",")._();
+            _sb_prms.group(tmp.finish()).normline()._();
+          } else {
+            _sb_prms.group(tmp.finish())._();
+          }
+          tmp.reset();
+        },
+        .ellipsis3 => {
+          tmp.text(self._token(tkn))._();
+        },
+        .r_paren => {
+          if (tmp.isNotEmpty()) {
+            _sb_prms.group(tmp.finish())._();
+          } else if (!tmp.done) {
+            _ = tmp.finish();
+          }
+          break;
+        },
+        else => {
+          if (i < params.len) {
+            const p = params[i];
+            tmp.append(try self.t(p));
+            tkn = self.tree.lastToken(p);
+            i += 1;
+          }
+        }
+      }
+    }
+    self._in_call_args -= 1;
+    const should_softline = _sb_prms.isNotEmpty();
+    if (should_softline) {
+      // add trailing comma for complex args or if we break
+      _sb_prms.ifsplit(id, self.db.text(","), self.db.softline())._();
+    }
+    return self.db.seqb().softlineIf(should_softline).extends(_sb_prms.finish());
   }
 
   fn tVarDeclProto(self: *Self, vd: Ast.full.VarDecl) TranslateError!*SeqBuilder {
@@ -528,6 +630,83 @@ pub const Translate = struct {
     return sb;
   }
 
+  fn tFnProto(
+    self: *Self,
+    fn_tkn: Ast.TokenIndex,
+    params: []const Node.Index,
+    byte_align: ?Node.Index, 
+    addr_space: ?Node.Index, 
+    link_section: ?Node.Index, 
+    call_conv: ?Node.Index, 
+    ret_ty: ?Node.Index, 
+  ) TranslateError!*Doc {
+    // KEYWORD_fn IDENTIFIER? LPAREN ParamDeclList RPAREN ByteAlign? AddrSpace? LinkSection? CallConv? EXCLAMATIONMARK? TypeExpr
+    // `fn (a: b, c: d) addrspace(e) linksection(f) callconv(g) return_type`.
+    var sb = self.db.seqb();
+    var curr = if (fn_tkn > 0) fn_tkn - 1 else fn_tkn;
+    var has_extern = false;
+    loop: while (true) : (curr -= 1) {
+      switch (self.tree.tokenTag(curr)) {
+        .keyword_inline, .keyword_export, .keyword_pub => {
+          sb.space().text(self._token(curr))._();
+        },
+        .keyword_extern => {
+          sb.space().text(self._token(curr))._();
+          has_extern = true;
+        },
+        else => {
+          std.mem.reverse(*Doc, sb.docs.items);
+          break :loop;
+        }
+      }
+      if (curr == 0) {
+        std.mem.reverse(*Doc, sb.docs.items);
+        break;
+      }
+    }
+    sb.text("fn ")._();
+    const next_tkn = fn_tkn + 1;
+    if (self.tree.tokenTag(next_tkn) == .identifier) {
+      sb.text(self._token(next_tkn))._();
+    }
+    sb.text("(")._();
+    const id = d.genGroupID();
+    var sb_args = try self.tFnParams(id, fn_tkn, params);
+    sb.indent(sb_args.finish())._();
+    sb.softlineIf(sb_args.isNotEmpty()).text(")")._();
+    var tmp = self.db.seqb();
+    if (byte_align) |_n| {
+      tmp.normline().text("align(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    if (addr_space) |_n| {
+      tmp.normline().text("addrspace(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    if (call_conv) |_n| {
+      tmp.normline().text("callconv(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    if (link_section) |_n| {
+      tmp.normline().text("linksection(")._();
+      tmp.append(try self.t(_n));
+      tmp.text(")")._();
+    }
+    if (ret_ty) |_n| {
+      sb.group(tmp.normline().finish())._();
+      sb.append(try self.t(_n));
+    } else {
+      sb.group(tmp.finish())._();
+    }
+    if (has_extern) {
+      sb.text(";").hardline()._();
+    }
+    return self.db.groupi(id, sb.finish());
+  }
+
   fn t(self: *Self, n: Node.Index) !*Doc {
     const tag = self.tree.nodeTag(n);
     assert(tag != self.tree.nodeTag(Node.Index.root));
@@ -538,7 +717,10 @@ pub const Translate = struct {
       .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => {
         const vd = self.tree.fullVarDecl(n).?;
         var sb = try self.tVarDecl(vd);
-        return self.db.group(sb.text(";").hardline().finish());
+        if (self._in_block == 0) {
+          sb.text(";").hardline()._();
+        }
+        return self.db.group(sb.finish());
       },
       .enum_literal => {
         const tk = self._token(self.tree.nodeMainToken(n));
@@ -557,6 +739,122 @@ pub const Translate = struct {
         sb.indent(sb_args.finish())._();
         sb.softlineIf(should_softline).text(")")._();
         return self.db.groupi(id, sb.finish());
+      },
+      .fn_proto_simple => {
+        // `fn (a: type_expr) return_type`.
+        const typ, const ret = self.tree.nodeData(n).opt_node_and_opt_node;
+        const fn_tkn = self.tree.nodeMainToken(n);
+        const params = if (typ.unwrap()) |idx| &.{idx} else &.{};
+        return self.tFnProto(fn_tkn, params, null, null, null, null, ret.unwrap());
+      },
+      .fn_proto_multi => {
+        // `fn (a: b, c: d) return_type`.
+        const proto = self.tree.fnProtoMulti(n);
+        const fn_tkn = self.tree.nodeMainToken(n);
+        return self.tFnProto(
+          fn_tkn, proto.ast.params,
+          proto.ast.align_expr.unwrap(),
+          proto.ast.addrspace_expr.unwrap(),
+          proto.ast.section_expr.unwrap(),
+          proto.ast.callconv_expr.unwrap(),
+          proto.ast.return_type.unwrap(),
+        );
+      },
+      .fn_proto_one => {
+        // `fn (a: b) addrspace(e) linksection(f) callconv(g) return_type`.
+        const extra_index, const ret = self.tree.nodeData(n).extra_and_opt_node;
+        const proto = self.tree.extraData(extra_index, Node.FnProtoOne);
+        const fn_tkn = self.tree.nodeMainToken(n);
+        const params = if (proto.param.unwrap()) |idx| &.{idx} else &.{};
+        return self.tFnProto(
+          fn_tkn, params,
+          proto.align_expr.unwrap(),
+          proto.addrspace_expr.unwrap(),
+          proto.section_expr.unwrap(),
+          proto.callconv_expr.unwrap(),
+          ret.unwrap(),
+        );
+      },
+      .fn_proto => {
+        // `fn (a: b, c: d) addrspace(e) linksection(f) callconv(g) return_type`.
+        const proto = self.tree.fnProto(n);
+        const fn_tkn = self.tree.nodeMainToken(n);
+        return self.tFnProto(
+          fn_tkn, proto.ast.params,
+          proto.ast.align_expr.unwrap(),
+          proto.ast.addrspace_expr.unwrap(),
+          proto.ast.section_expr.unwrap(),
+          proto.ast.callconv_expr.unwrap(),
+          proto.ast.return_type.unwrap(),
+        );
+      },
+      .fn_decl => {
+        const proto, const body = self.tree.nodeData(n).node_and_node;
+        const hdr = try self.t(proto);
+        var sb = self.db.seqb();
+        sb.appends(hdr).space().append(try self.t(body));
+        return self.db.group(sb.hardline().finish());
+      },
+      .block_two, .block_two_semicolon => {
+        self._in_block += 1;
+        defer self._in_block -= 1;
+        const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
+        var sb = self.db.seqb().text("{");
+        var tmp = self.db.seqb();
+        if (first.unwrap()) |_n| {
+          tmp.hardline().append(try self.t(_n));
+          tmp.text(";")._();
+        }
+        if (second.unwrap()) |_n| {
+          tmp.hardline().append(try self.t(_n));
+          tmp.text(";")._();
+        }
+        if (tmp.isEmpty()) {
+          _ = tmp.finish();
+          return sb.text("}").finishSeq();
+        }
+        return sb.indent(tmp.finish()).hardline().text("}").finishSeq();
+      },
+      .block, .block_semicolon => {
+        self._in_block += 1;
+        defer self._in_block -= 1;
+        const rng = self.tree.nodeData(n).extra_range;
+        const stmts = self.tree.extraDataSlice(rng, Node.Index);
+        var sb = self.db.seqb().text("{");
+        var tmp = self.db.seqb();
+        if (stmts.len > 0) tmp.hardline()._();
+        for (stmts, 0..) |stmt, i| {
+          if (i > 0) {
+            tmp.hardline()._();
+          }
+          tmp.appends(try self.t(stmt)).text(";")._();
+        }
+        if (tmp.isEmpty()) {
+          _ = tmp.finish();
+          return sb.text("}").finishSeq();
+        }
+        return sb.indent(tmp.finish()).hardline().text("}").finishSeq();
+      },
+      .assign_destructure => {
+        const ad = self.tree.assignDestructure(n);
+        var sb = self.db.seqb();
+        for (ad.ast.variables, 0..) |vr, i| {
+          if (i > 0) {
+            sb.text(", ")._();
+          }
+          sb.append(try self.t(vr));
+        }
+        sb.space().text(self._token(ad.ast.equal_token)).space()._();
+        sb.append(try self.t(ad.ast.value_expr));
+        return self.db.group(sb.finish());
+      },
+      .assign => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+        var sb = self.db.seqb();
+        sb.append(try self.t(lhs));
+        sb.text(" = ")._();
+        sb.append(try self.t(rhs));
+        return self.db.group(sb.finish());
       },
       .field_access => {
         // lhs.a
@@ -623,8 +921,15 @@ pub const Translate = struct {
 
   pub fn translate(self: *Self) !*Doc {
     var decls: d.DocList = .empty;
-    for (self.decls) |nd| {
+    var last: Node.Tag = self.tree.nodeTag(.root);
+    for (self.decls, 0..) |nd, i| {
+      if (i > 0) {
+        if (!(isVarDecl(last) and isVarDecl(nd.tag))) {
+          util.listAppend(self.getDeclSep(), &decls, self.al);
+        }
+      }
       util.listAppend(try self.t(nd.idx), &decls, self.al);
+      last = nd.tag;
     }
     const doc = self.db.seq(decls.items);
     // verify that all builders are successfully consumed
