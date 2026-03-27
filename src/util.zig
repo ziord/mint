@@ -32,7 +32,7 @@ pub inline fn listAppend(val: anytype, list: *std.ArrayList(@TypeOf(val)), al: A
   };
 }
 
-pub inline fn listAppendSlice(comptime T: type, val: []T, list: *std.ArrayList(T), al: Allocator) void {
+pub inline fn listAppendSlice(comptime T: type, list: *std.ArrayList(T), val: []T, al: Allocator) void {
   list.appendSlice(al, val) catch |e| {
     std.debug.print("list append slice failed: {}\n", .{e});
     std.posix.exit(1);

@@ -538,6 +538,20 @@ test "vardecl 5" {
   ).diff(res, true);
 }
 
+test "vardecl 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ threadlocal const x = expr;
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // default width: 80
+  const res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\threadlocal const x = expr;
+  ).diff(res, true);
+}
 test "vardecl.chains 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -2235,5 +2249,753 @@ test "fundecl 13" {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
     \\}
+  ).diff(res, true);
+}
+
+test "expr 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\ fn foo(bar: T) void {
+  \\    var x: u3 = 5;
+  \\    const a, _ = expr;
+  \\   var j = a * b;
+  \\   var j = a * b + 5;
+  \\    var j = x * x - (x + 5);
+  \\    var j = x * x - (x + 5) + k;
+  \\   var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2 + barm1 * foom1 + bar0 * foo0 + bar1 * foo1 + bar2 * foo2 + bar3 / boxN * foo;
+  \\  var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+  \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo + (bar  * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+  \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo + bar / boxB * foo);
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  var x: u3 = 5;
+    \\  const a, _ = expr;
+    \\  var j = a * b;
+    \\  var j = a * b + 5;
+    \\  var j = x * x - (x + 5);
+    \\  var j = x * x - (x + 5) + k;
+    \\  var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + bar3 / boxN * foo;
+    \\  var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\      + bar / boxB * foo);
+    \\}
+  ).diff(res, true);
+  // using width: 100, indent: 4
+  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\    var x: u3 = 5;
+    \\    const a, _ = expr;
+    \\    var j = a * b;
+    \\    var j = a * b + 5;
+    \\    var j = x * x - (x + 5);
+    \\    var j = x * x - (x + 5) + k;
+    \\    var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\        + barm1 * foom1
+    \\        + bar0 * foo0
+    \\        + bar1 * foo1
+    \\        + bar2 * foo2
+    \\        + bar3 / boxN * foo;
+    \\    var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+    \\    var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\        + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+    \\    var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\        + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\            + bar / boxB * foo);
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  var x: u3 = 5;
+    \\  const a, _ = expr;
+    \\  var j = a * b;
+    \\  var j = a * b + 5;
+    \\  var j = x * x - (x + 5);
+    \\  var j = x * x - (x + 5) + k;
+    \\  var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3
+    \\    + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + bar3 / boxN * foo;
+    \\  var x = this.is.fancy(
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\  );
+    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo
+    \\      + bar / boxB * foo);
+    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo);
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  var x: u3 = 5;
+    \\  const a, _ = expr;
+    \\  var j = a * b;
+    \\  var j = a * b + 5;
+    \\  var j = x * x - (x + 5);
+    \\  var j = x * x - (x + 5) + k;
+    \\  var x = 1 * foo + bar - car * booh - dah / boxMM * foom4
+    \\    + barm3 * foom3
+    \\    + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + bar3 / boxN * foo;
+    \\  var x = this.is.fancy(
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\  );
+    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo);
+    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo);
+    \\}
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\fn foo(bar: T) void {
+    \\  var x: u3 = 5;
+    \\  const a, _ = expr;
+    \\  var j = a * b;
+    \\  var j = a * b + 5;
+    \\  var j = x * x - (x + 5);
+    \\  var j = x * x - (x + 5) + k;
+    \\  var x = 1 * foo
+    \\    + bar - car * booh - dah / boxMM * foom4
+    \\    + barm3 * foom3
+    \\    + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + bar3 / boxN * foo;
+    \\  var x = this.is.fancy(
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\  );
+    \\  var x = 1 * foo
+    \\    + bar - car * booh - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo + bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo);
+    \\  var x = 1 * foo
+    \\    + bar - car * booh - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo);
+    \\}
+  ).diff(res, true);
+}
+
+test "expr 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\    var x: u3 = 5;
+  \\   var j = a * b;
+  \\   var j = a * b + 5;
+  \\    var j = x * x - (x + 5);
+  \\    var j = x * x - (x + 5) + k;
+  \\   var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2 + barm1 * foom1 + bar0 * foo0 + bar1 * foo1 + bar2 * foo2 + bar3 / boxN * foo;
+  \\  var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+  \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo + (bar  * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+  \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo + bar / boxB * foo);
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b + 5;
+    \\var j = x * x - (x + 5);
+    \\var j = x * x - (x + 5) + k;
+    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\  + barm1 * foom1
+    \\  + bar0 * foo0
+    \\  + bar1 * foo1
+    \\  + bar2 * foo2
+    \\  + bar3 / boxN * foo;
+    \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\  + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\  + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\    + bar / boxB * foo);
+  ).diff(res, true);
+  // using width: 100, indent: 4
+  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b + 5;
+    \\var j = x * x - (x + 5);
+    \\var j = x * x - (x + 5) + k;
+    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + bar3 / boxN * foo;
+    \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\    + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\        + bar / boxB * foo);
+  ).diff(res, true);
+  // default width: 80
+  res = try format(src, .{.width = 80}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b + 5;
+    \\var j = x * x - (x + 5);
+    \\var j = x * x - (x + 5) + k;
+    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3
+    \\  + barm2 * foom2
+    \\  + barm1 * foom1
+    \\  + bar0 * foo0
+    \\  + bar1 * foo1
+    \\  + bar2 * foo2
+    \\  + bar3 / boxN * foo;
+    \\var x = this.is.fancy(
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo
+    \\    + bar / boxB * foo);
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo);
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b + 5;
+    \\var j = x * x - (x + 5);
+    \\var j = x * x - (x + 5) + k;
+    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4
+    \\  + barm3 * foom3
+    \\  + barm2 * foom2
+    \\  + barm1 * foom1
+    \\  + bar0 * foo0
+    \\  + bar1 * foo1
+    \\  + bar2 * foo2
+    \\  + bar3 / boxN * foo;
+    \\var x = this.is.fancy(
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo + bar * foo + bar * foo + bar * foo
+    \\    + bar * foo
+    \\    + bar / boxB * foo);
+    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo + bar * foo + bar * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo);
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b + 5;
+    \\var j = x * x - (x + 5);
+    \\var j = x * x - (x + 5) + k;
+    \\var x = 1 * foo
+    \\  + bar - car * booh - dah / boxMM * foom4
+    \\  + barm3 * foom3
+    \\  + barm2 * foom2
+    \\  + barm1 * foom1
+    \\  + bar0 * foo0
+    \\  + bar1 * foo1
+    \\  + bar2 * foo2
+    \\  + bar3 / boxN * foo;
+    \\var x = this.is.fancy(
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo
+    \\  + bar - car * booh - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar / boxB * foo);
+    \\var x = 1 * foo
+    \\  + bar - car * booh - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo + bar * foo
+    \\    + bar * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo);
+  ).diff(res, true);
+}
+
+test "expr 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\    var x: u3 = 5;
+  \\   var j = a * b;
+  \\   var j = a * b * 5;
+  \\    var j = x * x / (x * 5);
+  \\    var j = x * x / (x * 5) * k;
+  \\   var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1 * foom1 * bar0 * foo0 * bar1 * foo1 * bar2 * foo2 * bar3 / boxN * foo;
+  \\  var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+  \\  var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo * (bar  * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
+  \\  var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar / boxB * foo);
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
+    \\  * barm1 * foom1
+    \\  * bar0 * foo0
+    \\  * bar1 * foo1
+    \\  * bar2 * foo2
+    \\  * bar3 / boxN
+    \\  * foo;
+    \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
+    \\    * bar / boxB
+    \\    * foo);
+  ).diff(res, true);
+  // using width: 100, indent: 4
+  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
+    \\    * barm1 * foom1
+    \\    * bar0 * foo0
+    \\    * bar1 * foo1
+    \\    * bar2 * foo2
+    \\    * bar3 / boxN
+    \\    * foo;
+    \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
+    \\        * bar / boxB
+    \\        * foo);
+  ).diff(res, true);
+  // default width: 80, indent: 4
+  res = try format(src, .{.width = 80, .indent = 4}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3
+    \\    * barm2 * foom2
+    \\    * barm1 * foom1
+    \\    * bar0 * foo0
+    \\    * bar1 * foo1
+    \\    * bar2 * foo2
+    \\    * bar3 / boxN
+    \\    * foo;
+    \\var x = this.is.fancy(
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB
+    \\        * foo);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB
+    \\        * foo * foo
+    \\        * bar / boxB
+    \\        * foo);
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4
+    \\  * barm3 * foom3
+    \\  * barm2 * foom2
+    \\  * barm1 * foom1
+    \\  * bar0 * foo0
+    \\  * bar1 * foo1
+    \\  * bar2 * foo2
+    \\  * bar3 / boxN
+    \\  * foo;
+    \\var x = this.is.fancy(
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * bar / boxB
+    \\    * foo);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo);
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car
+    \\  * booh / dah
+    \\  / boxMM * foom4
+    \\  * barm3 * foom3
+    \\  * barm2 * foom2
+    \\  * barm1 * foom1
+    \\  * bar0 * foo0
+    \\  * bar1 * foo1
+    \\  * bar2 * foo2
+    \\  * bar3 / boxN
+    \\  * foo;
+    \\var x = this.is.fancy(
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car
+    \\  * booh / dah
+    \\  / boxB * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * (bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * bar / boxB
+    \\    * foo);
+    \\var x = 1 * foo * bar / car
+    \\  * booh / dah
+    \\  / boxB * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * (bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo);
+  ).diff(res, true);
+}
+
+test "expr 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src = 
+  \\    var x: u3 = 5;
+  \\   var j = a * b;
+  \\   var j = a * b * 5;
+  \\    var j = x * x / (x * 5);
+  \\    var j = x * x / (x * 5) * k;
+  \\   var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1 * foom1 * bar0 * foo0 * bar1 * foo1 * bar2 * foo2 * bar3 / boxN * foo;
+  \\  var x = this.is.fancy(a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
+  \\  var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo * (bar  * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
+  \\  var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo * bar * foo * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar / boxB * foo);
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  var res = try format(src, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
+    \\    * barm1 * foom1
+    \\    * bar0 * foo0
+    \\    * bar1 * foo1
+    \\    * bar2 * foo2
+    \\    * bar3 / boxN
+    \\    * foo;
+    \\var x = this.is.fancy(
+    \\  a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
+    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
+    \\    * bar / boxB
+    \\    * foo);
+  ).diff(res, true);
+  // using width: 100, indent: 4
+  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
+    \\        * barm1 * foom1
+    \\        * bar0 * foo0
+    \\        * bar1 * foo1
+    \\        * bar2 * foo2
+    \\        * bar3 / boxN
+    \\        * foo;
+    \\var x = this.is.fancy(
+    \\    a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
+    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo * bar * foo
+    \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
+    \\        * bar / boxB
+    \\        * foo);
+  ).diff(res, true);
+  // default width: 80, indent: 4
+  res = try format(src, .{.width = 80, .indent = 4}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3
+    \\        * barm2 * foom2
+    \\        * barm1 * foom1
+    \\        * bar0 * foo0
+    \\        * bar1 * foo1
+    \\        * bar2 * foo2
+    \\        * bar3 / boxN
+    \\        * foo;
+    \\var x = this.is.fancy(
+    \\    a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\    a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB
+    \\        * foo);
+    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo
+    \\        * bar * foo
+    \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo
+    \\        * bar / boxB
+    \\        * foo * foo
+    \\        * bar / boxB
+    \\        * foo);
+  ).diff(res, true);
+  // using width: 60
+  res = try format(src, .{.width = 60}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4
+    \\    * barm3 * foom3
+    \\    * barm2 * foom2
+    \\    * barm1 * foom1
+    \\    * bar0 * foo0
+    \\    * bar1 * foo1
+    \\    * bar2 * foo2
+    \\    * bar3 / boxN
+    \\    * foo;
+    \\var x = this.is.fancy(
+    \\  a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * bar / boxB
+    \\    * foo);
+    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo);
+  ).diff(res, true);
+  // using width: 30
+  res = try format(src, .{.width = 30}, al); 
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b * 5;
+    \\var j = x * x / (x * 5);
+    \\var j = x * x / (x * 5) * k;
+    \\var x = 1 * foo * bar / car
+    \\  - booh / dah
+    \\    / boxMM * foom4
+    \\    * barm3 * foom3
+    \\    * barm2 * foom2
+    \\    * barm1 * foom1
+    \\    * bar0 * foo0
+    \\    * bar1 * foo1
+    \\    * bar2 * foo2
+    \\    * bar3 / boxN
+    \\    * foo;
+    \\var x = this.is.fancy(
+    \\  a.b(
+    \\    (a * b
+    \\      + 5 * 6 / c * 12 / xyz),
+    \\  )
+    \\  .not()
+    \\  .so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo * bar / car
+    \\  * booh / dah
+    \\  / boxB * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * bar * foo
+    \\  * (bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * bar / boxB
+    \\    * foo);
+    \\var x = 1 * foo * bar * car
+    \\  + booh / dah
+    \\    / boxB - foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * bar * foo
+    \\    * (bar * foo * bar * foo
+    \\    * bar * foo
+    \\    * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo * foo
+    \\    * bar / boxB
+    \\    * foo);
   ).diff(res, true);
 }

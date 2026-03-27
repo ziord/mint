@@ -21,13 +21,27 @@ pub const Line = struct {
   ty: Ty,
 
   pub const Ty = enum (u4) {
-    soft, hard, norm, chain,
+    /// adds a line only when we break,
+    /// when we don't it's equiv to ""
+    soft,
+    /// always adds a line
+    hard,
+    /// adds a line only when we break,
+    /// when we don't it's equiv to " "
+    norm,
+    /// like `soft` but has a different
+    /// weight when computing complexity
+    chain,
+    /// acts like `soft` when fitting and like 
+    /// `hard` when printing, good for decl braces {}
+    decl,
     pub fn str(self: Ty) []const u8 {
       return switch (self) {
         .soft => "<soft>",
         .hard => "<hard>",
         .norm => "<norm>",
         .chain => "<chain>",
+        .decl => "<decl>",
       };
     }
   };
@@ -141,6 +155,10 @@ pub const SeqBuilder = struct {
     return self.line(.chain);
   }
 
+  pub fn declline(self: *@This()) *@This() {
+    return self.line(.decl);
+  }
+
   pub fn group(self: *@This(), docs: []*Doc) *@This() {
     const g = Doc.new(.{.group = Group{.id = getID(), .docs = docs}}, self.al);
     util.listAppend(g, &self.docs, self.al);
@@ -173,11 +191,11 @@ pub const SeqBuilder = struct {
   }
 
   pub fn extend(self: *@This(), docs: []*Doc) void {
-    util.listAppendSlice(*Doc, docs, &self.docs, self.al);
+    util.listAppendSlice(*Doc, &self.docs, docs, self.al);
   }
 
   pub fn extends(self: *@This(), docs: []*Doc) *@This() {
-    util.listAppendSlice(*Doc, docs, &self.docs, self.al);
+    util.listAppendSlice(*Doc, &self.docs, docs, self.al);
     return self;
   }
 

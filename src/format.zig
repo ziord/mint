@@ -107,8 +107,8 @@ pub const Format = struct {
         .line => |*d| {
           switch (d.ty) {
             .hard => return true,
-            .soft => {
-              // soft is "" in flat mode (len = 0)
+            .decl, .soft, .chain => {
+              // chain/soft/decl is "" in flat mode (len = 0)
               if (sm.mode == .split) {
                 return true;
               }
@@ -118,12 +118,6 @@ pub const Format = struct {
                 return true;
               } else {
                 width -= 1;
-              }
-            },
-            .chain => {
-              // soft is "" in flat mode (len = 0)
-              if (sm.mode == .split) {
-                return true;
               }
             },
           }
@@ -171,14 +165,7 @@ pub const Format = struct {
         },
         .line => |*_d| {
           switch (_d.ty) {
-            .soft => {
-              if (sm.mode == .split) {
-                self.print("\n");
-                self.printn(" ", sm.indent);
-                column = @intCast(sm.indent);
-              }
-            },
-            .chain => {
+            .chain, .soft => {
               if (sm.mode == .split) {
                 self.print("\n");
                 self.printn(" ", sm.indent);
@@ -195,7 +182,7 @@ pub const Format = struct {
                 column = @intCast(sm.indent);
               }
             },
-            .hard => {
+            .decl, .hard => {
               self.print("\n");
               self.printn(" ", sm.indent);
               column = @intCast(sm.indent);

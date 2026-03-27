@@ -22,8 +22,8 @@ pub const Translate = struct {
   tree: Ast,
   db: DocBuilder,
   cfg: FmtConfig,
-  _in_call_args: u32 = 0,
-  _in_block: u32 = 0,
+  _in_call_args: u16 = 0,
+  _in_block: u16 = 0,
 
   const Self = @This();
   const NodeData = struct{tag: Node.Tag, idx: Node.Index};
@@ -57,11 +57,28 @@ pub const Translate = struct {
   fn getDeclSep(self: *Self) *Doc {
     var sb = self.db.seqb();
     for (0..self.cfg.decl_line_seps) |_| {
-      sb.hardline()._();
+      sb.declline()._();
     }
     return sb.finishSeq();
   }
 
+  fn tagPrec(tag: Node.Tag) u8 {
+    // NOTE: https://ziglang.org/documentation/master/#Precedence
+    return switch (tag) {
+      // lowest is assign
+      .bool_or => 1,
+      .bool_and => 2,
+      .bang_equal, .equal_equal, .less_or_equal,
+      .less_than, .greater_or_equal, .greater_than => 3,
+      .bit_or, .bit_xor, .bit_and, .@"orelse", .@"catch" => 4,
+      .shl_sat, .shl, .shr => 5,
+      .add, .add_wrap, .add_sat, .array_cat, .sub, .sub_wrap, .sub_sat => 6,
+      .div, .mul, .mul_sat, .mul_wrap, .mod, .array_mult, .merge_error_sets => 7,
+      .negation, .negation_wrap, .address_of, .bit_not, .bool_not, .optional_type => 8,
+      else => 0,
+    };
+  }
+  
   inline fn _token(self: *Self, i: Ast.TokenIndex) [] const u8 {
     return self.tree.tokenSlice(i);
   }
@@ -263,12 +280,12 @@ pub const Translate = struct {
     // `--> [foo, bar, (..)] | [<expr>, bar, (..)]
     var list = ChainList.empty;
     if (self.collectMethodChains(call.ast.fn_expr)) |segments| {
-      util.listAppendSlice(Chain, segments, &list, self.al);
+      util.listAppendSlice(Chain, &list, segments, self.al);
       util.listAppend(Chain{.lbrack={}}, &list, self.al);
       for (call.ast.params, 0..) |p, i| {
         if (self.isCallTag(p)) {
           if (self.collectMethodChains(p)) |_segments| {
-            util.listAppendSlice(Chain, _segments, &list, self.al);
+            util.listAppendSlice(Chain, &list, _segments, self.al);
             continue;
           }
         }
@@ -282,6 +299,30 @@ pub const Translate = struct {
     return if (list.items.len > 0) list.items else null;
   }
 
+  fn _collectBinopExprStep(self: *Self, n: Node.Index, list: *NodeIndexList) void {
+    switch (self.tree.nodeTag(n)) {
+      .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
+      .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
+      .bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
+      .less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
+      .mul_sat, .sub, .sub_wrap, .sub_sat, .@"orelse" => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+        self._collectBinopExprStep(lhs, list);
+        util.listAppend(n, list, self.al);
+        self._collectBinopExprStep(rhs, list);
+      },
+      else => {
+        util.listAppend(n, list, self.al);
+      }
+    }
+  }
+
+  fn collectBinopExprs(self: *Self, n: Node.Index) []Node.Index {
+    var list: NodeIndexList = .empty;
+    self._collectBinopExprStep(n, &list);
+    return list.items;
+  }
+
   fn _computeDocComplexity(self: *Self, doc: *Doc) usize {
     var total = @as(usize, 0);
     switch (doc.*) {
@@ -293,6 +334,7 @@ pub const Translate = struct {
         switch (_n.ty) {
           .chain => total += 3,
           .soft => total += 2,
+          .decl => total += 2,
           .norm => total += 1,
           .hard => total += 0,
         }
@@ -325,7 +367,7 @@ pub const Translate = struct {
     return total;
   }
 
-  fn isComplexDoc(self: *Self, sb: *SeqBuilder) bool {
+  fn isComplexSeq(self: *Self, sb: *SeqBuilder) bool {
     // if we find the doc to be complex, we add softlines
     return self._computeDocsComplexity(sb.docs.items) > self.cfg.width;
   }
@@ -399,7 +441,7 @@ pub const Translate = struct {
           .rbrack => {
             self.flushTkSeq(&tk_seq, sb);
             var lhs_sb = sb_stack.pop().?;
-            var is_complex = self.isComplexDoc(sb);
+            var is_complex = self.isComplexSeq(sb);
             if (!is_complex) {
               // see if we can group the call
               var found = false;
@@ -419,7 +461,7 @@ pub const Translate = struct {
                 const fun = lhs_sb.docs.items[idx];
                 var tmp = self.db.seqb().appends(fun).extends(lhs_sb.docs.items[idx..]);
                 defer _ = tmp.finish();
-                is_complex = self.isComplexDoc(tmp);
+                is_complex = self.isComplexSeq(tmp);
                 if (!is_complex) {
                   lhs_sb.docs.items = lhs_sb.docs.items[0..idx];
                   var args = lhs_sb;
@@ -802,11 +844,11 @@ pub const Translate = struct {
         var sb = self.db.seqb().text("{");
         var tmp = self.db.seqb();
         if (first.unwrap()) |_n| {
-          tmp.hardline().append(try self.t(_n));
+          tmp.declline().append(try self.t(_n));
           tmp.text(";")._();
         }
         if (second.unwrap()) |_n| {
-          tmp.hardline().append(try self.t(_n));
+          tmp.declline().append(try self.t(_n));
           tmp.text(";")._();
         }
         if (tmp.isEmpty()) {
@@ -822,10 +864,10 @@ pub const Translate = struct {
         const stmts = self.tree.extraDataSlice(rng, Node.Index);
         var sb = self.db.seqb().text("{");
         var tmp = self.db.seqb();
-        if (stmts.len > 0) tmp.hardline()._();
+        if (stmts.len > 0) tmp.declline()._();
         for (stmts, 0..) |stmt, i| {
           if (i > 0) {
-            tmp.hardline()._();
+            tmp.append(self.getDeclSep());
           }
           tmp.appends(try self.t(stmt)).text(";")._();
         }
@@ -860,6 +902,78 @@ pub const Translate = struct {
         // lhs.a
         // TODO:
         unreachable;
+      },
+      //: Expr Nodes
+      // ops
+      .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
+      .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
+      .bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
+      .less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
+      .mul_sat, .sub, .sub_wrap, .sub_sat, .@"orelse" => {
+        const nodes = self.collectBinopExprs(n);
+        // a significantly high number is fine
+        var last_prec: u8 = 0xff;
+        var possible_splits: usize = 0;
+        var k: usize = 1;
+        while (k < nodes.len) : (k += 2) {
+          const prec = tagPrec(self.tree.nodeTag(nodes[k]));
+          if (prec < last_prec) {
+            last_prec = prec; 
+            possible_splits += 1;
+          }
+        }
+        assert(nodes.len % 2 == 1);
+        var ds = std.ArrayList(*Doc).empty;
+        var sb = self.db.seqb();
+        var tmp = self.db.seqb();
+        last_prec = 0xff;
+        var splits: usize = 0;
+        var i: usize = 1;
+        util.listAppend(try self.t(nodes[i-1]), &ds, self.al);
+        // FIXME: this is flaky, need to revisit
+        while (i < nodes.len) : (i += 2) {
+          const op = self._token(self.tree.nodeMainToken(nodes[i]));
+          const id = d.genGroupID();
+          if (ds.items.len >= 2) {
+            util.listAppendSlice(*Doc, &tmp.docs, ds.items, self.al);
+            ds.clearRetainingCapacity();
+            const op_prec = tagPrec(self.tree.nodeTag(nodes[i]));
+            if (op_prec <= last_prec) {
+              // only split when we're at a low precedence operator
+              tmp.softline()._();
+              last_prec = op_prec;
+              splits += 1;
+            } else if (splits == possible_splits) {
+              // indent-split if we're splitting unconditionally and if
+              // we've exhausted possible splits
+              tmp.indent(self.db.seqb().softline().finish())._();
+            } else {
+              // add space only when we split
+              tmp.ifsplit(id, self.db.space(), self.db.seq(&.{}))._();
+            }
+            const split_doc = self.db.seqb().text(op).space().finishSeq();
+            const flat_doc = self.db.seqb().space().text(op).space().finishSeq();
+            const op_doc = self.db.seqb().ifsplit(id, split_doc, flat_doc).finish();
+            tmp.extends(op_doc).append(try self.t(nodes[i+1]));
+            util.listAppend(self.db.groupi(id, tmp.finish()), &ds, self.al);
+          } else {
+            tmp.space().text(op).space()._();
+            tmp.append(try self.t(nodes[i+1]));
+            util.listAppend(self.db.groupi(id, tmp.finish()), &ds, self.al);
+          }
+          tmp.reset();
+        }
+        assert(ds.items.len > 0 and tmp.isEmpty());
+        util.listAppendSlice(*Doc, &tmp.docs, ds.items, self.al);
+        sb.indent(tmp.finish())._();
+        return self.db.group(sb.finish());
+      },
+      .grouped_expression => {
+        // `(expr)`
+        const expr, _ = self.tree.nodeData(n).node_and_token;
+        var sb = self.db.seqb();
+        sb.text("(").appends(try self.t(expr)).text(")")._();
+        return self.db.group(sb.finish());
       },
       //: Type Nodes
       .optional_type => {
