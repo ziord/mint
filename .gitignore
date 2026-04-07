@@ -5,3 +5,4 @@ zig-out
 .zinc
 *.txt
 .DS_Store
+.stfolder

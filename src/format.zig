@@ -16,7 +16,7 @@ pub const Format = struct {
   out_writer: std.fs.File.Writer,
   writer: *std.Io.Writer = undefined,
 
-  var WriteBuf: [4096]u8 = undefined;
+  var WriteBuf: [8192]u8 = undefined;
 
   const Self = @This();
   
@@ -107,8 +107,8 @@ pub const Format = struct {
         .line => |*d| {
           switch (d.ty) {
             .hard => return true,
-            .decl, .soft, .chain => {
-              // chain/soft/decl is "" in flat mode (len = 0)
+            .decl, .soft => {
+              // soft/decl is "" in flat mode (len = 0)
               if (sm.mode == .split) {
                 return true;
               }
@@ -150,6 +150,18 @@ pub const Format = struct {
     }
   }
 
+  fn shouldIndent(stack: *Stack) bool {
+    // don't indent if the next doc is also a line, since indenting
+    // would just end up adding useless spaces which breaks testing.
+    if (stack.getLastOrNull()) |lst| {
+      return switch (lst.doc.*) {
+        .line => false,
+        else => true,
+      };
+    }
+    return true;
+  }
+
   pub fn fmt(self: *Self, d: *Doc) void {
     self.setWriter();
     defer self.writer.flush() catch {};
@@ -165,11 +177,13 @@ pub const Format = struct {
         },
         .line => |*_d| {
           switch (_d.ty) {
-            .chain, .soft => {
+            .soft => {
               if (sm.mode == .split) {
                 self.print("\n");
-                self.printn(" ", sm.indent);
-                column = @intCast(sm.indent);
+                if (shouldIndent(&stack)) {
+                  self.printn(" ", sm.indent);
+                  column = @intCast(sm.indent);
+                }
               }
             },
             .norm => {
@@ -178,14 +192,25 @@ pub const Format = struct {
                 column += 1;
               } else {
                 self.print("\n");
+                if (shouldIndent(&stack)) {
+                  self.printn(" ", sm.indent);
+                  column = @intCast(sm.indent);
+                }
+              }
+            },
+            .hard => {
+              self.print("\n");
+              if (shouldIndent(&stack)) {
                 self.printn(" ", sm.indent);
                 column = @intCast(sm.indent);
               }
             },
-            .decl, .hard => {
+            .decl => {
               self.print("\n");
-              self.printn(" ", sm.indent);
-              column = @intCast(sm.indent);
+              if (shouldIndent(&stack)) {
+                self.printn(" ", sm.indent);
+                column = @intCast(sm.indent);
+              }
             },
           }
         },

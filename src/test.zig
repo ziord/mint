@@ -5,9 +5,12 @@ const OhSnap = @import("ohsnap");
 
 const Allocator = std.mem.Allocator;
 
-fn format(src: [:0]const u8, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
-  var t = try ts.Translate.init(src, al, .zig, cfg);
-  const doc = try t.translate();
+fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
+  var t = try ts.Translate.init(src, al, .zig);
+  return t.translate();
+}
+
+fn format(doc: *fmt.Doc, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
   var f = fmt.Format.init(al, cfg);
   f.fmt(doc);
   return f.getFmtString();
@@ -16,18 +19,19 @@ fn format(src: [:0]const u8, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
 test "vardecl 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\var x = foo(abc, bar, baz);
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var x = foo(abc, bar, baz);
   ).diff(res, true);
   // using width: 10
-  res = try format(src, .{.width = 10}, al);
+  res = try format(doc, .{.width = 10}, al);
   try oh.snap(@src(),
     \\var x = foo(
     \\  abc,
@@ -40,7 +44,7 @@ test "vardecl 1" {
 test "vardecl 2" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ const y = box(abc, bar, baz,);
   \\ const a: ?Foo = box(abc, bar, baz);
   \\ const b: Foo = box(abc, bar, baz);
@@ -56,7 +60,8 @@ test "vardecl 2" {
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\const y = box(abc, bar, baz);
@@ -73,7 +78,7 @@ test "vardecl 2" {
     \\const f: []Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\const y = box(abc, bar, baz);
     \\const a: ?Foo = box(
@@ -139,7 +144,7 @@ test "vardecl 2" {
 test "vardecl 3" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ const g: [*:Bar]Foo = box(abc, bar, baz);
   \\ const g: [*c:Bar]Foo = box(abc, bar, baz);
   \\ const g: [:Bar]Foo = box(abc, bar, baz);
@@ -156,7 +161,8 @@ test "vardecl 3" {
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
@@ -173,7 +179,7 @@ test "vardecl 3" {
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
@@ -193,7 +199,7 @@ test "vardecl 3" {
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\const g: [*:Bar]Foo = box(
     \\  abc,
@@ -242,7 +248,11 @@ test "vardecl 3" {
     \\  Dxe,
     \\  box(),
     \\) = box(abc, bar, baz);
-    \\const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
+    \\const g: [*:Bar]const Foo = x.box(
+    \\  abc(),
+    \\  bar,
+    \\  baz,
+    \\);
     \\const Foo = box(
     \\  abc,
     \\  bar,
@@ -259,7 +269,7 @@ test "vardecl 3" {
 test "vardecl 4" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
   \\const buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
   \\const buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
@@ -268,7 +278,8 @@ test "vardecl 4" {
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var buffer: [1024]u8
@@ -290,7 +301,7 @@ test "vardecl 4" {
     \\  addrspace(.generic)
     \\  linksection(".my_custom_section") = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var buffer
     \\  align(64)
@@ -300,11 +311,11 @@ test "vardecl 4" {
     \\  align(64)
     \\  linksection(".my_custom_section") = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
   ).diff(res, true);
   // using width: 100
-  res = try format(src, .{.width = 100}, al);
+  res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
     \\const buffer: [1024]u8
@@ -327,7 +338,7 @@ test "vardecl 4" {
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var buffer: [1024]u8
     \\  align(64)
@@ -348,11 +359,7 @@ test "vardecl 4" {
     \\  addrspace(.generic)
     \\  linksection(".my_custom_section") = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var buffer
     \\  align(64)
@@ -362,24 +369,24 @@ test "vardecl 4" {
     \\  align(64)
     \\  linksection(".my_custom_section") = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
-    \\  linksection(".my_custom_section") = undefined;
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = undefined;
     \\const buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
-    \\  linksection(".my_custom_section") = text(
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
     \\    rhs,
     \\    abc,
@@ -389,27 +396,33 @@ test "vardecl 4" {
     \\const buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
-    \\  linksection(".my_custom_section") = text(
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(
+    \\      rhs,
+    \\      abc,
+    \\      lhs,
+    \\    ),
     \\);
     \\var buffer
     \\  align(64)
     \\  addrspace(.generic)
-    \\  linksection(".my_custom_section") = undefined;
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = undefined;
     \\var buffer
     \\  align(64)
-    \\  linksection(".my_custom_section") = text(
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(
+    \\      rhs,
+    \\      abc,
+    \\      lhs,
+    \\    ),
     \\);
   ).diff(res, true);
 }
@@ -417,7 +430,7 @@ test "vardecl 4" {
 test "vardecl 5" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\const buffer: [1024]u8 align(64) = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
   \\const buffer: [1024]u8 align(64) = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
   \\var buffer align(64) = undefined;
@@ -427,7 +440,8 @@ test "vardecl 5" {
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\const buffer: [1024]u8
@@ -441,19 +455,21 @@ test "vardecl 5" {
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
+    \\
     \\var buffer align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(rhs, abc, lhs),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var a align(b) = c;
+    \\
     \\var a: b align(c) = d;
   ).diff(res, true);
   // using width: 100
-  res = try format(src, .{.width = 100}, al);
+  res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\const buffer: [1024]u8
     \\  align(64) = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
@@ -461,16 +477,18 @@ test "vardecl 5" {
     \\  align(64) = text(
     \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
+    \\
     \\var buffer align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
     \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var a align(b) = c;
+    \\
     \\var a: b align(c) = d;
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\const buffer: [1024]u8
     \\  align(64) = text(
@@ -483,27 +501,21 @@ test "vardecl 5" {
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
+    \\
     \\var buffer align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var a align(b) = c;
+    \\
     \\var a: b align(c) = d;
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\const buffer: [1024]u8
     \\  align(64) = text(
@@ -516,24 +528,26 @@ test "vardecl 5" {
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(
+    \\      rhs,
+    \\      abc,
+    \\      lhs,
+    \\    ),
     \\);
+    \\
     \\var buffer
     \\  align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
     \\  self.token_token.token2_token()
-    \\  .token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\    .token_token_token_token_token_token(
+    \\      rhs,
+    \\      abc,
+    \\      lhs,
+    \\    ),
     \\);
     \\var a align(b) = c;
+    \\
     \\var a: b align(c) = d;
   ).diff(res, true);
 }
@@ -541,13 +555,14 @@ test "vardecl 5" {
 test "vardecl 6" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ threadlocal const x = expr;
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // default width: 80
-  const res = try format(src, .{.width = 80}, al); 
+  const doc = try translate(src, al);
+  const res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\threadlocal const x = expr;
   ).diff(res, true);
@@ -555,73 +570,68 @@ test "vardecl 6" {
 test "vardecl.chains 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ var xyz = foo.bar("ok").box();
   \\ var ky = self.group(self.seqb().text("Group(").indent(self.seqb().softline().text(id).text(",").normline().appends(_d).finish()).softline().text(")").finish());
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb().softline().text(id).text(",").normline().appends(_d).finish(),
+    \\    )
     \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
+    \\    .text(")")
     \\    .finish(),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb()
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\    )
     \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
+    \\    .text(")")
     \\    .finish(),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb()
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\    )
     \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
+    \\    .text(")")
     \\    .finish(),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
     \\);
   ).diff(res, true);
 }
@@ -629,69 +639,64 @@ test "vardecl.chains 1" {
 test "vardecl.chains 2" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ var ky = self.group(self.seqb() .text("Group(") .indent(self.seqb().softline() .text(id) .text(",") .normline() .appends(_d).finish() ) .softline().text(")").finish());
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb().softline().text(id).text(",").normline().appends(_d).finish(),
+    \\    )
     \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
+    \\    .text(")")
     \\    .finish(),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb()
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\    )
     \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
+    \\    .text(")")
     \\    .finish(),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb()
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\    )
     \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
+    \\    .text(")")
     \\    .finish(),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
     \\);
   ).diff(res, true);
 }
@@ -699,7 +704,7 @@ test "vardecl.chains 2" {
 test "vardecl.chains 3" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ var ky = self.group(
   \\          self.seqb()
   \\           .text("Group(").indent(self.seqb()
@@ -726,106 +731,101 @@ test "vardecl.chains 3" {
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
-    \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
-    \\    .finish(),
-    \\    self.seqb()
-    \\    .text("IfSplit(")
+    \\    .text("Group(")
     \\    .indent(
+    \\      self.seqb().softline().text(id).text(",").normline().appends(_d).finish(),
     \\      self.seqb()
-    \\      .softline()
-    \\      .text(id)
-    \\      .text(",")
-    \\      .normline()
-    \\      .appends(_ds)
-    \\      .text(",")
-    \\      .normline()
-    \\      .appends(_df)
-    \\      .finish(),
-    \\    ),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
+    \\        .text("IfSplit(")
+    \\        .indent(
+    \\          self.seqb()
+    \\            .softline()
+    \\            .text(id)
+    \\            .text(",")
+    \\            .normline()
+    \\            .appends(_ds)
+    \\            .text(",")
+    \\            .normline()
+    \\            .appends(_df)
+    \\            .finish(),
+    \\        ),
+    \\    )
+    \\    .softline()
+    \\    .text(")")
+    \\    .finish(),
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
-    \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
-    \\    .finish(),
-    \\    self.seqb()
-    \\    .text("IfSplit(")
+    \\    .text("Group(")
     \\    .indent(
     \\      self.seqb()
-    \\      .softline()
-    \\      .text(id)
-    \\      .text(",")
-    \\      .normline()
-    \\      .appends(_ds)
-    \\      .text(",")
-    \\      .normline()
-    \\      .appends(_df)
-    \\      .finish(),
-    \\    ),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\      self.seqb()
+    \\        .text("IfSplit(")
+    \\        .indent(
+    \\          self.seqb()
+    \\            .softline()
+    \\            .text(id)
+    \\            .text(",")
+    \\            .normline()
+    \\            .appends(_ds)
+    \\            .text(",")
+    \\            .normline()
+    \\            .appends(_df)
+    \\            .finish(),
+    \\        ),
+    \\    )
+    \\    .softline()
+    \\    .text(")")
+    \\    .finish(),
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var ky = self.group(
     \\  self.seqb()
-    \\  .text("Group(")
-    \\  .indent(
-    \\    self.seqb()
-    \\    .softline()
-    \\    .text(id)
-    \\    .text(",")
-    \\    .normline()
-    \\    .appends(_d)
-    \\    .finish(),
-    \\    self.seqb()
-    \\    .text("IfSplit(")
+    \\    .text("Group(")
     \\    .indent(
     \\      self.seqb()
-    \\      .softline()
-    \\      .text(id)
-    \\      .text(",")
-    \\      .normline()
-    \\      .appends(_ds)
-    \\      .text(",")
-    \\      .normline()
-    \\      .appends(_df)
-    \\      .finish(),
-    \\    ),
-    \\  )
-    \\  .softline()
-    \\  .text(")")
-    \\  .finish(),
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\      self.seqb()
+    \\        .text("IfSplit(")
+    \\        .indent(
+    \\          self.seqb()
+    \\            .softline()
+    \\            .text(id)
+    \\            .text(",")
+    \\            .normline()
+    \\            .appends(_ds)
+    \\            .text(",")
+    \\            .normline()
+    \\            .appends(_df)
+    \\            .finish(),
+    \\        ),
+    \\    )
+    \\    .softline()
+    \\    .text(")")
+    \\    .finish(),
     \\);
   ).diff(res, true);
 }
@@ -833,8 +833,8 @@ test "vardecl.chains 3" {
 test "vardecl.chains 4" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
-  \\ var sb = self.db.seqb().appends(lhs) 
+  const src =
+  \\ var sb = self.db.seqb().appends(lhs)
   \\          .sb.ifsplit(
   \\            id,
   \\            self.db.indent(
@@ -848,82 +848,79 @@ test "vardecl.chains 4" {
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb().softline().text(".").text(self._token(rhs)).finish(),
+    \\    ),
+    \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(self._token(rhs))
+    \\        .finish(),
+    \\    ),
     \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(
+    \\          self._token(rhs),
+    \\        )
+    \\        .finish(),
+    \\    ),
     \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
 }
 
 test "vardecl.chains 5" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ var sb = self.db.seqb().appends(lhs);
   \\ var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
   \\ var ky = selfgroup(selfseqb(),text("Group("),indent(  selfseqb(),  softline(),  text(id),  text(","), normline(), appends(_d, finish()), selfseqb(), text("IfSplit(", selfseqb()), indent( selfseqb(),   softline(),   text(id), text(","), normline(), appends(_ds), text(","), normline(), appends(_df), finish()), ),softline(),text(")"),finish());
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var sb = self.db.seqb().appends(lhs);
@@ -959,7 +956,7 @@ test "vardecl.chains 5" {
     \\);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb().appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
@@ -994,10 +991,10 @@ test "vardecl.chains 5" {
     \\);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs);
+    \\  .appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
     \\var ky = selfgroup(
     \\  selfseqb(),
@@ -1037,91 +1034,93 @@ test "vardecl.chains 5" {
 test "vardecl.chains 6" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ var q = fox()().hahah(a, b, "yes").bar(abc());
   \\ var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, long_arg2));
   \\ var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, xlong_arg2));
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, long_arg2));
     \\var q = fox()()
-    \\.hahah(a, b, "yes")
-    \\.bar(compute_something(long_arg1, xlong_arg2));
+    \\  .hahah(a, b, "yes")
+    \\  .bar(compute_something(long_arg1, xlong_arg2));
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()()
-    \\.hahah(a, b, "yes")
-    \\.bar(compute_something(long_arg1, long_arg2));
+    \\  .hahah(a, b, "yes")
+    \\  .bar(compute_something(long_arg1, long_arg2));
     \\var q = fox()()
-    \\.hahah(a, b, "yes")
-    \\.bar(compute_something(long_arg1, xlong_arg2));
+    \\  .hahah(a, b, "yes")
+    \\  .bar(compute_something(long_arg1, xlong_arg2));
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var q = fox()()
-    \\.hahah(a, b, "yes")
-    \\.bar(abc());
+    \\  .hahah(a, b, "yes")
+    \\  .bar(abc());
     \\var q = fox()()
-    \\.hahah(a, b, "yes")
-    \\.bar(
-    \\  compute_something(
-    \\    long_arg1,
-    \\    long_arg2,
-    \\  ),
-    \\);
+    \\  .hahah(a, b, "yes")
+    \\  .bar(
+    \\    compute_something(
+    \\      long_arg1,
+    \\      long_arg2,
+    \\    ),
+    \\  );
     \\var q = fox()()
-    \\.hahah(a, b, "yes")
-    \\.bar(
-    \\  compute_something(
-    \\    long_arg1,
-    \\    xlong_arg2,
-    \\  ),
-    \\);
+    \\  .hahah(a, b, "yes")
+    \\  .bar(
+    \\    compute_something(
+    \\      long_arg1,
+    \\      xlong_arg2,
+    \\    ),
+    \\  );
   ).diff(res, true);
 }
 
 test "vardecl.chains 7" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   ;
   const al = arena.allocator();
   // default width: 80
-  var res = try format(src, .{}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
   const oh = OhSnap{};
   try oh.snap(@src(),
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(
-    \\  compute_value(lhs, rhs),
-    \\);
+    \\  .appends(
+    \\    compute_value(lhs, rhs),
+    \\  );
   ).diff(res, true);
 }
 
 test "vardecl.chains 8" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
-  \\ var sb = self.db.seqb().appends(lhs) 
+  const src =
+  \\ var sb = self.db.seqb().appends(lhs)
   \\          .sb.ifsplit(
   \\            id,
   \\            self.db.indent(
@@ -1143,108 +1142,105 @@ test "vardecl.chains 8" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
-    \\)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
-    \\)
-    \\._();
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
+    \\  )
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{}, al);
+  res = try format(doc, .{}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\)
-    \\._();
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb().softline().text(".").text(self._token(rhs)).finish(),
+    \\    ),
+    \\  )
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb().softline().text(".").text(self._token(rhs)).finish(),
+    \\    ),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\)
-    \\._();
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(self._token(rhs))
+    \\        .finish(),
+    \\    ),
+    \\  )
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(self._token(rhs))
+    \\        .finish(),
+    \\    ),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var sb = self.db.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\)
-    \\._();
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(
+    \\          self._token(rhs),
+    \\        )
+    \\        .finish(),
+    \\    ),
+    \\  )
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(
+    \\          self._token(rhs),
+    \\        )
+    \\        .finish(),
+    \\    ),
+    \\  )
+    \\  ._();
   ).diff(res, true);
 }
 
 test "vardecl.chains 9" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
-  \\ var sb = self.db.xyz().pkzy.aaa.seqb().appends(lhs) 
+  const src =
+  \\ var sb = self.db.xyz().pkzy.aaa.seqb().appends(lhs)
   \\          .sb.ifsplit(
   \\            id,
   \\            self.db.indent(
@@ -1257,96 +1253,89 @@ test "vardecl.chains 9" {
   \\ )._();
   ;
   const al = arena.allocator();
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   const oh = OhSnap{};
   // using width: 100
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
+    \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb().softline().text(".").text(self._token(rhs)).finish(),
+    \\    ),
+    \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(self._token(rhs))
+    \\        .finish(),
+    \\    ),
     \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(
+    \\          self._token(rhs),
+    \\        )
+    \\        .finish(),
+    \\    ),
     \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
-    \\  ),
-    \\  self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
 }
 
 test "vardecl.chains 10" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
-  \\ var sb = self.db.xyz().pkzy.aaa.seqb().appends(lhs) 
+  const src =
+  \\ var sb = self.db.xyz().pkzy.aaa.seqb().appends(lhs)
   \\          .sb.ifsplit(
   \\            id,
   \\            self.db.indent(
@@ -1359,122 +1348,116 @@ test "vardecl.chains 10" {
   \\ )._();
   ;
   const al = arena.allocator();
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   const oh = OhSnap{};
   // using width: 100
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish())
-    \\  .self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish())
+    \\      .self.db.seqb()
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
+    \\  )
+    \\  ._();
   ).diff(res, true);
-  res = try format(src, .{.width = 90}, al); 
+  res = try format(doc, .{.width = 90}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish())
+    \\      .self.db.seqb()
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
     \\  )
-    \\  .self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  ._();
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb().softline().text(".").text(self._token(rhs)).finish(),
+    \\    )
+    \\      .self.db.seqb()
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
     \\  )
-    \\  .self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  ._();
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al);
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(self._token(rhs))
+    \\        .finish(),
+    \\    )
+    \\      .self.db.seqb()
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
     \\  )
-    \\  .self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  ._();
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al);
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var sb = self.db.xyz()
-    \\.pkzy.aaa.seqb()
-    \\.appends(lhs)
-    \\.sb.ifsplit(
-    \\  id,
-    \\  self.db.indent(
-    \\    self.db.seqb()
-    \\    .softline()
-    \\    .text(".")
-    \\    .text(self._token(rhs))
-    \\    .finish(),
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db.seqb()
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(
+    \\          self._token(rhs),
+    \\        )
+    \\        .finish(),
+    \\    )
+    \\      .self.db.seqb()
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
     \\  )
-    \\  .self.db.seqb()
-    \\  .text(".")
-    \\  .text(self._token(rhs))
-    \\  .finish(),
-    \\)
-    \\._();
+    \\  ._();
   ).diff(res, true);
 }
 
 test "vardecl.chains 11" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ const y = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // default width: 80
-  const res = try format(src, .{.width = 80}, al); 
+  const doc = try translate(src, al);
+  const res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\const y = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -1489,18 +1472,19 @@ test "vardecl.chains 11" {
 test "fundecl 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype,) A(T) {
   \\  var x = 5;
   \\    print("just testing!");
   \\   var x: i32, const y: u32 = foo_(bar(1, 2));
-  \\   x = 5; 
+  \\   x = 5;
   \\ }
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype) A(T) {
     \\  var x = 5;
@@ -1510,7 +1494,7 @@ test "fundecl 1" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\fn foo(
     \\  x: std.ArrayList(T),
@@ -1526,7 +1510,7 @@ test "fundecl 1" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\fn foo(
     \\  x: std.ArrayList(T),
@@ -1542,7 +1526,7 @@ test "fundecl 1" {
     \\}
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\fn foo(
     \\  x: std.ArrayList(T),
@@ -1564,14 +1548,15 @@ test "fundecl 1" {
 test "fundecl 2" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ fn foo2(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype, noalias y: u2, k: anytype, ...) A(T) {
   \\ }
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\fn foo2(
     \\  comptime T: type,
@@ -1585,7 +1570,7 @@ test "fundecl 2" {
     \\) A(T) {}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\fn foo2(
     \\  comptime T: type,
@@ -1599,7 +1584,7 @@ test "fundecl 2" {
     \\) A(T) {}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\fn foo2(
     \\  comptime T: type,
@@ -1617,24 +1602,25 @@ test "fundecl 2" {
 test "fundecl 3" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...,) A(T) {
   \\ }
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\fn foo3(
     \\  comptime T: type,
@@ -1648,14 +1634,15 @@ test "fundecl 3" {
 test "fundecl 4" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ pub fn foo4(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\pub fn foo4(
     \\  comptime T: type,
@@ -1666,7 +1653,7 @@ test "fundecl 4" {
     \\) A(T) {}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\pub fn foo4(
     \\  comptime T: type,
@@ -1677,7 +1664,7 @@ test "fundecl 4" {
     \\) A(T) {}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\pub fn foo4(
     \\  comptime T: type,
@@ -1692,7 +1679,7 @@ test "fundecl 4" {
 test "fundecl 5" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ inline fn foo5(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
   \\ pub inline fn foo6(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
@@ -1701,7 +1688,8 @@ test "fundecl 5" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\inline fn foo5(
     \\  comptime T: type,
@@ -1720,7 +1708,7 @@ test "fundecl 5" {
     \\) A(T) {}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\inline fn foo5(
     \\  comptime T: type,
@@ -1739,7 +1727,7 @@ test "fundecl 5" {
     \\) A(T) {}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\inline fn foo5(
     \\  comptime T: type,
@@ -1762,7 +1750,7 @@ test "fundecl 5" {
 test "fundecl 6" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ export fn foo7(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
   \\ pub export fn foo8(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
@@ -1771,7 +1759,8 @@ test "fundecl 6" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\export fn foo7(
     \\  comptime T: type,
@@ -1790,7 +1779,7 @@ test "fundecl 6" {
     \\) A(T) {}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\export fn foo7(
     \\  comptime T: type,
@@ -1809,7 +1798,7 @@ test "fundecl 6" {
     \\) A(T) {}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\export fn foo7(
     \\  comptime T: type,
@@ -1832,14 +1821,15 @@ test "fundecl 6" {
 test "fundecl 7" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ extern fn foo9(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
   \\ pub extern fn foo10(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
   ;
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\extern fn foo9(
     \\  comptime T: type,
@@ -1858,7 +1848,7 @@ test "fundecl 7" {
     \\) A(T);
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\extern fn foo9(
     \\  comptime T: type,
@@ -1877,7 +1867,7 @@ test "fundecl 7" {
     \\) A(T);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\extern fn foo9(
     \\  comptime T: type,
@@ -1900,7 +1890,7 @@ test "fundecl 7" {
 test "fundecl 8" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ pub fn fantasticFooBar(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
   \\    var x = 5;
   \\    print("just testing!");
@@ -1910,7 +1900,8 @@ test "fundecl 8" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
@@ -1925,7 +1916,7 @@ test "fundecl 8" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
@@ -1945,7 +1936,7 @@ test "fundecl 8" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
@@ -1969,7 +1960,7 @@ test "fundecl 8" {
 test "fundecl 9" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ pub fn fantasticFooBar(comptime T: anytype, x: anytype, comptime x: anytype, noalias y: anytype, k: anytype) align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
   \\    var x = 5;
   \\    print("just testing!");
@@ -1979,7 +1970,8 @@ test "fundecl 9" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
@@ -1994,7 +1986,7 @@ test "fundecl 9" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
@@ -2014,7 +2006,7 @@ test "fundecl 9" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
@@ -2038,7 +2030,7 @@ test "fundecl 9" {
 test "fundecl 10" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ pub fn fantasticFooBar() align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
   \\    var x = 5;
   \\    print("just testing!");
@@ -2048,7 +2040,8 @@ test "fundecl 10" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar()
     \\align(64)
@@ -2062,7 +2055,7 @@ test "fundecl 10" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar()
     \\align(64)
@@ -2076,7 +2069,7 @@ test "fundecl 10" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\pub fn fantasticFooBar()
     \\align(64)
@@ -2094,7 +2087,7 @@ test "fundecl 10" {
 test "fundecl 11" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ pub fn fan() align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
   \\    var x = 5;
   \\    print("just testing!");
@@ -2104,7 +2097,8 @@ test "fundecl 11" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\pub fn fan() align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
     \\  var x = 5;
@@ -2113,7 +2107,7 @@ test "fundecl 11" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\pub fn fan()
     \\align(64)
@@ -2127,7 +2121,7 @@ test "fundecl 11" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\pub fn fan()
     \\align(64)
@@ -2145,7 +2139,7 @@ test "fundecl 11" {
 test "fundecl 12" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ const T = fn (a: anytype, comptime T: type, x: i32);
   \\ const T = fn abc(a: anytype, comptime T: type, x: i32);
   \\ const T = fn (a: anytype, comptime T: type, x: i32) void;
@@ -2154,7 +2148,8 @@ test "fundecl 12" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\const T = fn (a: anytype, comptime T: type, x: i32);
     \\const T = fn abc(a: anytype, comptime T: type, x: i32);
@@ -2162,7 +2157,7 @@ test "fundecl 12" {
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\const T = fn (a: anytype, comptime T: type, x: i32);
     \\const T = fn abc(a: anytype, comptime T: type, x: i32);
@@ -2170,7 +2165,7 @@ test "fundecl 12" {
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\const T = fn (a: anytype, comptime T: type, x: i32);
     \\const T = fn abc(a: anytype, comptime T: type, x: i32);
@@ -2182,7 +2177,7 @@ test "fundecl 12" {
     \\) []const u8;
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\const T = fn (
     \\  a: anytype,
@@ -2210,7 +2205,7 @@ test "fundecl 12" {
 test "fundecl 13" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ fn foo(bar: T) void {
   \\   comptime const x, var y = expr;
   \\   comptime const x, const y = expr;
@@ -2219,7 +2214,8 @@ test "fundecl 13" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
@@ -2227,7 +2223,7 @@ test "fundecl 13" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
@@ -2235,7 +2231,7 @@ test "fundecl 13" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
@@ -2243,7 +2239,7 @@ test "fundecl 13" {
     \\}
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
@@ -2255,7 +2251,7 @@ test "fundecl 13" {
 test "expr 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\ fn foo(bar: T) void {
   \\    var x: u3 = 5;
   \\    const a, _ = expr;
@@ -2272,7 +2268,8 @@ test "expr 1" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
@@ -2296,7 +2293,7 @@ test "expr 1" {
     \\}
   ).diff(res, true);
   // using width: 100, indent: 4
-  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  res = try format(doc, .{.width = 100, .indent = 4}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\    var x: u3 = 5;
@@ -2320,7 +2317,7 @@ test "expr 1" {
     \\}
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
@@ -2353,7 +2350,7 @@ test "expr 1" {
     \\}
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
@@ -2393,7 +2390,7 @@ test "expr 1" {
     \\}
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
@@ -2443,7 +2440,7 @@ test "expr 1" {
 test "expr 2" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\    var x: u3 = 5;
   \\   var j = a * b;
   \\   var j = a * b + 5;
@@ -2457,7 +2454,8 @@ test "expr 2" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2478,7 +2476,7 @@ test "expr 2" {
     \\    + bar / boxB * foo);
   ).diff(res, true);
   // using width: 100, indent: 4
-  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  res = try format(doc, .{.width = 100, .indent = 4}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2499,7 +2497,7 @@ test "expr 2" {
     \\        + bar / boxB * foo);
   ).diff(res, true);
   // default width: 80
-  res = try format(src, .{.width = 80}, al); 
+  res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2529,7 +2527,7 @@ test "expr 2" {
     \\    + bar / boxB * foo);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2566,7 +2564,7 @@ test "expr 2" {
     \\    + bar / boxB * foo);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2613,7 +2611,7 @@ test "expr 2" {
 test "expr 3" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\    var x: u3 = 5;
   \\   var j = a * b;
   \\   var j = a * b * 5;
@@ -2627,7 +2625,8 @@ test "expr 3" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2650,7 +2649,7 @@ test "expr 3" {
     \\    * foo);
   ).diff(res, true);
   // using width: 100, indent: 4
-  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  res = try format(doc, .{.width = 100, .indent = 4}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2673,7 +2672,7 @@ test "expr 3" {
     \\        * foo);
   ).diff(res, true);
   // default width: 80, indent: 4
-  res = try format(src, .{.width = 80, .indent = 4}, al); 
+  res = try format(doc, .{.width = 80, .indent = 4}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2705,7 +2704,7 @@ test "expr 3" {
     \\        * foo);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2746,7 +2745,7 @@ test "expr 3" {
     \\    * foo);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2801,7 +2800,7 @@ test "expr 3" {
 test "expr 4" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
-  const src = 
+  const src =
   \\    var x: u3 = 5;
   \\   var j = a * b;
   \\   var j = a * b * 5;
@@ -2815,7 +2814,8 @@ test "expr 4" {
   const al = arena.allocator();
   const oh = OhSnap{};
   // using width: 100
-  var res = try format(src, .{.width = 100}, al);
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2842,7 +2842,7 @@ test "expr 4" {
     \\    * foo);
   ).diff(res, true);
   // using width: 100, indent: 4
-  res = try format(src, .{.width = 100, .indent = 4}, al); 
+  res = try format(doc, .{.width = 100, .indent = 4}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2869,7 +2869,7 @@ test "expr 4" {
     \\        * foo);
   ).diff(res, true);
   // default width: 80, indent: 4
-  res = try format(src, .{.width = 80, .indent = 4}, al); 
+  res = try format(doc, .{.width = 80, .indent = 4}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2902,7 +2902,7 @@ test "expr 4" {
     \\        * foo);
   ).diff(res, true);
   // using width: 60
-  res = try format(src, .{.width = 60}, al); 
+  res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2943,7 +2943,7 @@ test "expr 4" {
     \\    * foo);
   ).diff(res, true);
   // using width: 30
-  res = try format(src, .{.width = 30}, al); 
+  res = try format(doc, .{.width = 30}, al);
   try oh.snap(@src(),
     \\var x: u3 = 5;
     \\var j = a * b;
@@ -2966,8 +2966,8 @@ test "expr 4" {
     \\    (a * b
     \\      + 5 * 6 / c * 12 / xyz),
     \\  )
-    \\  .not()
-    \\  .so(a, b),
+    \\    .not()
+    \\    .so(a, b),
     \\  a.b().not().so(a, b),
     \\  a.b().not().so(a, b),
     \\);
@@ -2997,5 +2997,1452 @@ test "expr 4" {
     \\    * foo * foo
     \\    * bar / boxB
     \\    * foo);
+  ).diff(res, true);
+}
+
+test "containerdecl 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = struct {
+  \\  x: []const u8,
+  \\  y: u32
+  \\};
+  \\ const Ty = struct {
+  \\  ab: []const u8,
+  \\  xyz: u32,
+  \\};
+  \\ const Ty = struct(arg) {
+  \\  ab: []const u8,
+  \\  xyz: u32,
+  \\};
+  \\ const Ty = packed struct {
+  \\  x1: []const u8,
+  \\  y1: u32,
+  \\};
+  \\ const Ty = extern struct {
+  \\  x2: []const u8,
+  \\  y2: u32,
+  \\};
+  \\ const Ty = extern struct(arg) {
+  \\  x2: []const u8,
+  \\  y2: u32,
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct { x: []const u8, y: u32 };
+    \\const Ty = struct { ab: []const u8, xyz: u32 };
+    \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
+    \\const Ty = packed struct { x1: []const u8, y1: u32 };
+    \\const Ty = extern struct { x2: []const u8, y2: u32 };
+    \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct { x: []const u8, y: u32 };
+    \\const Ty = struct { ab: []const u8, xyz: u32 };
+    \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
+    \\const Ty = packed struct { x1: []const u8, y1: u32 };
+    \\const Ty = extern struct { x2: []const u8, y2: u32 };
+    \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct { x: []const u8, y: u32 };
+    \\const Ty = struct { ab: []const u8, xyz: u32 };
+    \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
+    \\const Ty = packed struct { x1: []const u8, y1: u32 };
+    \\const Ty = extern struct { x2: []const u8, y2: u32 };
+    \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = struct {
+    \\  ab: []const u8,
+    \\  xyz: u32,
+    \\};
+    \\const Ty = struct(arg) {
+    \\  ab: []const u8,
+    \\  xyz: u32,
+    \\};
+    \\const Ty = packed struct {
+    \\  x1: []const u8,
+    \\  y1: u32,
+    \\};
+    \\const Ty = extern struct {
+    \\  x2: []const u8,
+    \\  y2: u32,
+    \\};
+    \\const Ty = extern struct(
+    \\  arg
+    \\) {
+    \\  x2: []const u8,
+    \\  y2: u32,
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = struct {
+  \\  xabc: []const u8,
+  \\  y123: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay"};
+  \\ }
+  \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{  .al = al,       .cfg = cfg,     .mem_writer = std.Io.Writer.Allocating.init(al),     .out_writer = std.fs.File.Writer.init(std.fs.File.stdout(), &WriteBuf),   };
+  \\ }
+  \\  pub noinline fn foo(self: @This()) Foo!@This(a, b, c, d) {
+  \\   var j = Ty{.x = "yay", .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff};
+  \\   return .{.x = "yay"};
+  \\ }
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct {
+    \\  xabc: []const u8,
+    \\  y123: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay"};
+    \\  }
+    \\
+    \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{
+    \\      .al = al,
+    \\      .cfg = cfg,
+    \\      .mem_writer = std.Io.Writer.Allocating.init(al),
+    \\      .out_writer = std.fs.File.Writer.init(std.fs.File.stdout(), &WriteBuf),
+    \\    };
+    \\  }
+    \\
+    \\  pub noinline fn foo(self: @This()) Foo!@This(a, b, c, d) {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{.x = "yay"};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct {
+    \\  xabc: []const u8,
+    \\  y123: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay"};
+    \\  }
+    \\
+    \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{
+    \\      .al = al,
+    \\      .cfg = cfg,
+    \\      .mem_writer = std.Io.Writer.Allocating.init(al),
+    \\      .out_writer = std.fs.File.Writer.init(std.fs.File.stdout(), &WriteBuf),
+    \\    };
+    \\  }
+    \\
+    \\  pub noinline fn foo(self: @This()) Foo!@This(a, b, c, d) {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{.x = "yay"};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct {
+    \\  xabc: []const u8,
+    \\  y123: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay"};
+    \\  }
+    \\
+    \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{
+    \\      .al = al,
+    \\      .cfg = cfg,
+    \\      .mem_writer = std.Io.Writer.Allocating.init(al),
+    \\      .out_writer = std.fs.File.Writer.init(
+    \\        std.fs.File.stdout(),
+    \\        &WriteBuf,
+    \\      ),
+    \\    };
+    \\  }
+    \\
+    \\  pub noinline fn foo(self: @This()) Foo!@This(a, b, c, d) {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{.x = "yay"};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct {
+    \\  xabc: []const u8,
+    \\  y123: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{.x = "yay"};
+    \\  }
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) !@This(a, b, c, d) {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .al = al,
+    \\      .cfg = cfg,
+    \\      .mem_writer = std.Io.Writer.Allocating.init(
+    \\        al,
+    \\      ),
+    \\      .out_writer = std.fs.File.Writer.init(
+    \\        std.fs.File.stdout(),
+    \\        &WriteBuf,
+    \\      ),
+    \\    };
+    \\  }
+    \\
+    \\  pub noinline fn foo(
+    \\    self: @This(),
+    \\  ) Foo!@This(a, b, c, d) {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{.x = "yay"};
+    \\  }
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub const FmtConfig = struct {
+  \\  width: u32 = 80,
+  \\  indent: u8 = 2,
+  \\  decl_line_seps: u8 = 2,
+  \\  writer: enum (u3) {
+  \\    file,
+  \\    out,
+  \\    mem,
+  \\  } = .mem,
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) { file: file, out: out, mem: mem } = .mem,
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) { file: file, out: out, mem: mem } = .mem,
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) {
+    \\    file: file,
+    \\    out: out,
+    \\    mem: mem,
+    \\  } = .mem,
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) {
+    \\    file: file,
+    \\    out: out,
+    \\    mem: mem,
+    \\  } = .mem,
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\};
+  \\ const Ty = union(Foo) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+    \\const Ty = union(Foo) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+    \\const Ty = union(Foo) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+    \\const Ty = union(Foo) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\};
+    \\const Ty = union(Foo) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum) {
+  \\  x: []const u8,
+  \\  y: u32
+  \\};
+  \\ const Ty = union(Foo) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) { x: []const u8, y: u32 };
+    \\const Ty = union(Foo) { x: []const u8, y: u32 };
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) { x: []const u8, y: u32 };
+    \\const Ty = union(Foo) { x: []const u8, y: u32 };
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) { x: []const u8, y: u32 };
+    \\const Ty = union(Foo) { x: []const u8, y: u32 };
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = union(Foo) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum(Foo)) {
+  \\  x: []const u8,
+  \\  y: u32
+  \\};
+  \\ const Ty = union(enum(Foo)) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\};
+  \\ const Ty = union(enum(Foo(a, b, c))) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo)) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = union(enum(Foo)) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = union(
+    \\  enum(Foo(a, b, c))
+    \\) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 7" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) {
+  \\  ab: []const u8,
+  \\  xyz: u32,
+  \\};
+  \\ const Ty = struct(Foo) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\};
+  \\ const Ty = struct {
+  \\  x: []const u8 align(abc),
+  \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+  \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) { ab: []const u8, xyz: u32 };
+    \\const Ty = struct(Foo) { x: []const u8, y: u32 };
+    \\const Ty = struct {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+    \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) {
+    \\  ab: []const u8,
+    \\  xyz: u32,
+    \\};
+    \\const Ty = struct(Foo) { x: []const u8, y: u32 };
+    \\const Ty = struct {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+    \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct(
+    \\  arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)
+    \\) {
+    \\  ab: []const u8,
+    \\  xyz: u32,
+    \\};
+    \\const Ty = struct(Foo) { x: []const u8, y: u32 };
+    \\const Ty = struct {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+    \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(
+    \\    11,
+    \\    "yes",
+    \\  ),
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = struct(
+    \\  arg.foo(xyz, "ok")
+    \\    .bar('y')
+    \\    .yes(a, b, c, d)
+    \\) {
+    \\  ab: []const u8,
+    \\  xyz: u32,
+    \\};
+    \\const Ty = struct(Foo) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = struct {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(
+    \\    foo(a, b, c, d)
+    \\  ) = box(11, "yes"),
+    \\  z: u32 align(
+    \\    foo(
+    \\      bar(1, 'a'),
+    \\      yes("joe", xyz),
+    \\    )
+    \\  ) = box(11, "yes"),
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 8" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = opaque {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\};
+  \\ const Ty = opaque {
+  \\  x: []const u8 align(abc),
+  \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+  \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = opaque { x: []const u8, y: u32 };
+    \\const Ty = opaque {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+    \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = opaque { x: []const u8, y: u32 };
+    \\const Ty = opaque {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+    \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = opaque { x: []const u8, y: u32 };
+    \\const Ty = opaque {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
+    \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(
+    \\    11,
+    \\    "yes",
+    \\  ),
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = opaque {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = opaque {
+    \\  x: []const u8 align(abc),
+    \\  y: u32 align(
+    \\    foo(a, b, c, d)
+    \\  ) = box(11, "yes"),
+    \\  z: u32 align(
+    \\    foo(
+    \\      bar(1, 'a'),
+    \\      yes("joe", xyz),
+    \\    )
+    \\  ) = box(11, "yes"),
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 9" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum(Foo(a, b, c))) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\ const fox = 0xdeadbeef;
+  \\ const fox = enum {a, b, c};
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  const fox = 0xdeadbeef;
+    \\  const fox = enum { a: a, b: b, c: c };
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  const fox = 0xdeadbeef;
+    \\  const fox = enum { a: a, b: b, c: c };
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  const fox = 0xdeadbeef;
+    \\  const fox = enum { a: a, b: b, c: c };
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(
+    \\  enum(Foo(a, b, c))
+    \\) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\
+    \\  const fox = 0xdeadbeef;
+    \\  const fox = enum {
+    \\    a: a,
+    \\    b: b,
+    \\    c: c,
+    \\  };
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 10" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum(Foo(a, b, c))) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\ abc: []const u8,
+  \\ const fox1 = 0xdeadbeef;
+  \\ const fox2 = enum {a, b, c};
+  \\ const fox3 = union (big) {a, b, c};
+  \\ x: usize,
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox2 = enum { a: a, b: b, c: c };
+    \\  const fox3 = union(big) { a: a, b: b, c: c };
+    \\
+    \\  x: usize,
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox2 = enum { a: a, b: b, c: c };
+    \\  const fox3 = union(big) { a: a, b: b, c: c };
+    \\
+    \\  x: usize,
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum(Foo(a, b, c))) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox2 = enum { a: a, b: b, c: c };
+    \\  const fox3 = union(big) { a: a, b: b, c: c };
+    \\
+    \\  x: usize,
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(
+    \\  enum(Foo(a, b, c))
+    \\) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox2 = enum {
+    \\    a: a,
+    \\    b: b,
+    \\    c: c,
+    \\  };
+    \\  const fox3 = union(big) {
+    \\    a: a,
+    \\    b: b,
+    \\    c: c,
+    \\  };
+    \\
+    \\  x: usize,
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 11" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum) {
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 12" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\  pub fn foo(self: @This()) @This() {
+  \\   var j = Ty{.x = "yay", .y = 0xff};
+  \\   return .{.x = "yay", .y = 0xff};
+  \\ }
+  \\ abc: []const u8,
+  \\ x: usize,
+  \\ pub fn x() void {}
+  \\};
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\
+    \\  pub fn x() void {}
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\
+    \\  pub fn x() void {}
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(self: @This()) @This() {
+    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    return .{.x = "yay", .y = 0xff};
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\
+    \\  pub fn x() void {}
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  pub fn foo(
+    \\    self: @This(),
+    \\  ) @This() {
+    \\    var j = Ty{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\    return .{
+    \\      .x = "yay",
+    \\      .y = 0xff,
+    \\    };
+    \\  }
+    \\
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\
+    \\  pub fn x() void {}
+    \\};
+  ).diff(res, true);
+}
+
+test "containerdecl 13" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ pub const Ty = union(enum) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\ const fox1 = 0xdeadbeef;
+  \\ const fox1 = struct{};
+  \\};
+  \\ var x = 5;
+  \\ y: []u8,
+  \\ abc: []const u8,
+  \\ z: u32,
+  \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+  \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+  \\const Ty = union(enum(Foo(a, b, c))) {};
+  \\ var x = 5;
+  \\ y: []u8,
+  \\ abc: []const u8,
+  \\ z: u32,
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox1 = struct {};
+    \\};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo(a, b, c))) {};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox1 = struct {};
+    \\};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo(a, b, c))) {};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox1 = struct {};
+    \\};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
+    \\const Ty = union(enum(Foo(a, b, c))) {};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\
+    \\  const fox1 = 0xdeadbeef;
+    \\  const fox1 = struct {};
+    \\};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\pub const Ty = union(
+    \\  enum(Foo)
+    \\) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = union(enum(Foo)) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\};
+    \\const Ty = union(
+    \\  enum(Foo(a, b, c))
+    \\) {};
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+}
+
+test "containerdecl 14" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ pub const Ty = 0xff;
+  \\ var x = 5;
+  \\ y: []u8,
+  \\ abc: []const u8,
+  \\ z: u32,
+  \\ var x = 5;
+  \\ y: []u8,
+  \\ abc: []const u8,
+  \\ z: u32,
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = 0xff;
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = 0xff;
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = 0xff;
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\pub const Ty = 0xff;
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\var x = 5;
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
   ).diff(res, true);
 }

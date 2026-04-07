@@ -29,10 +29,7 @@ pub const Line = struct {
     /// adds a line only when we break,
     /// when we don't it's equiv to " "
     norm,
-    /// like `soft` but has a different
-    /// weight when computing complexity
-    chain,
-    /// acts like `soft` when fitting and like 
+    /// acts like `soft` when fitting and like
     /// `hard` when printing, good for decl braces {}
     decl,
     pub fn str(self: Ty) []const u8 {
@@ -40,7 +37,6 @@ pub const Line = struct {
         .soft => "<soft>",
         .hard => "<hard>",
         .norm => "<norm>",
-        .chain => "<chain>",
         .decl => "<decl>",
       };
     }
@@ -79,14 +75,6 @@ pub const Doc = union(enum) {
     };
   }
 
-  pub fn isChainLine(d: *const Doc) bool {
-    return switch (d.*) {
-      .line => |l| {
-        return l.ty == .chain;
-      },
-      else => false,
-    };
-  }
 };
 
 pub const SeqBuilder = struct {
@@ -149,10 +137,6 @@ pub const SeqBuilder = struct {
 
   pub fn normline(self: *@This()) *@This() {
     return self.line(.norm);
-  }
-
-  pub fn chainline(self: *@This()) *@This() {
-    return self.line(.chain);
   }
 
   pub fn declline(self: *@This()) *@This() {
