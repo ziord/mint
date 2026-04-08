@@ -739,6 +739,148 @@ pub const Translate = struct {
     return self.db.group(sb.finish());
   }
 
+  fn tPtrType(self: *Self, ty: Ast.full.PtrType) TranslateError!*Doc {
+    var sb = self.db.seqb();
+    switch (ty.size) {
+      .c => sb.text("[*c]")._(),
+      .one => {
+        sb.text("*")._();
+      },
+      .many => {
+        if (ty.ast.sentinel.unwrap()) |n| {
+          sb.text("[")._();
+          var elems = self.db.seqb();
+          elems.softline().text("*:")._();
+          elems.append(try self.t(n));
+          sb.indent(elems.finish()).softline().text("]")._();
+        } else {
+          sb.text("[*]")._();
+        }
+      },
+      .slice => {
+        if (ty.ast.sentinel.unwrap()) |n| {
+          sb.text("[")._();
+          var elems = self.db.seqb();
+          elems.softline().text(":")._();
+          elems.append(try self.t(n));
+          sb.indent(elems.finish()).softline().text("]")._();
+        } else {
+           sb.text("[]")._();
+        }
+      }
+    }
+    var allow: ?*Doc = null;
+    var alig: ?*Doc = null;
+    var addr: ?*Doc = null;
+    var cnst: ?*Doc = null;
+    var vol: ?*Doc = null;
+    if (ty.allowzero_token) |i| {
+      allow = self.db.text(self._token(i));
+    }
+    if (ty.ast.align_node.unwrap()) |nd| {
+      var tmp = self.db.seqb().text("align(");
+      var args = self.db.seqb().softline(); 
+      if (ty.ast.bit_range_start.unwrap()) |brs| {
+        const bre = ty.ast.bit_range_end.unwrap().?;
+        const f_doc = try self.t(nd);
+        const s_doc = try self.t(brs);
+        const e_doc = try self.t(bre);
+        const id = d.genGroupID();
+        var split_d = self.db.seqb().appends(f_doc);
+        var rest = self.db.seqb().softline().text(":").appends(s_doc);
+        rest.softline().text(":").append(e_doc);
+        split_d.indent(rest.finish())._();
+        var flat_d = self.db.seqb().appends(f_doc);
+        flat_d.text(":").appends(s_doc).text(":").append(e_doc);
+        args.ifsplit(id, split_d.finishSeq(), flat_d.finishSeq())._();
+        tmp.indent(args.finish()).softline().text(")")._();
+        alig = self.db.groupi(id, tmp.finish());
+      } else {
+        args.append(try self.t(nd));
+        tmp.indent(args.finish()).softline().text(")")._();
+        alig = self.db.group(tmp.finish());
+      }
+    }
+    if (ty.ast.addrspace_node.unwrap()) |nd| {
+      addr = try self.tAttribute(nd, "addrspace");
+    }
+    if (ty.const_token) |i| {
+      cnst = self.db.text(self._token(i));
+    }
+    if (ty.volatile_token) |i| {
+      vol = self.db.text(self._token(i));
+    }
+    var split = self.db.seqb();
+    var flat = self.db.seqb();
+    var rest = self.db.seqb();
+    if (allow) |_n| {
+      split.append(_n);
+      flat.appends(_n).space()._();
+    }
+    if (alig) |_n| {
+      if (split.isNotEmpty()) {
+        rest.normline().append(_n);
+      } else {
+        split.append(_n);
+      }
+      flat.appends(_n).space()._();
+    }
+    if (addr) |_n| {
+      if (split.isNotEmpty()) {
+        rest.normline().append(_n);
+      } else {
+        split.append(_n);
+      }
+      flat.appends(_n).space()._();
+    }
+    var skip_vol = false;
+    var skip_child = false;
+    const c = try self.t(ty.ast.child_type);
+    if (cnst) |_n| {
+      skip_vol = vol != null;
+      skip_child = true;
+      if (vol) |_n2| {
+        const b = self.db.seqb().appends(_n).space().appends(_n2).normline().appends(c);
+        const g = self.db.group(b.finish());
+        if (split.isNotEmpty()) {
+          rest.normline().append(g);
+        } else {
+          split.append(g);
+        }
+      } else {
+        const g = self.db.group(self.db.seqb().appends(_n).space().appends(c).finish());
+        if (split.isNotEmpty()) {
+          rest.normline().append(g);
+        } else {
+          split.append(g);
+        }
+      }
+      flat.appends(_n).space()._();
+    }
+    if (vol) |_n| {
+      if (!skip_vol) {
+        if (split.isNotEmpty()) {
+          rest.normline().append(_n);
+        } else {
+          split.append(_n);
+        }
+      }
+      flat.appends(_n).space()._();
+    }
+    if (!skip_child) {
+      if (split.isNotEmpty()) {
+        rest.normline().append(c);
+      } else {
+        split.append(c);
+      }
+    }
+    flat.append(c);
+    split.indent(rest.finish())._();
+    const id = d.genGroupID();
+    sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
+    return self.db.groupi(id, sb.finish());
+  }
+
   fn tStructInit(
     self: *Self,
     n: Node.Index,
@@ -1147,45 +1289,31 @@ pub const Translate = struct {
           if (tag == .array_type) self.tree.arrayType(n)
           else self.tree.arrayTypeSentinel(n)
         );
+        var sb = self.db.seqb().text("[");
         const cnt = try self.t(_n.ast.elem_count);
-        const ty = try self.t(_n.ast.elem_type);
-        var sb = self.db.seqb().text("[").appends(cnt);
+        var elems = self.db.seqb().softline().appends(cnt);
         if (_n.ast.sentinel.unwrap()) |s| {
-          sb.text(":").append(try self.t(s));
+          elems.text(":").append(try self.t(s));
         }
-        return self.db.group(sb.text("]").appends(ty).finish());
+        const ty = try self.t(_n.ast.elem_type);
+        sb.indent(elems.finish()).softline().text("]").appends(ty)._();
+        return self.db.group(sb.finish());
       },
       .ptr_type_aligned => {
         const _n = self.tree.ptrTypeAligned(n);
-        var sb = self.db.seqb();
-        switch (_n.size) {
-          .one => sb.text("*")._(),
-          .c => sb.text("[*c]")._(),
-          .many => sb.text("[*]")._(),
-          .slice => sb.text("[]")._(),
-        }
-        // TODO: other pointer token components
-        if (_n.const_token != null) {
-          sb.text("const").space()._();
-        }
-        return self.db.group(sb.appends(try self.t(_n.ast.child_type)).finish());
+        return self.tPtrType(_n);
       },
       .ptr_type_sentinel => {
         const _n = self.tree.ptrTypeSentinel(n);
-        var sb = self.db.seqb();
-        switch (_n.size) {
-          .one => sb.text("*")._(),
-          .c => sb.text("[*c:")._(),
-          .many => sb.text("[*:")._(),
-          .slice => sb.text("[:")._(),
-        }
-        const s = _n.ast.sentinel.unwrap().?;
-        sb.appends(try self.t(s)).text("]")._();
-        // TODO: other pointer token components
-        if (_n.const_token != null) {
-          sb.text("const").space()._();
-        }
-        return self.db.group(sb.appends(try self.t(_n.ast.child_type)).finish());
+        return self.tPtrType(_n);
+      },
+      .ptr_type_bit_range => {
+        const _n = self.tree.ptrTypeBitRange(n);
+        return self.tPtrType(_n);
+      },
+      .ptr_type => {
+        const _n = self.tree.ptrType(n);
+        return self.tPtrType(_n);
       },
       else => {
         log.debug("found unhandled node: {}", .{tag});

@@ -248,7 +248,9 @@ test "vardecl 3" {
     \\  Dxe,
     \\  box(),
     \\) = box(abc, bar, baz);
-    \\const g: [*:Bar]const Foo = x.box(
+    \\const g: [
+    \\  *:Bar
+    \\]const Foo = x.box(
     \\  abc(),
     \\  bar,
     \\  baz,
@@ -258,7 +260,9 @@ test "vardecl 3" {
     \\  bar,
     \\  baz,
     \\);
-    \\const g: [:Bar]const Foo = box(
+    \\const g: [
+    \\  :Bar
+    \\]const Foo = box(
     \\  abc,
     \\  bar,
     \\  baz,
@@ -4444,5 +4448,448 @@ test "containerdecl 14" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
+  ).diff(res, true);
+}
+
+test "ptr types 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
+  \\ var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  \\ var j: [*]align(foo:Car:Bar) rhs = 0xff;
+  \\ var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+  \\
+  \\ var x: *align(foo("ok")) rhs = 0xff;
+  \\ var a: **rhs = 0xff;
+  \\ var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+  \\ var xyz: **align(foo():Car():Bar()) rhs = 0xff;
+  \\ var a: ***rhs = 0xff;
+  \\
+  \\ var y: []rhs = 0xff;
+  \\ var y: []const rhs = 0xff;
+  \\
+  \\ var k: [*:lhs]rhs = 0xff;
+  \\ var a: [:lhs]rhs = 0xff;
+  \\ var j: [lhs:Foo(T, K)] rhs = 0xff;
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
+    \\var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+    \\var j: [*]align(foo:Car:Bar) rhs = 0xff;
+    \\var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var x: *align(foo("ok")) rhs = 0xff;
+    \\var a: **rhs = 0xff;
+    \\var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var xyz: **align(foo():Car():Bar()) rhs = 0xff;
+    \\var a: ***rhs = 0xff;
+    \\var y: []rhs = 0xff;
+    \\var y: []const rhs = 0xff;
+    \\var k: [*:lhs]rhs = 0xff;
+    \\var a: [:lhs]rhs = 0xff;
+    \\var j: [lhs:Foo(T, K)]rhs = 0xff;
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
+    \\var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+    \\var j: [*]align(foo:Car:Bar) rhs = 0xff;
+    \\var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var x: *align(foo("ok")) rhs = 0xff;
+    \\var a: **rhs = 0xff;
+    \\var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var xyz: **align(foo():Car():Bar()) rhs = 0xff;
+    \\var a: ***rhs = 0xff;
+    \\var y: []rhs = 0xff;
+    \\var y: []const rhs = 0xff;
+    \\var k: [*:lhs]rhs = 0xff;
+    \\var a: [:lhs]rhs = 0xff;
+    \\var j: [lhs:Foo(T, K)]rhs = 0xff;
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
+    \\var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+    \\var j: [*]align(foo:Car:Bar) rhs = 0xff;
+    \\var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var x: *align(foo("ok")) rhs = 0xff;
+    \\var a: **rhs = 0xff;
+    \\var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var xyz: **align(foo():Car():Bar()) rhs = 0xff;
+    \\var a: ***rhs = 0xff;
+    \\var y: []rhs = 0xff;
+    \\var y: []const rhs = 0xff;
+    \\var k: [*:lhs]rhs = 0xff;
+    \\var a: [:lhs]rhs = 0xff;
+    \\var j: [lhs:Foo(T, K)]rhs = 0xff;
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var j: [*]align(
+    \\  foo(bar.oop(0x12))
+    \\)
+    \\  rhs = 0xff;
+    \\var j: [*]align(
+    \\  foo(bar.oop(0x12))
+    \\    :Foo()
+    \\    :Bar()
+    \\)
+    \\  rhs = 0xff;
+    \\var j: [*]align(foo:Car:Bar)
+    \\  rhs = 0xff;
+    \\var j: [*]align(
+    \\  foo()
+    \\    :Car()
+    \\    :Bar()
+    \\)
+    \\  rhs = 0xff;
+    \\var x: *align(foo("ok"))
+    \\  rhs = 0xff;
+    \\var a: **rhs = 0xff;
+    \\var abc: **[*]align(
+    \\  foo()
+    \\    :Car()
+    \\    :Bar()
+    \\)
+    \\  rhs = 0xff;
+    \\var xyz: **align(
+    \\  foo()
+    \\    :Car()
+    \\    :Bar()
+    \\)
+    \\  rhs = 0xff;
+    \\var a: ***rhs = 0xff;
+    \\var y: []rhs = 0xff;
+    \\var y: []const rhs = 0xff;
+    \\var k: [*:lhs]rhs = 0xff;
+    \\var a: [:lhs]rhs = 0xff;
+    \\var j: [
+    \\  lhs:Foo(T, K)
+    \\]rhs = 0xff;
+  ).diff(res, true);
+}
+
+test "ptr types 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var j: [lhs:Foo(T, K)] rhs = 0xff;
+  \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
+  \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var j: [lhs:Foo(T, K)]rhs = 0xff;
+    \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
+    \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\var j: [lhs:Foo(T, K)]rhs = 0xff;
+    \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
+    \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var j: [lhs:Foo(T, K)]rhs = 0xff;
+    \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
+    \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var j: [
+    \\  lhs:Foo(T, K)
+    \\]rhs = 0xff;
+    \\var j: [
+    \\  lhs:Foo(T, K)
+    \\]Foo(Bar.xyz(abc)) = 0xff;
+    \\var j: [*c]align(
+    \\  foo(bar.oop(0x12))
+    \\    :Foo()
+    \\    :Bar()
+    \\)
+    \\  rhs = 0xff;
+  ).diff(res, true);
+}
+
+test "ptr types 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var x: *allowzero align(foo("ok")) Rhs align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
+  \\ var x: *allowzero align(foo("ok")) Rhs = 0xff;
+  \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) Rhs = 0xff;
+  \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) const Rhs = 0xff;
+  \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Rhs = 0xff;
+  \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc)) = 0xff;
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var x: *allowzero align(foo("ok")) Rhs
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\
+    \\var x: *allowzero align(foo("ok")) Rhs = 0xff;
+    \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) Rhs = 0xff;
+    \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const Rhs = 0xff;
+    \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Rhs = 0xff;
+    \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) = 0xff;
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\var x: *allowzero align(foo("ok")) Rhs
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\
+    \\var x: *allowzero align(foo("ok")) Rhs = 0xff;
+    \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) Rhs = 0xff;
+    \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) = 0xff;
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var x: *allowzero align(foo("ok")) Rhs
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(".my_custom_section") = undefined;
+    \\
+    \\var x: *allowzero align(foo("ok")) Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) = 0xff;
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  Rhs
+    \\  align(64)
+    \\  addrspace(.generic)
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = undefined;
+    \\
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Rhs = 0xff;
+    \\var x: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile
+    \\  Foo(Bar.xyz(abc)) = 0xff;
+  ).diff(res, true);
+}
+
+test "ptr types 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() *allowzero align(foo("ok")) Rhs {
+  \\   return 0;
+  \\}
+  \\ fn foo() *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc)) {
+  \\   return 0;
+  \\}
+  \\ fn foo(abc: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc))) *allowzero align(foo("ok")) Rhs {
+  \\   return 0;
+  \\}
+  \\ fn foo(abc: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc))) *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc)) {
+  \\   return 0;
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn foo() *allowzero align(foo("ok")) Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo() *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero align(foo("ok")) Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn foo() *allowzero align(foo("ok")) Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo() *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero align(foo("ok")) Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn foo() *allowzero align(foo("ok")) Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo() *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero align(foo("ok")) Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn foo() *allowzero
+    \\  align(foo("ok"))
+    \\  Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo() *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile
+    \\  Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile
+    \\    Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(foo("ok"))
+    \\  Rhs {
+    \\  return 0;
+    \\}
+    \\
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile
+    \\    Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile
+    \\  Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
   ).diff(res, true);
 }
