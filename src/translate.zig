@@ -344,36 +344,84 @@ pub const Translate = struct {
       split.indent(rest.finish())._();
       const db = self.db.seqb().ifsplit(
         id,
-        self.db.group(split.finish()),
-        self.db.group(flat.finish()),
+        split.finishSeq(),
+        flat.finishSeq(),
       );
       return self.db.groupi(id, db.finish());
     }
     return null;
   }
 
-  fn _collectBinopExprStep(self: *Self, n: Node.Index, list: *NodeIndexList) void {
-    switch (self.tree.nodeTag(n)) {
+  const Binary = struct {
+    op: ?Node.Index,
+    node: Node.Index,
+  };
+
+  const BinaryList = std.ArrayList(Binary);
+
+  fn _collectBinaryExprStep(self: *Self, n: Node.Index, prev_op: Node.Tag, list: *BinaryList) bool {
+    const curr_op = self.tree.nodeTag(n);
+    switch (curr_op) {
       .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
       .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
       .bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
       .less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
-      .mul_sat, .sub, .sub_wrap, .sub_sat, .@"orelse" => {
-        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
-        self._collectBinopExprStep(lhs, list);
-        util.listAppend(n, list, self.al);
-        self._collectBinopExprStep(rhs, list);
+      .mul_sat, .sub, .sub_wrap, .sub_sat => {
+        if (tagPrec(prev_op) == tagPrec(curr_op)) {
+          const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+          const a = self._collectBinaryExprStep(lhs, curr_op, list);
+          const b = self._collectBinaryExprStep(rhs, curr_op, list);
+          assert(list.getLast().op == null);
+          list.items[list.items.len - 1].op = n;
+          return a and b;
+        } else {
+          // preserve the tree.
+          util.listAppend(Binary{.op = null, .node = n}, list, self.al);
+        }
       },
       else => {
-        util.listAppend(n, list, self.al);
+        util.listAppend(Binary{.op = null, .node = n}, list, self.al);
+        return true;
       }
     }
+    return false;
   }
 
-  fn collectBinopExprs(self: *Self, n: Node.Index) []Node.Index {
-    var list: NodeIndexList = .empty;
-    self._collectBinopExprStep(n, &list);
-    return list.items;
+  fn tBinaryExpr(self: *Self, n: Node.Index, tag: Node.Tag) TranslateError!*Doc {
+    var list: BinaryList = .empty;
+    const all_same_precs = self._collectBinaryExprStep(n, tag,  &list);
+    const nodes = list.items;
+    const first = nodes[0];
+    assert(first.op == null);
+    var sb = self.db.seqb();
+    sb.append(try self.t(first.node));
+    var rest = self.db.seqb();
+    var tmp = self.db.seqb();
+    const group = all_same_precs or nodes.len > 12;
+    if (nodes.len > 1) {
+      var last: ?*Doc = null;
+      for (nodes[1..]) |bin| {
+        const op = self._token(self.tree.nodeMainToken(bin.op.?));
+        const doc = try self.t(bin.node);
+        if (last) |lhs| {
+          tmp.appends(lhs).normline().text(op).space().append(doc);
+          last = self.db.group(tmp.finish());
+          tmp.reset();
+        } else if (group) {
+          tmp.normline().text(op).space().append(doc);
+          last = self.db.group(tmp.finish());
+          tmp.reset();
+        } else {
+          rest.normline().text(op).space().append(doc);
+        }
+      }
+      if (last) |doc| {
+        rest.append(doc);
+      }
+    }
+    _ = tmp.finish(); // discard because of .reset()
+    sb.indent(rest.finish())._();
+    return self.db.group(sb.finish());
   }
 
   fn tAttribute(self: *Self, n: Node.Index, name: ?[]const u8) !*Doc {
@@ -726,10 +774,15 @@ pub const Translate = struct {
     if (cf.comptime_token) |idx| {
       sb.text(self._token(idx)).space()._();
     }
-    sb.text(self._token(cf.ast.main_token))._();
-    if (cf.ast.type_expr.unwrap()) |_n| {
-      sb.text(": ").append(try self.t(_n));
+    if (!cf.ast.tuple_like) {
+      sb.text(self._token(cf.ast.main_token))._();
+      if (cf.ast.type_expr.unwrap()) |_n| {
+        sb.text(": ").append(try self.t(_n));
+      }
+    } else if (cf.ast.type_expr.unwrap()) |_n| {
+      sb.append(try self.t(_n));
     }
+
     if (cf.ast.align_expr.unwrap()) |_n| {
       sb.space().append(try self.tAttribute(_n, "align"));
     }
@@ -1007,7 +1060,14 @@ pub const Translate = struct {
         self._in_block += 1;
         defer self._in_block -= 1;
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
-        var sb = self.db.seqb().text("{");
+        var sb = self.db.seqb();
+        const tkn = self.tree.nodeMainToken(n);
+        if (self.tree.tokenTag(tkn - 1) == .colon) {
+          if (self.tree.tokenTag(tkn - 2) == .identifier) {
+            sb.text(self._token(tkn - 2)).text(": ")._();
+          }
+        }
+        sb.text("{")._();
         var tmp = self.db.seqb();
         if (first.unwrap()) |_n| {
           tmp.declline().append(try self.t(_n));
@@ -1028,7 +1088,14 @@ pub const Translate = struct {
         defer self._in_block -= 1;
         const rng = self.tree.nodeData(n).extra_range;
         const stmts = self.tree.extraDataSlice(rng, Node.Index);
-        var sb = self.db.seqb().text("{");
+        var sb = self.db.seqb();
+        const tkn = self.tree.nodeMainToken(n);
+        if (self.tree.tokenTag(tkn - 1) == .colon) {
+          if (self.tree.tokenTag(tkn - 2) == .identifier) {
+            sb.text(self._token(tkn - 2)).text(": ")._();
+          }
+        }
+        sb.text("{")._();
         var tmp = self.db.seqb();
         if (stmts.len > 0) tmp.declline()._();
         for (stmts, 0..) |stmt, i| {
@@ -1173,6 +1240,18 @@ pub const Translate = struct {
         }
         return self.db.group(sb.finish());
       },
+      .@"break" => {
+        // `break :label expr`, `break expr`, `break :label`, `break`.
+        var sb = self.db.seqb().text("break");
+        const tkn, const node = self.tree.nodeData(n).opt_token_and_opt_node;
+        if (tkn.unwrap()) |idx| {
+          sb.text(" :").text(self._token(idx)).space()._();
+        }
+        if (node.unwrap()) |_n| {
+          sb.append(try self.t(_n));
+        }
+        return self.db.group(sb.finish());
+      },
       .assign_destructure => {
         const ad = self.tree.assignDestructure(n);
         var sb = self.db.seqb();
@@ -1205,64 +1284,52 @@ pub const Translate = struct {
       .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
       .bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
       .less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
-      .mul_sat, .sub, .sub_wrap, .sub_sat, .@"orelse" => {
-        const nodes = self.collectBinopExprs(n);
-        // a significantly high number is fine
-        var last_prec: u8 = 0xff;
-        var possible_splits: usize = 0;
-        var k: usize = 1;
-        while (k < nodes.len) : (k += 2) {
-          const prec = tagPrec(self.tree.nodeTag(nodes[k]));
-          if (prec < last_prec) {
-            last_prec = prec;
-            possible_splits += 1;
-          }
-        }
-        assert(nodes.len % 2 == 1);
-        var ds = std.ArrayList(*Doc).empty;
-        var sb = self.db.seqb();
-        var tmp = self.db.seqb();
-        last_prec = 0xff;
-        var splits: usize = 0;
-        var i: usize = 1;
-        util.listAppend(try self.t(nodes[i-1]), &ds, self.al);
-        // FIXME: this is flaky, need to revisit
-        while (i < nodes.len) : (i += 2) {
-          const op = self._token(self.tree.nodeMainToken(nodes[i]));
-          const id = d.genGroupID();
-          if (ds.items.len >= 2) {
-            util.listAppendSlice(*Doc, &tmp.docs, ds.items, self.al);
-            ds.clearRetainingCapacity();
-            const op_prec = tagPrec(self.tree.nodeTag(nodes[i]));
-            if (op_prec <= last_prec) {
-              // only split when we're at a low precedence operator
-              tmp.softline()._();
-              last_prec = op_prec;
-              splits += 1;
-            } else if (splits == possible_splits) {
-              // indent-split if we're splitting unconditionally and if
-              // we've exhausted possible splits
-              tmp.indent(self.db.seqb().softline().finish())._();
-            } else {
-              // add space only when we split
-              tmp.ifsplit(id, self.db.space(), self.db.seq(&.{}))._();
-            }
-            const split_doc = self.db.seqb().text(op).space().finishSeq();
-            const flat_doc = self.db.seqb().space().text(op).space().finishSeq();
-            const op_doc = self.db.seqb().ifsplit(id, split_doc, flat_doc).finish();
-            tmp.extends(op_doc).append(try self.t(nodes[i+1]));
-            util.listAppend(self.db.groupi(id, tmp.finish()), &ds, self.al);
-          } else {
-            tmp.space().text(op).space()._();
-            tmp.append(try self.t(nodes[i+1]));
-            util.listAppend(self.db.groupi(id, tmp.finish()), &ds, self.al);
-          }
-          tmp.reset();
-        }
-        assert(ds.items.len > 0 and tmp.isEmpty());
-        util.listAppendSlice(*Doc, &tmp.docs, ds.items, self.al);
-        sb.indent(tmp.finish())._();
+      .mul_sat, .sub, .sub_wrap, .sub_sat => {
+        return self.tBinaryExpr(n, tag);
+      },
+      .@"try" => {
+        const tkn = self._token(self.tree.nodeMainToken(n));
+        const _n = self.tree.nodeData(n).node;
+        var sb = self.db.seqb().text(tkn).space();
+        sb.append(try self.t(_n));
         return self.db.group(sb.finish());
+      },
+      .@"catch" => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+        var sb = self.db.seqb();
+        const lhs_d = try self.t(lhs);
+        const rhs_d = try self.t(rhs);
+        const tkn = self.tree.nodeMainToken(n);
+        const catch_tkn = self._token(tkn);
+        var flat = self.db.seqb().appends(lhs_d).space().text(catch_tkn).space();
+        var split = self.db.seqb().appends(lhs_d);
+        var rest = self.db.seqb().softline().text(catch_tkn).space();
+        if (self.tree.tokenTag(tkn + 1) == .pipe) {
+          const payload = self._token(tkn + 2);
+          flat.text("|").text(payload).text("|").space()._();
+          rest.text("|").text(payload).text("|").space()._();
+        }
+        flat.append(rhs_d);
+        rest.append(rhs_d);
+        split.indent(rest.finish())._();
+        const id = d.genGroupID();
+        sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
+        return self.db.groupi(id, sb.finish());
+      },
+      .@"orelse" => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+        var sb = self.db.seqb();
+        const lhs_d = try self.t(lhs);
+        const rhs_d = try self.t(rhs);
+        const tkn = self.tree.nodeMainToken(n);
+        const orelse_tkn = self._token(tkn);
+        var flat = self.db.seqb().appends(lhs_d).space().text(orelse_tkn).space().appends(rhs_d);
+        var split = self.db.seqb().appends(lhs_d);
+        var rest = self.db.seqb().softline().text(orelse_tkn).space().appends(rhs_d);
+        split.indent(rest.finish())._();
+        const id = d.genGroupID();
+        sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
+        return self.db.groupi(id, sb.finish());
       },
       .address_of => {
         const tkn = self._token(self.tree.nodeMainToken(n));

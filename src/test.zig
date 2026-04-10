@@ -2282,17 +2282,38 @@ test "expr 1" {
     \\  var j = a * b + 5;
     \\  var j = x * x - (x + 5);
     \\  var j = x * x - (x + 5) + k;
-    \\  var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
+    \\    + barm3 * foom3
+    \\    + barm2 * foom2
     \\    + barm1 * foom1
     \\    + bar0 * foo0
     \\    + bar1 * foo1
     \\    + bar2 * foo2
     \\    + bar3 / boxN * foo;
     \\  var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
-    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
     \\    + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
-    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
-    \\    + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
     \\}
   ).diff(res, true);
@@ -2306,17 +2327,38 @@ test "expr 1" {
     \\    var j = a * b + 5;
     \\    var j = x * x - (x + 5);
     \\    var j = x * x - (x + 5) + k;
-    \\    var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\    var x = 1 * foo
+    \\        + bar
+    \\        - car * booh
+    \\        - dah / boxMM * foom4
+    \\        + barm3 * foom3
+    \\        + barm2 * foom2
     \\        + barm1 * foom1
     \\        + bar0 * foo0
     \\        + bar1 * foo1
     \\        + bar2 * foo2
     \\        + bar3 / boxN * foo;
     \\    var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
-    \\    var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\    var x = 1 * foo
+    \\        + bar
+    \\        - car * booh
+    \\        - dah / boxB * foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar * foo
     \\        + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
-    \\    var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
-    \\        + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\    var x = 1 * foo
+    \\        + bar
+    \\        - car * booh
+    \\        - dah / boxB * foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + (bar * foo
+    \\            + bar * foo
+    \\            + bar * foo
+    \\            + bar / boxB * foo * foo
+    \\            + bar / boxB * foo * foo
     \\            + bar / boxB * foo);
     \\}
   ).diff(res, true);
@@ -2330,7 +2372,11 @@ test "expr 1" {
     \\  var j = a * b + 5;
     \\  var j = x * x - (x + 5);
     \\  var j = x * x - (x + 5) + k;
-    \\  var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
+    \\    + barm3 * foom3
     \\    + barm2 * foom2
     \\    + barm1 * foom1
     \\    + bar0 * foo0
@@ -2342,13 +2388,30 @@ test "expr 1" {
     \\    a.b().not().so(a, b),
     \\    a.b().not().so(a, b),
     \\  );
-    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
     \\    + bar * foo
-    \\    + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
     \\      + bar / boxB * foo);
-    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
     \\    + bar * foo
-    \\    + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
     \\}
@@ -2363,7 +2426,10 @@ test "expr 1" {
     \\  var j = a * b + 5;
     \\  var j = x * x - (x + 5);
     \\  var j = x * x - (x + 5) + k;
-    \\  var x = 1 * foo + bar - car * booh - dah / boxMM * foom4
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
     \\    + barm3 * foom3
     \\    + barm2 * foom2
     \\    + barm1 * foom1
@@ -2376,18 +2442,29 @@ test "expr 1" {
     \\    a.b().not().so(a, b),
     \\    a.b().not().so(a, b),
     \\  );
-    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
     \\    + bar * foo
     \\    + bar * foo
     \\    + bar * foo
-    \\    + (bar * foo + bar * foo + bar * foo + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
     \\      + bar * foo
     \\      + bar / boxB * foo);
-    \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
     \\    + bar * foo
     \\    + bar * foo
     \\    + bar * foo
-    \\    + (bar * foo + bar * foo + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
@@ -2404,7 +2481,9 @@ test "expr 1" {
     \\  var j = x * x - (x + 5);
     \\  var j = x * x - (x + 5) + k;
     \\  var x = 1 * foo
-    \\    + bar - car * booh - dah / boxMM * foom4
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
     \\    + barm3 * foom3
     \\    + barm2 * foom2
     \\    + barm1 * foom1
@@ -2418,21 +2497,27 @@ test "expr 1" {
     \\    a.b().not().so(a, b),
     \\  );
     \\  var x = 1 * foo
-    \\    + bar - car * booh - dah / boxB * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
     \\    + bar * foo
     \\    + bar * foo
     \\    + bar * foo
-    \\    + (bar * foo + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
     \\      + bar * foo
     \\      + bar * foo
     \\      + bar * foo
     \\      + bar / boxB * foo);
     \\  var x = 1 * foo
-    \\    + bar - car * booh - dah / boxB * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
     \\    + bar * foo
     \\    + bar * foo
     \\    + bar * foo
-    \\    + (bar * foo + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
     \\      + bar * foo
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo * foo
@@ -2466,17 +2551,38 @@ test "expr 2" {
     \\var j = a * b + 5;
     \\var j = x * x - (x + 5);
     \\var j = x * x - (x + 5) + k;
-    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxMM * foom4
+    \\  + barm3 * foom3
+    \\  + barm2 * foom2
     \\  + barm1 * foom1
     \\  + bar0 * foo0
     \\  + bar1 * foo1
     \\  + bar2 * foo2
     \\  + bar3 / boxN * foo;
     \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
     \\  + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
-    \\  + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo);
   ).diff(res, true);
   // using width: 100, indent: 4
@@ -2487,17 +2593,38 @@ test "expr 2" {
     \\var j = a * b + 5;
     \\var j = x * x - (x + 5);
     \\var j = x * x - (x + 5) + k;
-    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2
+    \\var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
+    \\    + barm3 * foom3
+    \\    + barm2 * foom2
     \\    + barm1 * foom1
     \\    + bar0 * foo0
     \\    + bar1 * foo1
     \\    + bar2 * foo2
     \\    + bar3 / boxN * foo;
     \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
+    \\var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
     \\    + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo
-    \\    + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo
+    \\var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar / boxB * foo * foo
+    \\        + bar / boxB * foo * foo
     \\        + bar / boxB * foo);
   ).diff(res, true);
   // default width: 80
@@ -2508,37 +2635,10 @@ test "expr 2" {
     \\var j = a * b + 5;
     \\var j = x * x - (x + 5);
     \\var j = x * x - (x + 5) + k;
-    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3
-    \\  + barm2 * foom2
-    \\  + barm1 * foom1
-    \\  + bar0 * foo0
-    \\  + bar1 * foo1
-    \\  + bar2 * foo2
-    \\  + bar3 / boxN * foo;
-    \\var x = this.is.fancy(
-    \\  a.b().not().so(a, b),
-    \\  a.b().not().so(a, b),
-    \\  a.b().not().so(a, b),
-    \\);
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
-    \\  + bar * foo
-    \\  + (bar * foo + bar * foo + bar * foo + bar * foo + bar * foo
-    \\    + bar / boxB * foo);
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo
-    \\  + bar * foo
-    \\  + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo
-    \\    + bar / boxB * foo * foo
-    \\    + bar / boxB * foo);
-  ).diff(res, true);
-  // using width: 60
-  res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
-    \\var x: u3 = 5;
-    \\var j = a * b;
-    \\var j = a * b + 5;
-    \\var j = x * x - (x + 5);
-    \\var j = x * x - (x + 5) + k;
-    \\var x = 1 * foo + bar - car * booh - dah / boxMM * foom4
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxMM * foom4
     \\  + barm3 * foom3
     \\  + barm2 * foom2
     \\  + barm1 * foom1
@@ -2551,18 +2651,80 @@ test "expr 2" {
     \\  a.b().not().so(a, b),
     \\  a.b().not().so(a, b),
     \\);
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
     \\  + bar * foo
     \\  + bar * foo
     \\  + bar * foo
-    \\  + (bar * foo + bar * foo + bar * foo + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
     \\    + bar * foo
     \\    + bar / boxB * foo);
-    \\var x = 1 * foo + bar - car * booh - dah / boxB * foo
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
     \\  + bar * foo
     \\  + bar * foo
     \\  + bar * foo
-    \\  + (bar * foo + bar * foo + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo * foo
+    \\    + bar / boxB * foo);
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var x: u3 = 5;
+    \\var j = a * b;
+    \\var j = a * b + 5;
+    \\var j = x * x - (x + 5);
+    \\var j = x * x - (x + 5) + k;
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxMM * foom4
+    \\  + barm3 * foom3
+    \\  + barm2 * foom2
+    \\  + barm1 * foom1
+    \\  + bar0 * foo0
+    \\  + bar1 * foo1
+    \\  + bar2 * foo2
+    \\  + bar3 / boxN * foo;
+    \\var x = this.is.fancy(
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\  a.b().not().so(a, b),
+    \\);
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar / boxB * foo);
+    \\var x = 1 * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo);
@@ -2576,7 +2738,9 @@ test "expr 2" {
     \\var j = x * x - (x + 5);
     \\var j = x * x - (x + 5) + k;
     \\var x = 1 * foo
-    \\  + bar - car * booh - dah / boxMM * foom4
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxMM * foom4
     \\  + barm3 * foom3
     \\  + barm2 * foom2
     \\  + barm1 * foom1
@@ -2590,21 +2754,27 @@ test "expr 2" {
     \\  a.b().not().so(a, b),
     \\);
     \\var x = 1 * foo
-    \\  + bar - car * booh - dah / boxB * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
     \\  + bar * foo
     \\  + bar * foo
     \\  + bar * foo
-    \\  + (bar * foo + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
     \\    + bar * foo
     \\    + bar * foo
     \\    + bar * foo
     \\    + bar / boxB * foo);
     \\var x = 1 * foo
-    \\  + bar - car * booh - dah / boxB * foo
+    \\  + bar
+    \\  - car * booh
+    \\  - dah / boxB * foo
     \\  + bar * foo
     \\  + bar * foo
     \\  + bar * foo
-    \\  + (bar * foo + bar * foo
+    \\  + (bar * foo
+    \\    + bar * foo
     \\    + bar * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo * foo
@@ -2637,19 +2807,23 @@ test "expr 3" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
-    \\  * barm1 * foom1
-    \\  * bar0 * foo0
-    \\  * bar1 * foo1
-    \\  * bar2 * foo2
-    \\  * bar3 / boxN
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1
+    \\  * foom1
+    \\  * bar0
+    \\  * foo0
+    \\  * bar1
+    \\  * foo1
+    \\  * bar2
+    \\  * foo2
+    \\  * bar3
+    \\  / boxN
     \\  * foo;
     \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
     \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
-    \\  * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
-    \\    * bar / boxB
+    \\  * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
+    \\    / boxB
     \\    * foo);
   ).diff(res, true);
   // using width: 100, indent: 4
@@ -2660,19 +2834,23 @@ test "expr 3" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
-    \\    * barm1 * foom1
-    \\    * bar0 * foo0
-    \\    * bar1 * foo1
-    \\    * bar2 * foo2
-    \\    * bar3 / boxN
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1
+    \\    * foom1
+    \\    * bar0
+    \\    * foo0
+    \\    * bar1
+    \\    * foo1
+    \\    * bar2
+    \\    * foo2
+    \\    * bar3
+    \\    / boxN
     \\    * foo;
     \\var x = this.is.fancy(a.b().not().so(a, b), a.b().not().so(a, b), a.b().not().so(a, b));
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
-    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
-    \\        * bar / boxB
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
+    \\        / boxB
     \\        * foo);
   ).diff(res, true);
   // default width: 80, indent: 4
@@ -2683,13 +2861,18 @@ test "expr 3" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3
-    \\    * barm2 * foom2
-    \\    * barm1 * foom1
-    \\    * bar0 * foo0
-    \\    * bar1 * foo1
-    \\    * bar2 * foo2
-    \\    * bar3 / boxN
+    \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4 * barm3 * foom3 * barm2
+    \\    * foom2
+    \\    * barm1
+    \\    * foom1
+    \\    * bar0
+    \\    * foo0
+    \\    * bar1
+    \\    * foo1
+    \\    * bar2
+    \\    * foo2
+    \\    * bar3
+    \\    / boxN
     \\    * foo;
     \\var x = this.is.fancy(
     \\    a.b().not().so(a, b),
@@ -2697,14 +2880,18 @@ test "expr 3" {
     \\    a.b().not().so(a, b),
     \\);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo
-    \\    * bar * foo
+    \\    * bar
+    \\    * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB
     \\        * foo);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo
-    \\    * bar * foo
+    \\    * bar
+    \\    * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB
-    \\        * foo * foo
-    \\        * bar / boxB
+    \\        * foo
+    \\        * foo
+    \\        * bar
+    \\        / boxB
     \\        * foo);
   ).diff(res, true);
   // using width: 60
@@ -2716,36 +2903,51 @@ test "expr 3" {
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
     \\var x = 1 * foo * bar / car * booh / dah / boxMM * foom4
-    \\  * barm3 * foom3
-    \\  * barm2 * foom2
-    \\  * barm1 * foom1
-    \\  * bar0 * foo0
-    \\  * bar1 * foo1
-    \\  * bar2 * foo2
-    \\  * bar3 / boxN
+    \\  * barm3
+    \\  * foom3
+    \\  * barm2
+    \\  * foom2
+    \\  * barm1
+    \\  * foom1
+    \\  * bar0
+    \\  * foo0
+    \\  * bar1
+    \\  * foo1
+    \\  * bar2
+    \\  * foo2
+    \\  * bar3
+    \\  / boxN
     \\  * foo;
     \\var x = this.is.fancy(
     \\  a.b().not().so(a, b),
     \\  a.b().not().so(a, b),
     \\  a.b().not().so(a, b),
     \\);
-    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * (bar * foo * bar * foo * bar * foo * bar * foo
-    \\    * bar * foo
-    \\    * bar / boxB
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar
+    \\    * foo
+    \\    * bar
+    \\    / boxB
     \\    * foo);
-    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * (bar * foo * bar * foo * bar * foo * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar / boxB * foo
+    \\    * foo
+    \\    * bar
+    \\    / boxB
+    \\    * foo
+    \\    * foo
+    \\    * bar
+    \\    / boxB
     \\    * foo);
   ).diff(res, true);
   // using width: 30
@@ -2757,15 +2959,24 @@ test "expr 3" {
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
     \\var x = 1 * foo * bar / car
-    \\  * booh / dah
-    \\  / boxMM * foom4
-    \\  * barm3 * foom3
-    \\  * barm2 * foom2
-    \\  * barm1 * foom1
-    \\  * bar0 * foo0
-    \\  * bar1 * foo1
-    \\  * bar2 * foo2
-    \\  * bar3 / boxN
+    \\  * booh
+    \\  / dah
+    \\  / boxMM
+    \\  * foom4
+    \\  * barm3
+    \\  * foom3
+    \\  * barm2
+    \\  * foom2
+    \\  * barm1
+    \\  * foom1
+    \\  * bar0
+    \\  * foo0
+    \\  * bar1
+    \\  * foo1
+    \\  * bar2
+    \\  * foo2
+    \\  * bar3
+    \\  / boxN
     \\  * foo;
     \\var x = this.is.fancy(
     \\  a.b().not().so(a, b),
@@ -2773,30 +2984,50 @@ test "expr 3" {
     \\  a.b().not().so(a, b),
     \\);
     \\var x = 1 * foo * bar / car
-    \\  * booh / dah
-    \\  / boxB * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * bar * foo
+    \\  * booh
+    \\  / dah
+    \\  / boxB
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
     \\  * (bar * foo * bar * foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * bar / boxB
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    / boxB
     \\    * foo);
     \\var x = 1 * foo * bar / car
-    \\  * booh / dah
-    \\  / boxB * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * bar * foo
+    \\  * booh
+    \\  / dah
+    \\  / boxB
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
     \\  * (bar * foo * bar * foo
-    \\    * bar * foo
-    \\    * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    / boxB
+    \\    * foo
+    \\    * foo
+    \\    * bar
+    \\    / boxB
+    \\    * foo
+    \\    * foo
+    \\    * bar
+    \\    / boxB
     \\    * foo);
   ).diff(res, true);
 }
@@ -2826,12 +3057,13 @@ test "expr 4" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
-    \\    * barm1 * foom1
-    \\    * bar0 * foo0
-    \\    * bar1 * foo1
-    \\    * bar2 * foo2
-    \\    * bar3 / boxN
+    \\var x = 1 * foo * bar / car
+    \\  - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1 * foom1 * bar0 * foo0 * bar1
+    \\    * foo1
+    \\    * bar2
+    \\    * foo2
+    \\    * bar3
+    \\    / boxN
     \\    * foo;
     \\var x = this.is.fancy(
     \\  a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
@@ -2840,10 +3072,12 @@ test "expr 4" {
     \\);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
     \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
-    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo * bar * foo
-    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
-    \\    * bar / boxB
-    \\    * foo);
+    \\var x = 1 * foo * bar * car
+    \\  + booh / dah / boxB
+    \\  - foo * bar * foo * bar * foo * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
+    \\      / boxB
+    \\      * foo);
   ).diff(res, true);
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
@@ -2853,12 +3087,14 @@ test "expr 4" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2
-    \\        * barm1 * foom1
-    \\        * bar0 * foo0
-    \\        * bar1 * foo1
-    \\        * bar2 * foo2
-    \\        * bar3 / boxN
+    \\var x = 1 * foo * bar / car
+    \\    - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1 * foom1 * bar0 * foo0
+    \\        * bar1
+    \\        * foo1
+    \\        * bar2
+    \\        * foo2
+    \\        * bar3
+    \\        / boxN
     \\        * foo;
     \\var x = this.is.fancy(
     \\    a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
@@ -2867,10 +3103,12 @@ test "expr 4" {
     \\);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
-    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo * bar * foo
-    \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo
-    \\        * bar / boxB
-    \\        * foo);
+    \\var x = 1 * foo * bar * car
+    \\    + booh / dah / boxB
+    \\    - foo * bar * foo * bar * foo * bar * foo
+    \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
+    \\            / boxB
+    \\            * foo);
   ).diff(res, true);
   // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
@@ -2880,13 +3118,16 @@ test "expr 4" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4 * barm3 * foom3
-    \\        * barm2 * foom2
-    \\        * barm1 * foom1
-    \\        * bar0 * foo0
-    \\        * bar1 * foo1
-    \\        * bar2 * foo2
-    \\        * bar3 / boxN
+    \\var x = 1 * foo * bar / car
+    \\    - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2 * foom2 * barm1 * foom1
+    \\        * bar0
+    \\        * foo0
+    \\        * bar1
+    \\        * foo1
+    \\        * bar2
+    \\        * foo2
+    \\        * bar3
+    \\        / boxN
     \\        * foo;
     \\var x = this.is.fancy(
     \\    a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
@@ -2894,16 +3135,20 @@ test "expr 4" {
     \\    a.b().not().so(a, b),
     \\);
     \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo
-    \\    * bar * foo
+    \\    * bar
+    \\    * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB
     \\        * foo);
-    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo
-    \\        * bar * foo
-    \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo
-    \\        * bar / boxB
-    \\        * foo * foo
-    \\        * bar / boxB
-    \\        * foo);
+    \\var x = 1 * foo * bar * car
+    \\    + booh / dah / boxB
+    \\    - foo * bar * foo * bar * foo * bar * foo
+    \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar
+    \\            / boxB
+    \\            * foo
+    \\            * foo
+    \\            * bar
+    \\            / boxB
+    \\            * foo);
   ).diff(res, true);
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
@@ -2913,38 +3158,48 @@ test "expr 4" {
     \\var j = a * b * 5;
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
-    \\var x = 1 * foo * bar / car - booh / dah / boxMM * foom4
-    \\    * barm3 * foom3
-    \\    * barm2 * foom2
-    \\    * barm1 * foom1
-    \\    * bar0 * foo0
-    \\    * bar1 * foo1
-    \\    * bar2 * foo2
-    \\    * bar3 / boxN
+    \\var x = 1 * foo * bar / car
+    \\  - booh / dah / boxMM * foom4 * barm3 * foom3 * barm2
+    \\    * foom2
+    \\    * barm1
+    \\    * foom1
+    \\    * bar0
+    \\    * foo0
+    \\    * bar1
+    \\    * foo1
+    \\    * bar2
+    \\    * foo2
+    \\    * bar3
+    \\    / boxN
     \\    * foo;
     \\var x = this.is.fancy(
     \\  a.b((a * b + 5 * 6 / c * 12 / xyz)).not().so(a, b),
     \\  a.b().not().so(a, b),
     \\  a.b().not().so(a, b),
     \\);
-    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * (bar * foo * bar * foo * bar * foo * bar * foo
-    \\    * bar * foo
-    \\    * bar / boxB
+    \\var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar
+    \\    * foo
+    \\    * bar
+    \\    / boxB
     \\    * foo);
-    \\var x = 1 * foo * bar * car + booh / dah / boxB - foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
-    \\    * foo);
+    \\var x = 1 * foo * bar * car
+    \\  + booh / dah / boxB
+    \\  - foo * bar * foo * bar * foo * bar * foo
+    \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo
+    \\      * foo
+    \\      * bar
+    \\      / boxB
+    \\      * foo
+    \\      * foo
+    \\      * bar
+    \\      / boxB
+    \\      * foo);
   ).diff(res, true);
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
@@ -2955,15 +3210,21 @@ test "expr 4" {
     \\var j = x * x / (x * 5);
     \\var j = x * x / (x * 5) * k;
     \\var x = 1 * foo * bar / car
-    \\  - booh / dah
-    \\    / boxMM * foom4
-    \\    * barm3 * foom3
-    \\    * barm2 * foom2
-    \\    * barm1 * foom1
-    \\    * bar0 * foo0
-    \\    * bar1 * foo1
-    \\    * bar2 * foo2
-    \\    * bar3 / boxN
+    \\  - booh / dah / boxMM * foom4
+    \\    * barm3
+    \\    * foom3
+    \\    * barm2
+    \\    * foom2
+    \\    * barm1
+    \\    * foom1
+    \\    * bar0
+    \\    * foo0
+    \\    * bar1
+    \\    * foo1
+    \\    * bar2
+    \\    * foo2
+    \\    * bar3
+    \\    / boxN
     \\    * foo;
     \\var x = this.is.fancy(
     \\  a.b(
@@ -2976,31 +3237,221 @@ test "expr 4" {
     \\  a.b().not().so(a, b),
     \\);
     \\var x = 1 * foo * bar / car
-    \\  * booh / dah
-    \\  / boxB * foo
-    \\  * bar * foo
-    \\  * bar * foo
-    \\  * bar * foo
+    \\  * booh
+    \\  / dah
+    \\  / boxB
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
+    \\  * bar
+    \\  * foo
     \\  * (bar * foo * bar * foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * bar / boxB
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    / boxB
     \\    * foo);
     \\var x = 1 * foo * bar * car
-    \\  + booh / dah
-    \\    / boxB - foo
-    \\    * bar * foo
-    \\    * bar * foo
-    \\    * bar * foo
+    \\  + booh / dah / boxB
+    \\  - foo * bar * foo * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
     \\    * (bar * foo * bar * foo
-    \\    * bar * foo
-    \\    * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
-    \\    * foo * foo
-    \\    * bar / boxB
-    \\    * foo);
+    \\      * bar
+    \\      * foo
+    \\      * bar
+    \\      / boxB
+    \\      * foo
+    \\      * foo
+    \\      * bar
+    \\      / boxB
+    \\      * foo
+    \\      * foo
+    \\      * bar
+    \\      / boxB
+    \\      * foo);
+  ).diff(res, true);
+}
+
+test "expr 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
+  \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
+  \\ var xyz = a + b - c * d;
+  \\ var xyz = a + b * c - d;
+  \\ var xyz = a * b * c - d;
+  \\ var xyz = a * b * c / d * e ;
+  \\ var xyz = a * b * c * d * e * ga * b * c * d * e - f;
+  \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr();
+  \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr() + 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr();
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
+    \\var xyz = a + b - c * d;
+    \\var xyz = a + b * c - d;
+    \\var xyz = a * b * c - d;
+    \\var xyz = a * b * c / d * e;
+    \\var xyz = a * b * c * d * e * ga * b * c * d * e - f;
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr();
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3) * expr()
+    \\  + 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3) * expr();
+  ).diff(res, true);
+  // using width: 100, indent: 4
+  res = try format(doc, .{.width = 100, .indent = 4}, al);
+  try oh.snap(@src(),
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
+    \\var xyz = a + b - c * d;
+    \\var xyz = a + b * c - d;
+    \\var xyz = a * b * c - d;
+    \\var xyz = a * b * c / d * e;
+    \\var xyz = a * b * c * d * e * ga * b * c * d * e - f;
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr();
+    \\var abc = 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(1, 2, 3) * expr()
+    \\    + 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(1, 2, 3) * expr();
+  ).diff(res, true);
+  // default width: 80, indent: 4
+  res = try format(doc, .{.width = 80, .indent = 4}, al);
+  try oh.snap(@src(),
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
+    \\var xyz = a + b - c * d;
+    \\var xyz = a + b * c - d;
+    \\var xyz = a * b * c - d;
+    \\var xyz = a * b * c / d * e;
+    \\var xyz = a * b * c * d * e * ga * b * c * d * e - f;
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr();
+    \\var abc = 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(1, 2, 3) * expr()
+    \\    + 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(1, 2, 3) * expr();
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3)
+    \\  catch expr();
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + (someFunc(1, 2, 3) catch expr());
+    \\var xyz = a + b - c * d;
+    \\var xyz = a + b * c - d;
+    \\var xyz = a * b * c - d;
+    \\var xyz = a * b * c / d * e;
+    \\var xyz = a * b * c * d * e * ga * b * c * d * e - f;
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3) * expr();
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3) * expr()
+    \\  + 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3) * expr();
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3)
+    \\  catch expr();
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + (someFunc(1, 2, 3)
+    \\    catch expr());
+    \\var xyz = a + b - c * d;
+    \\var xyz = a + b * c - d;
+    \\var xyz = a * b * c - d;
+    \\var xyz = a * b * c / d * e;
+    \\var xyz = a * b * c * d * e
+    \\  * ga
+    \\  * b
+    \\  * c
+    \\  * d
+    \\  * e
+    \\  - f;
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3)
+    \\    * expr();
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3) * expr()
+    \\  + 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + someFunc(1, 2, 3)
+    \\    * expr();
   ).diff(res, true);
 }
 
@@ -3321,7 +3772,7 @@ test "containerdecl 3" {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
-    \\  writer: enum(u3) { file: file, out: out, mem: mem } = .mem,
+    \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
   ).diff(res, true);
   // default width: 80
@@ -3331,7 +3782,7 @@ test "containerdecl 3" {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
-    \\  writer: enum(u3) { file: file, out: out, mem: mem } = .mem,
+    \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
   ).diff(res, true);
   // using width: 60
@@ -3341,11 +3792,7 @@ test "containerdecl 3" {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
-    \\  writer: enum(u3) {
-    \\    file: file,
-    \\    out: out,
-    \\    mem: mem,
-    \\  } = .mem,
+    \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
   ).diff(res, true);
   // using width: 30
@@ -3356,9 +3803,9 @@ test "containerdecl 3" {
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
     \\  writer: enum(u3) {
-    \\    file: file,
-    \\    out: out,
-    \\    mem: mem,
+    \\    file,
+    \\    out,
+    \\    mem,
     \\  } = .mem,
     \\};
   ).diff(res, true);
@@ -3842,7 +4289,7 @@ test "containerdecl 9" {
     \\  }
     \\
     \\  const fox = 0xdeadbeef;
-    \\  const fox = enum { a: a, b: b, c: c };
+    \\  const fox = enum { a, b, c };
     \\};
   ).diff(res, true);
   // default width: 80
@@ -3858,7 +4305,7 @@ test "containerdecl 9" {
     \\  }
     \\
     \\  const fox = 0xdeadbeef;
-    \\  const fox = enum { a: a, b: b, c: c };
+    \\  const fox = enum { a, b, c };
     \\};
   ).diff(res, true);
   // using width: 60
@@ -3874,7 +4321,7 @@ test "containerdecl 9" {
     \\  }
     \\
     \\  const fox = 0xdeadbeef;
-    \\  const fox = enum { a: a, b: b, c: c };
+    \\  const fox = enum { a, b, c };
     \\};
   ).diff(res, true);
   // using width: 30
@@ -3901,9 +4348,9 @@ test "containerdecl 9" {
     \\
     \\  const fox = 0xdeadbeef;
     \\  const fox = enum {
-    \\    a: a,
-    \\    b: b,
-    \\    c: c,
+    \\    a,
+    \\    b,
+    \\    c,
     \\  };
     \\};
   ).diff(res, true);
@@ -3945,8 +4392,8 @@ test "containerdecl 10" {
     \\  abc: []const u8,
     \\
     \\  const fox1 = 0xdeadbeef;
-    \\  const fox2 = enum { a: a, b: b, c: c };
-    \\  const fox3 = union(big) { a: a, b: b, c: c };
+    \\  const fox2 = enum { a, b, c };
+    \\  const fox3 = union(big) { a, b, c };
     \\
     \\  x: usize,
     \\};
@@ -3966,8 +4413,8 @@ test "containerdecl 10" {
     \\  abc: []const u8,
     \\
     \\  const fox1 = 0xdeadbeef;
-    \\  const fox2 = enum { a: a, b: b, c: c };
-    \\  const fox3 = union(big) { a: a, b: b, c: c };
+    \\  const fox2 = enum { a, b, c };
+    \\  const fox3 = union(big) { a, b, c };
     \\
     \\  x: usize,
     \\};
@@ -3987,8 +4434,8 @@ test "containerdecl 10" {
     \\  abc: []const u8,
     \\
     \\  const fox1 = 0xdeadbeef;
-    \\  const fox2 = enum { a: a, b: b, c: c };
-    \\  const fox3 = union(big) { a: a, b: b, c: c };
+    \\  const fox2 = enum { a, b, c };
+    \\  const fox3 = union(big) { a, b, c };
     \\
     \\  x: usize,
     \\};
@@ -4019,14 +4466,14 @@ test "containerdecl 10" {
     \\
     \\  const fox1 = 0xdeadbeef;
     \\  const fox2 = enum {
-    \\    a: a,
-    \\    b: b,
-    \\    c: c,
+    \\    a,
+    \\    b,
+    \\    c,
     \\  };
     \\  const fox3 = union(big) {
-    \\    a: a,
-    \\    b: b,
-    \\    c: c,
+    \\    a,
+    \\    b,
+    \\    c,
     \\  };
     \\
     \\  x: usize,
@@ -4448,6 +4895,92 @@ test "containerdecl 14" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
+  ).diff(res, true);
+}
+
+test "containerdecl 15" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub const FmtConfig = struct {
+  \\  width: u32 = 80,
+  \\  indent: u8 = 2,
+  \\  decl_line_seps: u8 = 2,
+  \\  writer: enum (u3) {
+  \\    file: File,
+  \\    out: Out,
+  \\    mem: Mem,
+  \\  } = .mem,
+  \\};
+  \\  const fox2 = enum { a, b, c };
+  \\  const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) { file: File, out: Out, mem: Mem } = .mem,
+    \\};
+    \\const fox2 = enum { a, b, c };
+    \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) { file: File, out: Out, mem: Mem } = .mem,
+    \\};
+    \\const fox2 = enum { a, b, c };
+    \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) {
+    \\    file: File,
+    \\    out: Out,
+    \\    mem: Mem,
+    \\  } = .mem,
+    \\};
+    \\const fox2 = enum { a, b, c };
+    \\const fox3 = union(big) {
+    \\  a: A(abc, xyz),
+    \\  b: B,
+    \\  c: C(Type("Foo")),
+    \\};
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) {
+    \\    file: File,
+    \\    out: Out,
+    \\    mem: Mem,
+    \\  } = .mem,
+    \\};
+    \\const fox2 = enum { a, b, c };
+    \\const fox3 = union(big) {
+    \\  a: A(abc, xyz),
+    \\  b: B,
+    \\  c: C(Type("Foo")),
+    \\};
   ).diff(res, true);
 }
 
@@ -4891,5 +5424,310 @@ test "ptr types 4" {
     \\  Foo(Bar.xyz(abc)) {
     \\  return 0;
     \\}
+  ).diff(res, true);
+}
+
+test "try/catch 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc = try someFunc(1, 2, 3);
+  \\ var abc = someTestFunc(try someFunc(1, 2, 3));
+  \\ var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
+  \\
+  \\ var abc = someFunc(1, 2, 3) catch |e| 5;
+  \\ var abc = someFunc(1, 2, 3) catch expr();
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var abc = try someFunc(1, 2, 3);
+    \\var abc = someTestFunc(try someFunc(1, 2, 3));
+    \\var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
+    \\var abc = someFunc(1, 2, 3) catch |e| 5;
+    \\var abc = someFunc(1, 2, 3) catch expr();
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\var abc = try someFunc(1, 2, 3);
+    \\var abc = someTestFunc(try someFunc(1, 2, 3));
+    \\var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
+    \\var abc = someFunc(1, 2, 3) catch |e| 5;
+    \\var abc = someFunc(1, 2, 3) catch expr();
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var abc = try someFunc(1, 2, 3);
+    \\var abc = someTestFunc(try someFunc(1, 2, 3));
+    \\var abc = someTestFunc(
+    \\  try someFunc(1, 2, 3),
+    \\  try someFunc(1, 2, 3),
+    \\);
+    \\var abc = someFunc(1, 2, 3) catch |e| 5;
+    \\var abc = someFunc(1, 2, 3) catch expr();
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var abc = try someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\);
+    \\var abc = someTestFunc(
+    \\  try someFunc(1, 2, 3),
+    \\);
+    \\var abc = someTestFunc(
+    \\  try someFunc(1, 2, 3),
+    \\  try someFunc(1, 2, 3),
+    \\);
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch |e| 5;
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch expr();
+  ).diff(res, true);
+}
+
+test "try/catch 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc = someFunc(1, 2, 3) catch return;
+  \\ var abc = someFunc(1, 2, 3) catch |e| {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) catch |e| blk: {
+  \\   someBlock();
+  \\   break :blk result("okay");
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) catch {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) catch blk: {
+  \\   someBlock();
+  \\   break :blk result("okay");
+  \\ };
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3) catch return;
+    \\var abc = someFunc(1, 2, 3) catch |e| {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) catch |e| blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = someFunc(1, 2, 3) catch {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) catch blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3) catch return;
+    \\var abc = someFunc(1, 2, 3) catch |e| {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch |e| blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(1, 2, 3) catch {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) catch blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3) catch return;
+    \\var abc = someFunc(1, 2, 3) catch |e| {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch |e| blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(1, 2, 3) catch {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch return;
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch |e| {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch |e| blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+  ).diff(res, true);
+}
+
+test "orelse 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc = someFunc(1, 2, 3) orelse return;
+  \\ var abc = someFunc(1, 2, 3) orelse {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) orelse blk: {
+  \\   someBlock();
+  \\   break :blk result("okay");
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) orelse  {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) orelse blk: {
+  \\   someBlock();
+  \\   break :blk result("okay");
+  \\ };
+  \\var abc = 5 * 4
+  \\  + 3
+  \\  - abc
+  \\  + 4
+  \\  - 3
+  \\  + (someFunc(1, 2, 3)
+  \\    orelse expr());
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3) orelse return;
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3) orelse return;
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3) orelse return;
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + (someFunc(1, 2, 3) orelse expr());
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse return;
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + (someFunc(1, 2, 3)
+    \\    orelse expr());
   ).diff(res, true);
 }
