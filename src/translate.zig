@@ -46,6 +46,29 @@ pub const Translate = struct {
     return isVarDecl(self.tree.nodeTag(n));
   }
 
+  fn isEmptyBlock(self: *Self, n: Node.Index) bool {
+    switch (self.tree.nodeTag(n)) {
+      .block_two, .block_two_semicolon => {
+        const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
+        return first.unwrap() == null and second.unwrap() == null;
+      },
+      .block_semicolon, .block => {
+        const rng = self.tree.nodeData(n).extra_range;
+        const stmts = self.tree.extraDataSlice(rng, Node.Index);
+        return stmts.len == 0;
+      },
+      else => return false,
+    }
+  }
+
+  fn isBlock(self: *Self, tkn: Ast.TokenIndex) bool {
+    return self.tree.tokenTag(tkn) == .l_brace and self.tree.tokenTag(tkn - 1) != .colon;
+  }
+
+  fn shouldAddTerminator(self: *Self, n: Node.Index) bool {
+    return self.tree.tokenTag(self.tree.lastToken(n) + 1) == .semicolon;
+  }
+
   fn unwrapTwo(
     args: [*]Node.Index,
     first: Node.OptionalIndex,
@@ -585,13 +608,13 @@ pub const Translate = struct {
     return sb;
   }
 
-  fn tVarDecl(self: *Self, vd: Ast.full.VarDecl) TranslateError!*SeqBuilder {
+  fn tVarDecl(self: *Self, vd: Ast.full.VarDecl) TranslateError!*Doc {
     var sb = try self.tVarDeclProto(vd);
     if (vd.ast.init_node.unwrap()) |_n| {
       sb.text(" = ")._();
       sb.append(try self.t(_n));
     }
-    return sb;
+    return self.db.group(sb.finish());
   }
 
   fn tFnProto(
@@ -608,7 +631,6 @@ pub const Translate = struct {
     // `fn (a: b, c: d) addrspace(e) linksection(f) callconv(g) return_type`.
     var sb = self.db.seqb();
     var curr = if (fn_tkn > 0) fn_tkn - 1 else fn_tkn;
-    var has_extern = false;
     loop: while (true) : (curr -= 1) {
       switch (self.tree.tokenTag(curr)) {
         .keyword_inline, .keyword_export, .keyword_pub, .keyword_noinline => {
@@ -616,7 +638,6 @@ pub const Translate = struct {
         },
         .keyword_extern => {
           sb.space().text(self._token(curr))._();
-          has_extern = true;
         },
         else => {
           std.mem.reverse(*Doc, sb.docs.items);
@@ -652,17 +673,24 @@ pub const Translate = struct {
       tmp.normline().append(try self.tAttribute(_n, "linksection"));
     }
     if (ret_ty) |_n| {
-      sb.group(tmp.normline().finish())._();
-      const tkn = self.tree.nodeMainToken(_n) - 1;
-      if (self.tree.tokenTag(tkn) == .bang) {
-        sb.text(self._token(tkn))._();
+      if (tmp.isNotEmpty() or params.len > 0) {
+        sb.group(tmp.normline().finish())._();
+        const tkn = self.tree.nodeMainToken(_n) - 1;
+        if (self.tree.tokenTag(tkn) == .bang) {
+          sb.text(self._token(tkn))._();
+        }
+        sb.append(try self.t(_n));
+      } else {
+        _ = tmp.finish();
+        sb.space()._();
+        const tkn = self.tree.nodeMainToken(_n) - 1;
+        if (self.tree.tokenTag(tkn) == .bang) {
+          sb.text(self._token(tkn))._();
+        }
+        sb.append(try self.t(_n));
       }
-      sb.append(try self.t(_n));
     } else {
       sb.group(tmp.finish())._();
-    }
-    if (has_extern) {
-      sb.text(";")._();
     }
     return self.db.groupi(id, sb.finish());
   }
@@ -711,7 +739,7 @@ pub const Translate = struct {
     for (members, 1..) |_n, i| {
       const doc = try self.t(_n);
       const node_tag = self.tree.nodeTag(_n);
-      if (self.nodeIsVarDecl(_n)) {
+      if (self.shouldAddTerminator(_n)) {
         tmp.group(self.db.seqb().appends(doc).text(";").finish())._();
       } else {
         const tag = self.tree.tokenTag(self.tree.firstToken(_n));
@@ -746,7 +774,7 @@ pub const Translate = struct {
     for (members, 1..) |_n, i| {
       const doc = try self.t(_n);
       const node_tag = self.tree.nodeTag(_n);
-      if (self.nodeIsVarDecl(_n)) {
+      if (self.shouldAddTerminator(_n)) {
         sb.group(self.db.seqb().appends(doc).text(";").finish())._();
       } else {
         const tag = self.tree.tokenTag(self.tree.firstToken(_n));
@@ -790,6 +818,87 @@ pub const Translate = struct {
       sb.text(" = ").append(try self.t(_n));
     }
     return self.db.group(sb.finish());
+  }
+
+  fn tIf(self: *Self, ifn: Ast.full.If) TranslateError!*Doc {
+    const cond_expr = try self.t(ifn.ast.cond_expr);
+    var sb = self.db.seqb();
+    var tmp = self.db.seqb();
+    tmp.text("if (")._();
+    var cond = self.db.seqb();
+    cond.softline().append(cond_expr);
+    tmp.indent(cond.finish()).softline().text(")")._();
+    if (ifn.payload_token) |tkn| {
+      tmp.text(" |").text(self._token(tkn))._();
+      if (self.tree.tokenTag(tkn) == .asterisk) {
+        tmp.text(self._token(tkn + 1))._();
+      }
+      tmp.text("|")._();
+    }
+    sb.group(tmp.finish())._();
+    var if_has_braces = false;
+    const id = d.genGroupID();
+    if (self.isEmptyBlock(ifn.ast.then_expr)) {
+      if_has_braces = true;
+      sb.text(" {").declline().text("}")._();
+    } else {
+      const then_expr = try self.t(ifn.ast.then_expr);
+      const tkn = self.tree.nodeMainToken(ifn.ast.then_expr);
+      if (self.isBlock(tkn)) {
+        if_has_braces = true;
+        sb.space().append(then_expr);
+      } else {
+        var flat = self.db.seqb();
+        var split = self.db.seqb();
+        flat.space().append(then_expr);
+        split.softline().append(then_expr);
+        sb.ifsplit(id, self.db.indent(split.finish()), flat.finishSeq())._();
+      }
+    }
+    if (ifn.ast.else_expr.unwrap()) |els| {
+      if (self.isEmptyBlock(els)) {
+        sb.text(" else ")._();
+        if (ifn.error_token) |tkn| {
+          sb.text("|").text(self._token(tkn)).text("| ")._();
+        }
+        sb.text("{").declline().text("}")._();
+      } else {
+        const else_expr = try self.t(els);
+        const tkn = self.tree.nodeMainToken(els);
+        if (if_has_braces or self.isBlock(tkn)) {
+          if (if_has_braces) {
+            sb.text(" else ")._();
+            if (ifn.error_token) |err_tkn| {
+              sb.text("|").text(self._token(err_tkn)).text("| ")._();
+            }
+            sb.append(else_expr);
+          } else {
+            var els_sb = self.db.seqb();
+            els_sb.declline().text("else ")._();
+            if (ifn.error_token) |err_tkn| {
+              els_sb.text("|").text(self._token(err_tkn)).text("| ")._();
+            }
+            els_sb.append(else_expr);
+            sb.group(els_sb.finish())._();
+          }
+        } else {
+          var flat = self.db.seqb();
+          var split = self.db.seqb();
+          var rest = self.db.seqb();
+          flat.text(" else ")._();
+          split.softline().text("else")._();
+          if (ifn.error_token) |err_tkn| {
+            flat.text("|").text(self._token(err_tkn)).text("| ")._();
+            split.text(" |").text(self._token(err_tkn)).text("|")._();
+          }
+          flat.append(else_expr);
+          rest.softline().append(else_expr);
+          split.indent(rest.finish())._();
+          sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
+        }
+      }
+    }
+    return self.db.groupi(id, sb.finish());
   }
 
   fn tPtrType(self: *Self, ty: Ast.full.PtrType) TranslateError!*Doc {
@@ -971,6 +1080,41 @@ pub const Translate = struct {
     return self.db.groupi(id, sb.finish());
   }
 
+  fn tArrayInit(
+    self: *Self,
+    n: Node.Index,
+    texpr: ?Node.Index,
+    should_softline: bool,
+    fields: []const Node.Index,
+  ) TranslateError!*Doc {
+    var sb = self.db.seqb();
+    if (texpr) |te| {
+      sb.appends(try self.t(te)).text("{")._();
+    } else {
+      // main token is '{'
+      const name = self.tree.nodeMainToken(n) - 1;
+      sb.text(self._token(name)).text("{")._();
+    }
+    var args = self.db.seqb().softlineIf(should_softline);
+    for (fields, 0..) |val, i| {
+      var tmp = self.db.seqb();
+      tmp.append(try self.t(val));
+      if (i < fields.len - 1) {
+        args.group(tmp.text(",").finish()).normline()._();
+      } else {
+        args.group(tmp.finish())._();
+      }
+    }
+    if (args.isEmpty()) {
+      _ = args.finish();
+      return self.db.group(sb.finish());
+    }
+    const id = d.genGroupID();
+    args.ifsplit(id, self.db.text(","), self.db.seq(&.{}))._();
+    sb.indent(args.finish()).softlineIf(should_softline).text("}")._();
+    return self.db.groupi(id, sb.finish());
+  }
+
   fn t(self: *Self, n: Node.Index) !*Doc {
     const tag = self.tree.nodeTag(n);
     assert(tag != self.tree.nodeTag(Node.Index.root));
@@ -980,8 +1124,7 @@ pub const Translate = struct {
       },
       .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => {
         const vd = self.tree.fullVarDecl(n).?;
-        var sb = try self.tVarDecl(vd);
-        return self.db.group(sb.finish());
+        return self.tVarDecl(vd);
       },
       .enum_literal => {
         const tk = self._token(self.tree.nodeMainToken(n));
@@ -1071,11 +1214,15 @@ pub const Translate = struct {
         var tmp = self.db.seqb();
         if (first.unwrap()) |_n| {
           tmp.declline().append(try self.t(_n));
-          tmp.text(";")._();
+          if (self.shouldAddTerminator(_n)) {
+            tmp.text(";")._();
+          }
         }
         if (second.unwrap()) |_n| {
           tmp.declline().append(try self.t(_n));
-          tmp.text(";")._();
+          if (self.shouldAddTerminator(_n)) {
+            tmp.text(";")._();
+          }
         }
         if (tmp.isEmpty()) {
           _ = tmp.finish();
@@ -1102,7 +1249,10 @@ pub const Translate = struct {
           if (i > 0) {
             tmp.declline()._();
           }
-          tmp.appends(try self.t(stmt)).text(";")._();
+          tmp.append(try self.t(stmt));
+          if (self.shouldAddTerminator(stmt)) {
+            tmp.text(";")._();
+          }
         }
         if (tmp.isEmpty()) {
           _ = tmp.finish();
@@ -1179,6 +1329,14 @@ pub const Translate = struct {
       .container_field => {
         return self.tContainerField(self.tree.containerField(n));
       },
+      .if_simple => {
+        const ifn = self.tree.ifSimple(n);
+        return self.tIf(ifn);
+      },
+      .@"if" => {
+        const ifn = self.tree.ifFull(n);
+        return self.tIf(ifn);
+      },
       .builtin_call_two, .builtin_call_two_comma => {
         const id = d.genGroupID();
         var sb = self.db.seqb();
@@ -1231,6 +1389,26 @@ pub const Translate = struct {
         const args = unwrapTwo(&buf, first, second);
         const should_softline = args.len > 0;
         return self.tStructInit(n, null, should_softline, args);
+      },
+      .array_init, .array_init_comma => {
+        const decl = self.tree.arrayInit(n);
+        return self.tArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements.len > 0, decl.ast.elements);
+      },
+      .array_init_one, .array_init_one_comma => {
+        const first, const second = self.tree.nodeData(n).node_and_opt_node;
+        const elements = if (second.unwrap()) |_n| &.{_n} else &.{};
+        return self.tArrayInit(n, first, elements.len > 0, elements);
+      },
+      .array_init_dot, .array_init_dot_comma => {
+        const decl = self.tree.arrayInitDot(n);
+        return self.tArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements.len > 0, decl.ast.elements);
+      },
+      .array_init_dot_two, .array_init_dot_two_comma => {
+        const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
+        var buf: [2]Node.Index = undefined;
+        const args = unwrapTwo(&buf, first, second);
+        const should_softline = args.len > 0;
+        return self.tArrayInit(n, null, should_softline, args);
       },
       .@"return" => {
         var sb = self.db.seqb().text("return");

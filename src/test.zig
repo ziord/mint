@@ -2144,8 +2144,8 @@ test "fundecl 12" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src =
-  \\ const T = fn (a: anytype, comptime T: type, x: i32);
-  \\ const T = fn abc(a: anytype, comptime T: type, x: i32);
+  \\ const T = fn (a: anytype, comptime T: type, x: i32) u32;
+  \\ const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
   \\ const T = fn (a: anytype, comptime T: type, x: i32) void;
   \\ const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   ;
@@ -2155,24 +2155,24 @@ test "fundecl 12" {
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
   try oh.snap(@src(),
-    \\const T = fn (a: anytype, comptime T: type, x: i32);
-    \\const T = fn abc(a: anytype, comptime T: type, x: i32);
+    \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   ).diff(res, true);
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try oh.snap(@src(),
-    \\const T = fn (a: anytype, comptime T: type, x: i32);
-    \\const T = fn abc(a: anytype, comptime T: type, x: i32);
+    \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   ).diff(res, true);
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
   try oh.snap(@src(),
-    \\const T = fn (a: anytype, comptime T: type, x: i32);
-    \\const T = fn abc(a: anytype, comptime T: type, x: i32);
+    \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
+    \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(
     \\  a: anytype,
@@ -2187,12 +2187,12 @@ test "fundecl 12" {
     \\  a: anytype,
     \\  comptime T: type,
     \\  x: i32,
-    \\);
+    \\) u32;
     \\const T = fn abc(
     \\  a: anytype,
     \\  comptime T: type,
     \\  x: i32,
-    \\);
+    \\) u32;
     \\const T = fn (
     \\  a: anytype,
     \\  comptime T: type,
@@ -2248,6 +2248,51 @@ test "fundecl 13" {
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 14" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() Foo!A.B(0xff, 123) {
+  \\  return self.puke("no!");
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 30
+  const doc = try translate(src, al);
+  const res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testing() Foo!A.B(
+    \\  0xff,
+    \\  123,
+    \\) {
+    \\  return self.puke("no!");
+    \\}
+  ).diff(res, true);
+}
+
+test "fundecl 15" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing(x: u2) Foo!A.B(0xff, 123) {
+  \\  return self.puke("no!");
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 30
+  const doc = try translate(src, al);
+  const res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testing(
+    \\  x: u2,
+    \\) Foo!A.B(0xff, 123) {
+    \\  return self.puke("no!");
     \\}
   ).diff(res, true);
 }
@@ -5729,5 +5774,663 @@ test "orelse 1" {
     \\  - 3
     \\  + (someFunc(1, 2, 3)
     \\    orelse expr());
+  ).diff(res, true);
+}
+
+test "if/else 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\ if (a) b else d;
+  \\ if (a) |x| b else d;
+  \\ if (a) |x| b else |y| d;
+  \\ if (expr()) doStuff();
+  \\ if (expr()) |pl| doStuff();
+  \\ var z = if (a) b else d;
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (a) b else d;
+    \\  if (a) |x| b else d;
+    \\  if (a) |x| b else |y| d;
+    \\  if (expr()) doStuff();
+    \\  if (expr()) |pl| doStuff();
+    \\  var z = if (a) b else d;
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (a) b else d;
+    \\  if (a) |x| b else d;
+    \\  if (a) |x| b else |y| d;
+    \\  if (expr()) doStuff();
+    \\  if (expr()) |pl| doStuff();
+    \\  var z = if (a) b else d;
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (a) b else d;
+    \\  if (a) |x| b else d;
+    \\  if (a) |x| b else |y| d;
+    \\  if (expr()) doStuff();
+    \\  if (expr()) |pl| doStuff();
+    \\  var z = if (a) b else d;
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (a) b else d;
+    \\  if (a) |x|
+    \\    b
+    \\  else
+    \\    d;
+    \\  if (a) |x|
+    \\    b
+    \\  else |y|
+    \\    d;
+    \\  if (expr())
+    \\    doStuff();
+    \\  if (expr()) |pl|
+    \\    doStuff();
+    \\  var z = if (a)
+    \\    b
+    \\  else
+    \\    d;
+    \\}
+  ).diff(res, true);
+}
+
+test "if/else 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\ var z = if (a) b: {var x = y; } else d;
+  \\ if (someExpr()) {
+  \\ var x = someOther();
+  \\} else {
+  \\  var y = someWhat();
+  \\}
+  \\ if (someExpr()) {
+  \\ var x = someOther();
+  \\} else if (someOtherExpr()) {
+  \\  var y = someWhat();
+  \\} else {
+  \\  var y = someElseWhat();
+  \\}
+  \\ if (someExpr()) |*payload| {
+  \\ var x = someOther();
+  \\} else {
+  \\  var y = someWhat();
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  var z = if (a) b: {
+    \\    var x = y;
+    \\  } else d;
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else if (someOtherExpr()) {
+    \\    var y = someWhat();
+    \\  } else {
+    \\    var y = someElseWhat();
+    \\  }
+    \\  if (someExpr()) |*payload| {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  var z = if (a) b: {
+    \\    var x = y;
+    \\  } else d;
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else if (someOtherExpr()) {
+    \\    var y = someWhat();
+    \\  } else {
+    \\    var y = someElseWhat();
+    \\  }
+    \\  if (someExpr()) |*payload| {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  var z = if (a) b: {
+    \\    var x = y;
+    \\  } else d;
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else if (someOtherExpr()) {
+    \\    var y = someWhat();
+    \\  } else {
+    \\    var y = someElseWhat();
+    \\  }
+    \\  if (someExpr()) |*payload| {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  var z = if (a)
+    \\    b: {
+    \\      var x = y;
+    \\    }
+    \\  else
+    \\    d;
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else if (
+    \\    someOtherExpr()
+    \\  ) {
+    \\    var y = someWhat();
+    \\  } else {
+    \\    var y = someElseWhat();
+    \\  }
+    \\  if (
+    \\    someExpr()
+    \\  ) |*payload| {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "if/else 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\ if (someExpr()) {
+  \\} else {
+  \\  var y = someWhat();
+  \\}
+  \\ if (someExpr()) {
+  \\ var x = someOther();
+  \\} else {
+  \\}
+  \\ if (someExpr()) {
+  \\} else {
+  \\}
+  \\ if (someExpr()) |*payload| {
+  \\} else {
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (someExpr()) {
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) {
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) |*payload| {
+    \\  } else {
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (someExpr()) {
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) {
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) |*payload| {
+    \\  } else {
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (someExpr()) {
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) {
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) |*payload| {
+    \\  } else {
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (someExpr()) {
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\  if (someExpr()) {
+    \\    var x = someOther();
+    \\  } else {
+    \\  }
+    \\  if (someExpr()) {
+    \\  } else {
+    \\  }
+    \\  if (
+    \\    someExpr()
+    \\  ) |*payload| {
+    \\  } else {
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "if/else 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\ {
+  \\ if (someExpr()) {
+  \\} else {
+  \\}
+  \\ if (someExpr()) |payload| {
+  \\} else {
+  \\}
+  \\ }
+  \\ if (
+  \\      (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()) or
+  \\      (lhs.isData() and lhs.data().node.modifier.isFrozen())
+  \\    ) {
+  \\      return self.error_(
+  \\        true, open.lhs_name.toToken(), "cannot open frozen type '{s}'",
+  \\        .{self.getTypename(lhs)}
+  \\      );
+  \\    }
+  \\ if (
+  \\      lhs.isStruct() and lhs.strukt().node.modifier.isFrozen() or
+  \\      lhs.isData() and lhs.data().node.modifier.isFrozen()
+  \\    ) {
+  \\      return self.error_(
+  \\        true, open.lhs_name.toToken(), "cannot open frozen type '{s}'",
+  \\        .{self.getTypename(lhs)}
+  \\      );
+  \\    }
+  \\ if (
+  \\      lhs.isStruct() and lhs.strukt().node.modifier.isFrozen() or
+  \\      lhs.isData() and lhs.data().node.modifier.isFrozen()
+  \\    ) {
+  \\      return self.error_(
+  \\        true, open.lhs_name.toToken(), "cannot open frozen type '{s}'",
+  \\        .{self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101)}
+  \\      );
+  \\    }
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  {
+    \\    if (someExpr()) {
+    \\    } else {
+    \\    }
+    \\    if (someExpr()) |payload| {
+    \\    } else {
+    \\    }
+    \\  }
+    \\  if ((lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()) or (lhs.isData() and lhs.data().node.modifier.isFrozen())) {
+    \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs)});
+    \\  }
+    \\  if (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen() or lhs.isData() and lhs.data().node.modifier.isFrozen()) {
+    \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs)});
+    \\  }
+    \\  if (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen() or lhs.isData() and lhs.data().node.modifier.isFrozen()) {
+    \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101)});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  {
+    \\    if (someExpr()) {
+    \\    } else {
+    \\    }
+    \\    if (someExpr()) |payload| {
+    \\    } else {
+    \\    }
+    \\  }
+    \\  if (
+    \\    (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen())
+    \\      or (lhs.isData() and lhs.data().node.modifier.isFrozen())
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs)},
+    \\    );
+    \\  }
+    \\  if (
+    \\    lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()
+    \\      or lhs.isData() and lhs.data().node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs)},
+    \\    );
+    \\  }
+    \\  if (
+    \\    lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()
+    \\      or lhs.isData() and lhs.data().node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{
+    \\        self.getTypename(lhs),
+    \\        self.book(0x101),
+    \\        self.book(0x101),
+    \\        self.book(0x101),
+    \\      },
+    \\    );
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  {
+    \\    if (someExpr()) {
+    \\    } else {
+    \\    }
+    \\    if (someExpr()) |payload| {
+    \\    } else {
+    \\    }
+    \\  }
+    \\  if (
+    \\    (lhs.isStruct()
+    \\      and lhs.strukt().node.modifier.isFrozen())
+    \\      or (lhs.isData()
+    \\        and lhs.data().node.modifier.isFrozen())
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs)},
+    \\    );
+    \\  }
+    \\  if (
+    \\    lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()
+    \\      or lhs.isData()
+    \\        and lhs.data().node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs)},
+    \\    );
+    \\  }
+    \\  if (
+    \\    lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()
+    \\      or lhs.isData()
+    \\        and lhs.data().node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{
+    \\        self.getTypename(lhs),
+    \\        self.book(0x101),
+    \\        self.book(0x101),
+    \\        self.book(0x101),
+    \\      },
+    \\    );
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  {
+    \\    if (
+    \\      someExpr()
+    \\    ) {
+    \\    } else {
+    \\    }
+    \\    if (
+    \\      someExpr()
+    \\    ) |payload| {
+    \\    } else {
+    \\    }
+    \\  }
+    \\  if (
+    \\    (lhs.isStruct()
+    \\      and lhs.strukt()
+    \\        .node.modifier.isFrozen())
+    \\      or (lhs.isData()
+    \\        and lhs.data()
+    \\          .node.modifier.isFrozen())
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{
+    \\        self.getTypename(
+    \\          lhs,
+    \\        ),
+    \\      },
+    \\    );
+    \\  }
+    \\  if (
+    \\    lhs.isStruct()
+    \\      and lhs.strukt()
+    \\        .node.modifier.isFrozen()
+    \\      or lhs.isData()
+    \\        and lhs.data()
+    \\          .node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{
+    \\        self.getTypename(
+    \\          lhs,
+    \\        ),
+    \\      },
+    \\    );
+    \\  }
+    \\  if (
+    \\    lhs.isStruct()
+    \\      and lhs.strukt()
+    \\        .node.modifier.isFrozen()
+    \\      or lhs.isData()
+    \\        and lhs.data()
+    \\          .node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{
+    \\        self.getTypename(
+    \\          lhs,
+    \\        ),
+    \\        self.book(
+    \\          0x101,
+    \\        ),
+    \\        self.book(
+    \\          0x101,
+    \\        ),
+    \\        self.book(
+    \\          0x101,
+    \\        ),
+    \\      },
+    \\    );
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "if/else 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\  if (cond()) { var x = 5; } else voidExpr();
+  \\  if (cond()) voidExpr() else {
+  \\ var x = 5;
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (cond()) {
+    \\    var x = 5;
+    \\  } else voidExpr();
+    \\  if (cond()) voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (cond()) {
+    \\    var x = 5;
+    \\  } else voidExpr();
+    \\  if (cond()) voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (cond()) {
+    \\    var x = 5;
+    \\  } else voidExpr();
+    \\  if (cond()) voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn testing() void {
+    \\  if (cond()) {
+    \\    var x = 5;
+    \\  } else voidExpr();
+    \\  if (cond())
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\}
   ).diff(res, true);
 }
