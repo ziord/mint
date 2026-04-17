@@ -901,6 +901,66 @@ pub const Translate = struct {
     return self.db.groupi(id, sb.finish());
   }
 
+  fn tSwitch(self: *Self, sw: Ast.full.Switch) TranslateError!*Doc {
+    var sb = self.db.seqb();
+    var tmp = self.db.seqb();
+    if (sw.label_token) |tkn| {
+      tmp.text(self._token(tkn)).text(": ")._();
+    }
+    tmp.text(self._token(sw.ast.switch_token))._();
+    tmp.text(" (")._();
+    var cond = self.db.seqb();
+    cond.softline().append(try self.t(sw.ast.condition));
+    tmp.indent(cond.finish()).softline().text(")")._();
+    sb.group(tmp.finish())._();
+    if (sw.ast.cases.len == 0) {
+      sb.text(" {}")._();
+      return self.db.group(sb.finish());
+    }
+    sb.text(" {")._();
+    var cases = self.db.seqb().declline();
+    for (sw.ast.cases, 0..) |cs, i| {
+      if (i > 0) cases.text(",").declline()._();
+      cases.append(try self.t(cs));
+    }
+    cases.text(",")._();
+    sb.indent(cases.finish()).declline()._();
+    sb.text("}")._();
+    return self.db.group(sb.finish());
+  }
+
+  fn tSwitchCase(self: *Self, sc: Ast.full.SwitchCase) TranslateError!*Doc {
+    var sb = self.db.seqb();
+    if (sc.inline_token) |tkn| {
+      sb.text(self._token(tkn)).space()._();
+    }
+    if (sc.ast.values.len > 0) {
+      var tmp = self.db.seqb();
+      for (sc.ast.values, 0..) |v, i| {
+        if (i > 0) tmp.text(",").normline()._();
+        tmp.append(try self.t(v));
+      }
+      sb.group(tmp.finish())._();
+    } else {
+      sb.text("else")._();
+    }
+    sb.space().text(self._token(sc.ast.arrow_token))._();
+    if (sc.payload_token) |tkn| {
+      sb.text(" |").text(self._token(tkn))._();
+      var idx = tkn + 1;
+      while (self.tree.tokenTag(idx) != .pipe) {
+        sb.text(self._token(idx))._();
+        if (self.tree.tokenTag(idx) == .comma) {
+          sb.space()._();
+        }
+        idx += 1;
+      }
+      sb.text(self._token(idx))._();
+    }
+    sb.space().append(try self.t(sc.ast.target_expr));
+    return self.db.group(sb.finish());
+  }
+
   fn tPtrType(self: *Self, ty: Ast.full.PtrType) TranslateError!*Doc {
     var sb = self.db.seqb();
     switch (ty.size) {
@@ -1337,6 +1397,26 @@ pub const Translate = struct {
         const ifn = self.tree.ifFull(n);
         return self.tIf(ifn);
       },
+      .@"switch", .switch_comma => {
+        const sw = self.tree.switchFull(n);
+        return self.tSwitch(sw);
+      },
+      .switch_case_one, .switch_case_inline_one => {
+        const sc = self.tree.switchCaseOne(n);
+        return self.tSwitchCase(sc);
+      },
+      .switch_case => {
+        const sc = self.tree.switchCase(n);
+        return self.tSwitchCase(sc);
+      },
+      .switch_range => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+        var sb = self.db.seqb();
+        sb.append(try self.t(lhs));
+        sb.text(self._token(self.tree.nodeMainToken(n)))._();
+        sb.append(try self.t(rhs));
+        return self.db.group(sb.finish());
+      },
       .builtin_call_two, .builtin_call_two_comma => {
         const id = d.genGroupID();
         var sb = self.db.seqb();
@@ -1456,7 +1536,6 @@ pub const Translate = struct {
         // TODO:
         unreachable;
       },
-      //: Expr Nodes
       // ops
       .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
       .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,

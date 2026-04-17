@@ -2297,6 +2297,92 @@ test "fundecl 15" {
   ).diff(res, true);
 }
 
+test "fundecl 16" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn ship() b: {break :b void;} {
+  \\ return voidExpr();  
+  \\}
+  \\fn ship(x: u32, y: TypeExpr) b: {var x = getType(); break :b setType(x);} {
+  \\ return voidExpr();  
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn ship() b: {
+    \\  break :b void;
+    \\} {
+    \\  return voidExpr();
+    \\}
+    \\
+    \\fn ship(x: u32, y: TypeExpr) b: {
+    \\  var x = getType();
+    \\  break :b setType(x);
+    \\} {
+    \\  return voidExpr();
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn ship() b: {
+    \\  break :b void;
+    \\} {
+    \\  return voidExpr();
+    \\}
+    \\
+    \\fn ship(x: u32, y: TypeExpr) b: {
+    \\  var x = getType();
+    \\  break :b setType(x);
+    \\} {
+    \\  return voidExpr();
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn ship() b: {
+    \\  break :b void;
+    \\} {
+    \\  return voidExpr();
+    \\}
+    \\
+    \\fn ship(
+    \\  x: u32,
+    \\  y: TypeExpr,
+    \\) b: {
+    \\  var x = getType();
+    \\  break :b setType(x);
+    \\} {
+    \\  return voidExpr();
+    \\}
+  ).diff(res, true);
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn ship() b: {
+    \\  break :b void;
+    \\} {
+    \\  return voidExpr();
+    \\}
+    \\
+    \\fn ship(
+    \\  x: u32,
+    \\  y: TypeExpr,
+    \\) b: {
+    \\  var x = getType();
+    \\  break :b setType(x);
+    \\} {
+    \\  return voidExpr();
+    \\}
+  ).diff(res, true);
+}
+
 test "expr 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -6432,5 +6518,601 @@ test "if/else 5" {
     \\    var x = 5;
     \\  }
     \\}
+  ).diff(res, true);
+}
+
+test "switch 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\label: switch (expr)  {
+  \\  a => a,
+  \\  b, c => c,
+  \\  inline d...e => e,
+  \\  else => f
+  \\},
+  \\ switch (someExpr(jk)) {}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\label: switch (expr) {
+    \\  a => a,
+    \\  b, c => c,
+    \\  inline d...e => e,
+    \\  else => f,
+    \\},
+    \\switch (someExpr(jk)) {}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\label: switch (expr) {
+    \\  a => a,
+    \\  b, c => c,
+    \\  inline d...e => e,
+    \\  else => f,
+    \\},
+    \\switch (someExpr(jk)) {}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\label: switch (expr) {
+    \\  a => a,
+    \\  b, c => c,
+    \\  inline d...e => e,
+    \\  else => f,
+    \\},
+    \\switch (someExpr(jk)) {}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\label: switch (
+    \\  expr
+    \\) {
+    \\  a => a,
+    \\  b, c => c,
+    \\  inline d...e => e,
+    \\  else => f,
+    \\},
+    \\switch (
+    \\  someExpr(jk)
+    \\) {}
+  ).diff(res, true);
+}
+
+test "switch 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn fun(expr: Type) switch (@TypeOf(expr)) {
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} {
+  \\   return 
+  \\label: switch (expr)  {
+  \\  a => a,
+  \\  b, c => c,
+  \\  inline d...e => e,
+  \\  else => f
+  \\};
+  \\}
+  \\ fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} {
+  \\   return 
+  \\label: switch (expr)  {
+  \\  a => a,
+  \\  b, c => c,
+  \\  inline d...e => e,
+  \\  else => f
+  \\};
+  \\}
+  \\ fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} {
+  \\ switch (expr)  {
+  \\  a => a,
+  \\  b, c => c,
+  \\  inline d...e => e,
+  \\  else => f
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+  \\fn fun(expr: Type) switch (@TypeOf(expr)) {
+  \\  .a => TyFoo,
+  \\  .b => TyBar,
+  \\  else => TyBaz,
+  \\} {
+  \\  return label: switch (expr) {
+  \\    a => a,
+  \\    b, c => c,
+  \\    inline d...e => e,
+  \\    else => f,
+  \\  };
+  \\}
+  \\
+  \\fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
+  \\  .a => TyFoo,
+  \\  .b => TyBar,
+  \\  else => TyBaz,
+  \\} {
+  \\  return label: switch (expr) {
+  \\    a => a,
+  \\    b, c => c,
+  \\    inline d...e => e,
+  \\    else => f,
+  \\  };
+  \\}
+  \\
+  \\fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
+  \\  .a => TyFoo,
+  \\  .b => TyBar,
+  \\  else => TyBaz,
+  \\} {
+  \\  switch (expr) {
+  \\    a => a,
+  \\    b, c => c,
+  \\    inline d...e => e,
+  \\    else => f,
+  \\  }
+  \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl: switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl: switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl: switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl: switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch (
+    \\  @TypeOf(expr)
+    \\) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (
+    \\    expr
+    \\  ) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl: switch (
+    \\  @TypeOf(expr)
+    \\) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (
+    \\    expr
+    \\  ) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl: switch (
+    \\  @TypeOf(expr)
+    \\) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "switch 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\tag: switch (expr2)  {
+  \\  .a => |bar| {},
+  \\  inline .x => |*bar, foo| a = call(),
+  \\  .y => |bar, foo| myExpr(),
+  \\  .b, .c => |*foo| {
+  \\  var k = abc;
+  \\  if (k * someExpr(expr2) > 0xff) {
+  \\    print("yep!");
+  \\}
+  \\},
+  \\  .b, .c, .d, .e, .f, .g, .h => |*foo| {
+  \\ if (ty.ast.sentinel.unwrap()) |n| {
+  \\   sb.text("[")._();
+  \\   var elems = self.db.seqb();
+  \\   elems.softline().text("*:")._();
+  \\   elems.append(try self.t(n));
+  \\   sb.indent(elems.finish()).softline().text("]")._();
+  \\ } else {
+  \\   sb.text("[*]")._();
+  \\ }
+  \\ },
+  \\  .d ... .e => {},
+  \\.add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
+  \\.bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
+  \\.bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
+  \\.less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
+  \\.mul_sat, .sub, .sub_wrap, .sub_sat => {
+  \\  return self.tBinaryExpr(n, tag);
+  \\},
+  \\  else => f,
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\tag: switch (expr2) {
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| {
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| {
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {},
+    \\  .add,
+    \\  .add_wrap,
+    \\  .add_sat,
+    \\  .array_cat,
+    \\  .array_mult,
+    \\  .bang_equal,
+    \\  .bit_and,
+    \\  .bit_or,
+    \\  .shl,
+    \\  .shl_sat,
+    \\  .shr,
+    \\  .bit_xor,
+    \\  .bool_and,
+    \\  .bool_or,
+    \\  .div,
+    \\  .equal_equal,
+    \\  .greater_or_equal,
+    \\  .greater_than,
+    \\  .less_or_equal,
+    \\  .less_than,
+    \\  .merge_error_sets,
+    \\  .mod,
+    \\  .mul,
+    \\  .mul_wrap,
+    \\  .mul_sat,
+    \\  .sub,
+    \\  .sub_wrap,
+    \\  .sub_sat => {
+    \\    return self.tBinaryExpr(n, tag);
+    \\  },
+    \\  else => f,
+    \\},
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\tag: switch (expr2) {
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| {
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| {
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {},
+    \\  .add,
+    \\  .add_wrap,
+    \\  .add_sat,
+    \\  .array_cat,
+    \\  .array_mult,
+    \\  .bang_equal,
+    \\  .bit_and,
+    \\  .bit_or,
+    \\  .shl,
+    \\  .shl_sat,
+    \\  .shr,
+    \\  .bit_xor,
+    \\  .bool_and,
+    \\  .bool_or,
+    \\  .div,
+    \\  .equal_equal,
+    \\  .greater_or_equal,
+    \\  .greater_than,
+    \\  .less_or_equal,
+    \\  .less_than,
+    \\  .merge_error_sets,
+    \\  .mod,
+    \\  .mul,
+    \\  .mul_wrap,
+    \\  .mul_sat,
+    \\  .sub,
+    \\  .sub_wrap,
+    \\  .sub_sat => {
+    \\    return self.tBinaryExpr(n, tag);
+    \\  },
+    \\  else => f,
+    \\},
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\tag: switch (expr2) {
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| {
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| {
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {},
+    \\  .add,
+    \\  .add_wrap,
+    \\  .add_sat,
+    \\  .array_cat,
+    \\  .array_mult,
+    \\  .bang_equal,
+    \\  .bit_and,
+    \\  .bit_or,
+    \\  .shl,
+    \\  .shl_sat,
+    \\  .shr,
+    \\  .bit_xor,
+    \\  .bool_and,
+    \\  .bool_or,
+    \\  .div,
+    \\  .equal_equal,
+    \\  .greater_or_equal,
+    \\  .greater_than,
+    \\  .less_or_equal,
+    \\  .less_than,
+    \\  .merge_error_sets,
+    \\  .mod,
+    \\  .mul,
+    \\  .mul_wrap,
+    \\  .mul_sat,
+    \\  .sub,
+    \\  .sub_wrap,
+    \\  .sub_sat => {
+    \\    return self.tBinaryExpr(n, tag);
+    \\  },
+    \\  else => f,
+    \\},
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\tag: switch (expr2) {
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| {
+    \\    var k = abc;
+    \\    if (
+    \\      k * someExpr(expr2)
+    \\        > 0xff
+    \\    ) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b,
+    \\  .c,
+    \\  .d,
+    \\  .e,
+    \\  .f,
+    \\  .g,
+    \\  .h => |*foo| {
+    \\    if (
+    \\      ty.ast.sentinel.unwrap()
+    \\    ) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline()
+    \\        .text("*:")
+    \\        ._();
+    \\      elems.append(
+    \\        try self.t(n),
+    \\      );
+    \\      sb.indent(
+    \\        elems.finish(),
+    \\      )
+    \\        .softline()
+    \\        .text("]")
+    \\        ._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {},
+    \\  .add,
+    \\  .add_wrap,
+    \\  .add_sat,
+    \\  .array_cat,
+    \\  .array_mult,
+    \\  .bang_equal,
+    \\  .bit_and,
+    \\  .bit_or,
+    \\  .shl,
+    \\  .shl_sat,
+    \\  .shr,
+    \\  .bit_xor,
+    \\  .bool_and,
+    \\  .bool_or,
+    \\  .div,
+    \\  .equal_equal,
+    \\  .greater_or_equal,
+    \\  .greater_than,
+    \\  .less_or_equal,
+    \\  .less_than,
+    \\  .merge_error_sets,
+    \\  .mod,
+    \\  .mul,
+    \\  .mul_wrap,
+    \\  .mul_sat,
+    \\  .sub,
+    \\  .sub_wrap,
+    \\  .sub_sat => {
+    \\    return self.tBinaryExpr(
+    \\      n,
+    \\      tag,
+    \\    );
+    \\  },
+    \\  else => f,
+    \\},
   ).diff(res, true);
 }
