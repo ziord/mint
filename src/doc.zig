@@ -102,7 +102,7 @@ pub const SeqBuilder = struct {
   pub fn copy(self: *@This()) @This() {
     var cpy = DocList.initCapacity(self.al, self.docs.items.len) catch unreachable;
     cpy.appendSliceAssumeCapacity(self.docs.items);
-    return .{.al = self.al, .docs = cpy, .db = self.db};
+    return .{.al = self.al, .docs = cpy, .db = self.db, .done = self.done};
   }
 
   pub fn text(self: *@This(), s: []const u8) *@This() {
@@ -310,99 +310,6 @@ pub const DocBuilder = struct {
     for (self.builders[0..self.len]) |bd| {
       if (!bd.done) {
         @panic("found unfinished builder!");
-      }
-    }
-  }
-
-  pub fn dbg(self: *@This(), doc: *Doc) *Doc {
-    switch (doc.*) {
-      .text => |*d| {
-        return self.group(
-          self.seqb()
-            .text("Text(")
-            .indent(self.seqb().softline().text("\"").text(d.s).text("\"").finish())
-            .softline()
-            .text(")")
-            .finish()
-          );
-      },
-      .line => |*d| {
-        return self.group(
-          self.seqb()
-           .text("Line(")
-           .indent(self.seqb().softline().text(d.ty.str()).finish())
-           .softline()
-           .text(")")
-           .finish()
-        );
-      },
-      .seq => |*d| {
-        var sb1 = self.seqb().text("Seq([");
-        if (d.docs.len > 0) {
-          var sb2 = self.seqb().softline();
-          for (d.docs, 0..) |_d, i| {
-            sb2.append(self.dbg(_d));
-            if (i < d.docs.len - 1) {
-              sb2.text(",").normline()._();
-            }
-          }
-          sb1.indent(sb2.finish()).softline().text("])")._();
-        } else {
-          sb1.text("])")._();
-        }
-        return self.group(sb1.finish());
-      },
-      .indent => |*d| {
-        return self.group(
-          self.seqb()
-           .text("Indent(")
-           .indent(self.seqb().softline().extends(d.docs).finish())
-           .softline()
-           .text(")")
-           .finish()
-         );
-      },
-      .group => |*d| {
-        const id = std.fmt.allocPrint(self.al, "{}", .{d.id}) catch unreachable;
-        return self.group(
-          self.seqb()
-           .text("Group(")
-           .indent(
-             self.seqb()
-              .softline()
-              .text(id)
-              .text(",")
-              .normline()
-              .extends(d.docs).finish()
-           )
-           .softline()
-           .text(")")
-           .finish()
-         );
-      },
-      .ifsplit => |*d| {
-        const id = std.fmt.allocPrint(self.al, "{}", .{d.group}) catch unreachable;
-        const _ds = self.dbg(d.split);
-        const _df = self.dbg(d.flat);
-        return self.group(
-          self.seqb()
-           .text("IfSplit(")
-           .indent(
-             self.seqb()
-              .softline()
-              .text(id)
-              .text(",")
-              .normline()
-              .appends(_ds)
-              .text(",")
-              .normline()
-              .appends(_df)
-              .finish()
-           )
-           .softline()
-           .text(")")
-           .finish()
-         );
       }
     }
   }
