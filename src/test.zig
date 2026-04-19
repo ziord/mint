@@ -1,9 +1,14 @@
 const std = @import("std");
 const fmt = @import("format.zig");
 const ts = @import("translate.zig");
-const OhSnap = @import("ohsnap");
 
 const Allocator = std.mem.Allocator;
+
+fn check(got: []const u8, expected: []const u8) !void {
+  if (!std.mem.eql(u8, expected, got)) {
+    return error.Different;
+  }
+}
 
 fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
   var t = try ts.Translate.init(src, al, .zig);
@@ -11,7 +16,7 @@ fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
 }
 
 fn format(doc: *fmt.Doc, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
-  var f = fmt.Format.init(al, cfg);
+  var f = fmt.Format.init(std.testing.io, al, cfg);
   f.fmt(doc);
   return f.getFmtString();
 }
@@ -26,19 +31,18 @@ test "vardecl 1" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var x = foo(abc, bar, baz);
-  ).diff(res, true);
+  );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x = foo(
     \\  abc,
     \\  bar,
     \\  baz,
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl 2" {
@@ -62,8 +66,7 @@ test "vardecl 2" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\const y = box(abc, bar, baz);
     \\const a: ?Foo = box(abc, bar, baz);
     \\const b: Foo = box(abc, bar, baz);
@@ -76,10 +79,10 @@ test "vardecl 2" {
     \\const f: []Foo = box(abc, bar, baz);
     \\const f: *[]Foo = box(abc, bar, baz);
     \\const f: []Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const y = box(abc, bar, baz);
     \\const a: ?Foo = box(
     \\  abc,
@@ -138,7 +141,7 @@ test "vardecl 2" {
     \\  Dxe,
     \\  box(),
     \\) = box(abc, bar, baz);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl 3" {
@@ -163,8 +166,7 @@ test "vardecl 3" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
     \\const e: *const Foo = box(abc, bar, baz);
@@ -177,10 +179,10 @@ test "vardecl 3" {
     \\const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
     \\const Foo = box(abc, bar, baz);
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
     \\const e: *const Foo = box(abc, bar, baz);
@@ -197,10 +199,10 @@ test "vardecl 3" {
     \\const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
     \\const Foo = box(abc, bar, baz);
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const g: [*:Bar]Foo = box(
     \\  abc,
     \\  bar,
@@ -267,7 +269,7 @@ test "vardecl 3" {
     \\  bar,
     \\  baz,
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl 4" {
@@ -284,8 +286,7 @@ test "vardecl 4" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
@@ -317,10 +318,10 @@ test "vardecl 4" {
     \\  self.token_token.token2_token()
     \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
-  ).diff(res, true);
+  );
   // using width: 100
   res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
     \\const buffer: [1024]u8
     \\  align(64)
@@ -340,10 +341,10 @@ test "vardecl 4" {
     \\  linksection(".my_custom_section") = text(
     \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
@@ -375,10 +376,10 @@ test "vardecl 4" {
     \\  self.token_token.token2_token()
     \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
@@ -428,7 +429,7 @@ test "vardecl 4" {
     \\      lhs,
     \\    ),
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl 5" {
@@ -446,8 +447,7 @@ test "vardecl 5" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -471,10 +471,10 @@ test "vardecl 5" {
     \\var a align(b) = c;
     \\
     \\var a: b align(c) = d;
-  ).diff(res, true);
+  );
   // using width: 100
   res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const buffer: [1024]u8
     \\  align(64) = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
     \\const buffer: [1024]u8
@@ -490,10 +490,10 @@ test "vardecl 5" {
     \\var a align(b) = c;
     \\
     \\var a: b align(c) = d;
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -517,10 +517,10 @@ test "vardecl 5" {
     \\var a align(b) = c;
     \\
     \\var a: b align(c) = d;
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -553,7 +553,7 @@ test "vardecl 5" {
     \\var a align(b) = c;
     \\
     \\var a: b align(c) = d;
-  ).diff(res, true);
+  );
 }
 
 test "vardecl 6" {
@@ -563,13 +563,12 @@ test "vardecl 6" {
   \\ threadlocal const x = expr;
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // default width: 80
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\threadlocal const x = expr;
-  ).diff(res, true);
+  );
 }
 test "vardecl.chains 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -582,8 +581,7 @@ test "vardecl.chains 1" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
@@ -595,10 +593,10 @@ test "vardecl.chains 1" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
@@ -616,10 +614,10 @@ test "vardecl.chains 1" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
@@ -637,7 +635,7 @@ test "vardecl.chains 1" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 2" {
@@ -650,8 +648,7 @@ test "vardecl.chains 2" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -662,10 +659,10 @@ test "vardecl.chains 2" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -682,10 +679,10 @@ test "vardecl.chains 2" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -702,7 +699,7 @@ test "vardecl.chains 2" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 3" {
@@ -737,8 +734,7 @@ test "vardecl.chains 3" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -763,10 +759,10 @@ test "vardecl.chains 3" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -797,10 +793,10 @@ test "vardecl.chains 3" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -831,7 +827,7 @@ test "vardecl.chains 3" {
     \\    .text(")")
     \\    .finish(),
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 4" {
@@ -854,8 +850,7 @@ test "vardecl.chains 4" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -866,10 +861,10 @@ test "vardecl.chains 4" {
     \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -887,10 +882,10 @@ test "vardecl.chains 4" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -910,7 +905,7 @@ test "vardecl.chains 4" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 5" {
@@ -925,8 +920,7 @@ test "vardecl.chains 5" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb().appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
     \\var ky = selfgroup(
@@ -958,10 +952,10 @@ test "vardecl.chains 5" {
     \\  text(")"),
     \\  finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb().appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
     \\var ky = selfgroup(
@@ -993,10 +987,10 @@ test "vardecl.chains 5" {
     \\  text(")"),
     \\  finish(),
     \\);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
@@ -1032,7 +1026,7 @@ test "vardecl.chains 5" {
     \\  text(")"),
     \\  finish(),
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 6" {
@@ -1047,17 +1041,16 @@ test "vardecl.chains 6" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, long_arg2));
     \\var q = fox()()
     \\  .hahah(a, b, "yes")
     \\  .bar(compute_something(long_arg1, xlong_arg2));
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()()
     \\  .hahah(a, b, "yes")
@@ -1065,10 +1058,10 @@ test "vardecl.chains 6" {
     \\var q = fox()()
     \\  .hahah(a, b, "yes")
     \\  .bar(compute_something(long_arg1, xlong_arg2));
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var q = fox()()
     \\  .hahah(a, b, "yes")
     \\  .bar(abc());
@@ -1088,7 +1081,7 @@ test "vardecl.chains 6" {
     \\      xlong_arg2,
     \\    ),
     \\  );
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 7" {
@@ -1101,23 +1094,22 @@ test "vardecl.chains 7" {
   // default width: 80
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  const oh = OhSnap{};
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(
     \\    compute_value(lhs, rhs),
     \\  );
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 8" {
@@ -1144,11 +1136,10 @@ test "vardecl.chains 8" {
   \\          )._();
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1160,10 +1151,10 @@ test "vardecl.chains 8" {
     \\    self.db.indent(self.db.seqb().softline().text(".").text(self._token(rhs)).finish()),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1179,10 +1170,10 @@ test "vardecl.chains 8" {
     \\    ),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1206,10 +1197,10 @@ test "vardecl.chains 8" {
     \\    ),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1237,7 +1228,7 @@ test "vardecl.chains 8" {
     \\    ),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 9" {
@@ -1259,9 +1250,8 @@ test "vardecl.chains 9" {
   const al = arena.allocator();
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  const oh = OhSnap{};
   // using width: 100
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1271,10 +1261,10 @@ test "vardecl.chains 9" {
     \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1286,10 +1276,10 @@ test "vardecl.chains 9" {
     \\    self.db.seqb().text(".").text(self._token(rhs)).finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1308,10 +1298,10 @@ test "vardecl.chains 9" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1332,7 +1322,7 @@ test "vardecl.chains 9" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 10" {
@@ -1354,9 +1344,8 @@ test "vardecl.chains 10" {
   const al = arena.allocator();
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  const oh = OhSnap{};
   // using width: 100
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1369,9 +1358,9 @@ test "vardecl.chains 10" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   res = try format(doc, .{.width = 90}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1384,10 +1373,10 @@ test "vardecl.chains 10" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1402,10 +1391,10 @@ test "vardecl.chains 10" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1424,10 +1413,10 @@ test "vardecl.chains 10" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1448,7 +1437,7 @@ test "vardecl.chains 10" {
     \\      .finish(),
     \\  )
     \\  ._();
-  ).diff(res, true);
+  );
 }
 
 test "vardecl.chains 11" {
@@ -1458,11 +1447,10 @@ test "vardecl.chains 11" {
   \\ const y = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // default width: 80
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const y = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
     \\    rhs,
@@ -1470,7 +1458,7 @@ test "vardecl.chains 11" {
     \\    lhs,
     \\  ),
     \\);
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 1" {
@@ -1485,21 +1473,20 @@ test "fundecl 1" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\  x = 5;
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
@@ -1512,10 +1499,10 @@ test "fundecl 1" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\  x = 5;
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
@@ -1528,10 +1515,10 @@ test "fundecl 1" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\  x = 5;
     \\}
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
@@ -1546,7 +1533,7 @@ test "fundecl 1" {
     \\  );
     \\  x = 5;
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 2" {
@@ -1557,11 +1544,10 @@ test "fundecl 2" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo2(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1572,10 +1558,10 @@ test "fundecl 2" {
     \\  k: anytype,
     \\  ...,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo2(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1586,10 +1572,10 @@ test "fundecl 2" {
     \\  k: anytype,
     \\  ...,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo2(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1600,7 +1586,7 @@ test "fundecl 2" {
     \\  k: anytype,
     \\  ...,
     \\) A(T) {}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 3" {
@@ -1611,28 +1597,27 @@ test "fundecl 3" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo3(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
     \\  ...,
     \\) A(T) {}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 4" {
@@ -1643,11 +1628,10 @@ test "fundecl 4" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn foo4(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1655,10 +1639,10 @@ test "fundecl 4" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn foo4(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1666,10 +1650,10 @@ test "fundecl 4" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn foo4(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1677,7 +1661,7 @@ test "fundecl 4" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 5" {
@@ -1690,11 +1674,10 @@ test "fundecl 5" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\inline fn foo5(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1710,10 +1693,10 @@ test "fundecl 5" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\inline fn foo5(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1729,10 +1712,10 @@ test "fundecl 5" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\inline fn foo5(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1748,7 +1731,7 @@ test "fundecl 5" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 6" {
@@ -1761,11 +1744,10 @@ test "fundecl 6" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\export fn foo7(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1781,10 +1763,10 @@ test "fundecl 6" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\export fn foo7(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1800,10 +1782,10 @@ test "fundecl 6" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\export fn foo7(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1819,7 +1801,7 @@ test "fundecl 6" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T) {}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 7" {
@@ -1830,11 +1812,10 @@ test "fundecl 7" {
   \\ pub extern fn foo10(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\extern fn foo9(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1850,10 +1831,10 @@ test "fundecl 7" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T);
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\extern fn foo9(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1869,10 +1850,10 @@ test "fundecl 7" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\extern fn foo9(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1888,7 +1869,7 @@ test "fundecl 7" {
     \\  noalias y: u2,
     \\  k: anytype,
     \\) A(T);
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 8" {
@@ -1902,11 +1883,10 @@ test "fundecl 8" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1918,10 +1898,10 @@ test "fundecl 8" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1938,10 +1918,10 @@ test "fundecl 8" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1958,7 +1938,7 @@ test "fundecl 8" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 9" {
@@ -1972,11 +1952,10 @@ test "fundecl 9" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
     \\  x: anytype,
@@ -1988,10 +1967,10 @@ test "fundecl 9" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
     \\  x: anytype,
@@ -2008,10 +1987,10 @@ test "fundecl 9" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
     \\  x: anytype,
@@ -2028,7 +2007,7 @@ test "fundecl 9" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 10" {
@@ -2042,11 +2021,10 @@ test "fundecl 10" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
@@ -2057,10 +2035,10 @@ test "fundecl 10" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
@@ -2071,10 +2049,10 @@ test "fundecl 10" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
@@ -2085,7 +2063,7 @@ test "fundecl 10" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 11" {
@@ -2099,20 +2077,19 @@ test "fundecl 11" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fan() align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
     \\  var x = 5;
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fan()
     \\align(64)
     \\addrspace(.generic)
@@ -2123,10 +2100,10 @@ test "fundecl 11" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub fn fan()
     \\align(64)
     \\addrspace(.generic)
@@ -2137,7 +2114,7 @@ test "fundecl 11" {
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 12" {
@@ -2150,27 +2127,26 @@ test "fundecl 12" {
   \\ const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
@@ -2179,10 +2155,10 @@ test "fundecl 12" {
     \\  comptime T: type,
     \\  x: i32,
     \\) []const u8;
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const T = fn (
     \\  a: anytype,
     \\  comptime T: type,
@@ -2203,7 +2179,7 @@ test "fundecl 12" {
     \\  comptime T: type,
     \\  x: i32,
     \\) []const u8;
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 13" {
@@ -2216,40 +2192,39 @@ test "fundecl 13" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
     \\}
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 14" {
@@ -2261,18 +2236,17 @@ test "fundecl 14" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 30
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() Foo!A.B(
     \\  0xff,
     \\  123,
     \\) {
     \\  return self.puke("no!");
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 15" {
@@ -2284,17 +2258,16 @@ test "fundecl 15" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 30
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing(
     \\  x: u2,
     \\) Foo!A.B(0xff, 123) {
     \\  return self.puke("no!");
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "fundecl 16" {
@@ -2309,11 +2282,10 @@ test "fundecl 16" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2326,10 +2298,10 @@ test "fundecl 16" {
     \\} {
     \\  return voidExpr();
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2342,10 +2314,10 @@ test "fundecl 16" {
     \\} {
     \\  return voidExpr();
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2361,10 +2333,10 @@ test "fundecl 16" {
     \\} {
     \\  return voidExpr();
     \\}
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2380,7 +2352,7 @@ test "fundecl 16" {
     \\} {
     \\  return voidExpr();
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "expr 1" {
@@ -2401,11 +2373,10 @@ test "expr 1" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2447,10 +2418,10 @@ test "expr 1" {
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
     \\}
-  ).diff(res, true);
+  );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\    var x: u3 = 5;
     \\    const a, _ = expr;
@@ -2492,10 +2463,10 @@ test "expr 1" {
     \\            + bar / boxB * foo * foo
     \\            + bar / boxB * foo);
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2546,10 +2517,10 @@ test "expr 1" {
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2600,10 +2571,10 @@ test "expr 1" {
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
     \\}
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2654,7 +2625,7 @@ test "expr 1" {
     \\      + bar / boxB * foo * foo
     \\      + bar / boxB * foo);
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "expr 2" {
@@ -2672,11 +2643,10 @@ test "expr 2" {
   \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo + bar / boxB * foo);
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2715,10 +2685,10 @@ test "expr 2" {
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo);
-  ).diff(res, true);
+  );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2757,10 +2727,10 @@ test "expr 2" {
     \\        + bar / boxB * foo * foo
     \\        + bar / boxB * foo * foo
     \\        + bar / boxB * foo);
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2808,10 +2778,10 @@ test "expr 2" {
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2859,10 +2829,10 @@ test "expr 2" {
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2910,7 +2880,7 @@ test "expr 2" {
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo * foo
     \\    + bar / boxB * foo);
-  ).diff(res, true);
+  );
 }
 
 test "expr 3" {
@@ -2928,11 +2898,10 @@ test "expr 3" {
   \\  var x = 1 * foo * bar / car * booh / dah / boxB * foo * bar * foo * bar * foo * bar * foo * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar / boxB * foo);
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -2956,10 +2925,10 @@ test "expr 3" {
     \\  * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
     \\    / boxB
     \\    * foo);
-  ).diff(res, true);
+  );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -2983,10 +2952,10 @@ test "expr 3" {
     \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
     \\        / boxB
     \\        * foo);
-  ).diff(res, true);
+  );
   // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3024,10 +2993,10 @@ test "expr 3" {
     \\        * bar
     \\        / boxB
     \\        * foo);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3080,10 +3049,10 @@ test "expr 3" {
     \\    * bar
     \\    / boxB
     \\    * foo);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3160,7 +3129,7 @@ test "expr 3" {
     \\    * bar
     \\    / boxB
     \\    * foo);
-  ).diff(res, true);
+  );
 }
 
 test "expr 4" {
@@ -3178,11 +3147,10 @@ test "expr 4" {
   \\  var x = 1 * foo * bar * car + booh / dah / boxB - foo * bar * foo * bar * foo * bar * foo * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar / boxB * foo);
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3209,10 +3177,10 @@ test "expr 4" {
     \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
     \\      / boxB
     \\      * foo);
-  ).diff(res, true);
+  );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3240,10 +3208,10 @@ test "expr 4" {
     \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
     \\            / boxB
     \\            * foo);
-  ).diff(res, true);
+  );
   // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3280,10 +3248,10 @@ test "expr 4" {
     \\            * bar
     \\            / boxB
     \\            * foo);
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3331,10 +3299,10 @@ test "expr 4" {
     \\      * bar
     \\      / boxB
     \\      * foo);
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3408,7 +3376,7 @@ test "expr 4" {
     \\      * bar
     \\      / boxB
     \\      * foo);
-  ).diff(res, true);
+  );
 }
 
 test "expr 5" {
@@ -3426,11 +3394,10 @@ test "expr 5" {
   \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr() + 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) * expr();
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
     \\var xyz = a + b - c * d;
@@ -3451,10 +3418,10 @@ test "expr 5" {
     \\  + 4
     \\  - 3
     \\  + someFunc(1, 2, 3) * expr();
-  ).diff(res, true);
+  );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
     \\var xyz = a + b - c * d;
@@ -3475,10 +3442,10 @@ test "expr 5" {
     \\    + 4
     \\    - 3
     \\    + someFunc(1, 2, 3) * expr();
-  ).diff(res, true);
+  );
   // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
     \\var xyz = a + b - c * d;
@@ -3499,10 +3466,10 @@ test "expr 5" {
     \\    + 4
     \\    - 3
     \\    + someFunc(1, 2, 3) * expr();
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3)
     \\  catch expr();
     \\var abc = 5 * 4
@@ -3534,10 +3501,10 @@ test "expr 5" {
     \\  + 4
     \\  - 3
     \\  + someFunc(1, 2, 3) * expr();
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = 5 * 4
     \\  + 3
     \\  - abc
@@ -3583,7 +3550,7 @@ test "expr 5" {
     \\  - 3
     \\  + someFunc(1, 2, 3)
     \\    * expr();
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 1" {
@@ -3616,41 +3583,40 @@ test "containerdecl 1" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct { x: []const u8, y: u32 };
     \\const Ty = struct { ab: []const u8, xyz: u32 };
     \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
     \\const Ty = packed struct { x1: []const u8, y1: u32 };
     \\const Ty = extern struct { x2: []const u8, y2: u32 };
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct { x: []const u8, y: u32 };
     \\const Ty = struct { ab: []const u8, xyz: u32 };
     \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
     \\const Ty = packed struct { x1: []const u8, y1: u32 };
     \\const Ty = extern struct { x2: []const u8, y2: u32 };
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct { x: []const u8, y: u32 };
     \\const Ty = struct { ab: []const u8, xyz: u32 };
     \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
     \\const Ty = packed struct { x1: []const u8, y1: u32 };
     \\const Ty = extern struct { x2: []const u8, y2: u32 };
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct {
     \\  x: []const u8,
     \\  y: u32,
@@ -3677,7 +3643,7 @@ test "containerdecl 1" {
     \\  x2: []const u8,
     \\  y2: u32,
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 2" {
@@ -3702,11 +3668,10 @@ test "containerdecl 2" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -3741,10 +3706,10 @@ test "containerdecl 2" {
     \\    return .{.x = "yay"};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -3779,10 +3744,10 @@ test "containerdecl 2" {
     \\    return .{.x = "yay"};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -3820,10 +3785,10 @@ test "containerdecl 2" {
     \\    return .{.x = "yay"};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -3875,7 +3840,7 @@ test "containerdecl 2" {
     \\    return .{.x = "yay"};
     \\  }
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 3" {
@@ -3894,41 +3859,40 @@ test "containerdecl 3" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
     \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
     \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
     \\  decl_line_seps: u8 = 2,
     \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -3939,7 +3903,7 @@ test "containerdecl 3" {
     \\    mem,
     \\  } = .mem,
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 4" {
@@ -3964,11 +3928,10 @@ test "containerdecl 4" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -3987,10 +3950,10 @@ test "containerdecl 4" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4009,10 +3972,10 @@ test "containerdecl 4" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4031,10 +3994,10 @@ test "containerdecl 4" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4069,7 +4032,7 @@ test "containerdecl 4" {
     \\    };
     \\  }
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 5" {
@@ -4086,29 +4049,28 @@ test "containerdecl 5" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4117,7 +4079,7 @@ test "containerdecl 5" {
     \\  x: []const u8,
     \\  y: u32,
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 6" {
@@ -4142,11 +4104,10 @@ test "containerdecl 6" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4158,10 +4119,10 @@ test "containerdecl 6" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4173,10 +4134,10 @@ test "containerdecl 6" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4188,10 +4149,10 @@ test "containerdecl 6" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo)) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4219,7 +4180,7 @@ test "containerdecl 6" {
     \\    };
     \\  }
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 7" {
@@ -4241,11 +4202,10 @@ test "containerdecl 7" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) { ab: []const u8, xyz: u32 };
     \\const Ty = struct(Foo) { x: []const u8, y: u32 };
     \\const Ty = struct {
@@ -4253,10 +4213,10 @@ test "containerdecl 7" {
     \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) {
     \\  ab: []const u8,
     \\  xyz: u32,
@@ -4267,10 +4227,10 @@ test "containerdecl 7" {
     \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct(
     \\  arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)
     \\) {
@@ -4286,10 +4246,10 @@ test "containerdecl 7" {
     \\    "yes",
     \\  ),
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = struct(
     \\  arg.foo(xyz, "ok")
     \\    .bar('y')
@@ -4314,7 +4274,7 @@ test "containerdecl 7" {
     \\    )
     \\  ) = box(11, "yes"),
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 8" {
@@ -4332,31 +4292,30 @@ test "containerdecl 8" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = opaque { x: []const u8, y: u32 };
     \\const Ty = opaque {
     \\  x: []const u8 align(abc),
     \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = opaque { x: []const u8, y: u32 };
     \\const Ty = opaque {
     \\  x: []const u8 align(abc),
     \\  y: u32 align(foo(a, b, c, d)) = box(11, "yes"),
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = opaque { x: []const u8, y: u32 };
     \\const Ty = opaque {
     \\  x: []const u8 align(abc),
@@ -4366,10 +4325,10 @@ test "containerdecl 8" {
     \\    "yes",
     \\  ),
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = opaque {
     \\  x: []const u8,
     \\  y: u32,
@@ -4386,7 +4345,7 @@ test "containerdecl 8" {
     \\    )
     \\  ) = box(11, "yes"),
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 9" {
@@ -4405,11 +4364,10 @@ test "containerdecl 9" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4422,10 +4380,10 @@ test "containerdecl 9" {
     \\  const fox = 0xdeadbeef;
     \\  const fox = enum { a, b, c };
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4438,10 +4396,10 @@ test "containerdecl 9" {
     \\  const fox = 0xdeadbeef;
     \\  const fox = enum { a, b, c };
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4454,10 +4412,10 @@ test "containerdecl 9" {
     \\  const fox = 0xdeadbeef;
     \\  const fox = enum { a, b, c };
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(
     \\  enum(Foo(a, b, c))
     \\) {
@@ -4484,7 +4442,7 @@ test "containerdecl 9" {
     \\    c,
     \\  };
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 10" {
@@ -4506,11 +4464,10 @@ test "containerdecl 10" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4528,10 +4485,10 @@ test "containerdecl 10" {
     \\
     \\  x: usize,
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4549,10 +4506,10 @@ test "containerdecl 10" {
     \\
     \\  x: usize,
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4570,10 +4527,10 @@ test "containerdecl 10" {
     \\
     \\  x: usize,
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(
     \\  enum(Foo(a, b, c))
     \\) {
@@ -4609,7 +4566,7 @@ test "containerdecl 10" {
     \\
     \\  x: usize,
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 11" {
@@ -4628,11 +4585,10 @@ test "containerdecl 11" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
@@ -4644,10 +4600,10 @@ test "containerdecl 11" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
@@ -4659,10 +4615,10 @@ test "containerdecl 11" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
@@ -4674,10 +4630,10 @@ test "containerdecl 11" {
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  pub fn foo(
     \\    self: @This(),
@@ -4705,7 +4661,7 @@ test "containerdecl 11" {
     \\    };
     \\  }
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 12" {
@@ -4725,11 +4681,10 @@ test "containerdecl 12" {
   \\};
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4744,10 +4699,10 @@ test "containerdecl 12" {
     \\
     \\  pub fn x() void {}
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4762,10 +4717,10 @@ test "containerdecl 12" {
     \\
     \\  pub fn x() void {}
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4780,10 +4735,10 @@ test "containerdecl 12" {
     \\
     \\  pub fn x() void {}
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4806,7 +4761,7 @@ test "containerdecl 12" {
     \\
     \\  pub fn x() void {}
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 13" {
@@ -4832,11 +4787,10 @@ test "containerdecl 13" {
   \\ z: u32,
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4858,10 +4812,10 @@ test "containerdecl 13" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4883,10 +4837,10 @@ test "containerdecl 13" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4908,10 +4862,10 @@ test "containerdecl 13" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4943,7 +4897,7 @@ test "containerdecl 13" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 14" {
@@ -4961,11 +4915,10 @@ test "containerdecl 14" {
   \\ z: u32,
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = 0xff;
     \\var x = 5;
     \\
@@ -4978,10 +4931,10 @@ test "containerdecl 14" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = 0xff;
     \\var x = 5;
     \\
@@ -4994,10 +4947,10 @@ test "containerdecl 14" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = 0xff;
     \\var x = 5;
     \\
@@ -5010,10 +4963,10 @@ test "containerdecl 14" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const Ty = 0xff;
     \\var x = 5;
     \\
@@ -5026,7 +4979,7 @@ test "containerdecl 14" {
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
-  ).diff(res, true);
+  );
 }
 
 test "containerdecl 15" {
@@ -5047,11 +5000,10 @@ test "containerdecl 15" {
   \\  const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5060,10 +5012,10 @@ test "containerdecl 15" {
     \\};
     \\const fox2 = enum { a, b, c };
     \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5072,10 +5024,10 @@ test "containerdecl 15" {
     \\};
     \\const fox2 = enum { a, b, c };
     \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5092,10 +5044,10 @@ test "containerdecl 15" {
     \\  b: B,
     \\  c: C(Type("Foo")),
     \\};
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5112,7 +5064,7 @@ test "containerdecl 15" {
     \\  b: B,
     \\  c: C(Type("Foo")),
     \\};
-  ).diff(res, true);
+  );
 }
 
 test "ptr types 1" {
@@ -5120,13 +5072,13 @@ test "ptr types 1" {
   defer arena.deinit();
   const src =
   \\ var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
-  \\ var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-  \\ var j: [*]align(foo:Car:Bar) rhs = 0xff;
-  \\ var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+  \\ var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  \\ var j: *align(foo:Car:Bar) rhs = 0xff;
+  \\ var j: *align(foo():Car():Bar()) rhs = 0xff;
   \\
   \\ var x: *align(foo("ok")) rhs = 0xff;
   \\ var a: **rhs = 0xff;
-  \\ var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+  \\ var abc: ***align(foo():Car():Bar()) rhs = 0xff;
   \\ var xyz: **align(foo():Car():Bar()) rhs = 0xff;
   \\ var a: ***rhs = 0xff;
   \\
@@ -5138,18 +5090,17 @@ test "ptr types 1" {
   \\ var j: [lhs:Foo(T, K)] rhs = 0xff;
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
-    \\var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-    \\var j: [*]align(foo:Car:Bar) rhs = 0xff;
-    \\var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+    \\var j: *align(foo:Car:Bar) rhs = 0xff;
+    \\var j: *align(foo():Car():Bar()) rhs = 0xff;
     \\var x: *align(foo("ok")) rhs = 0xff;
     \\var a: **rhs = 0xff;
-    \\var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var abc: ***align(foo():Car():Bar()) rhs = 0xff;
     \\var xyz: **align(foo():Car():Bar()) rhs = 0xff;
     \\var a: ***rhs = 0xff;
     \\var y: []rhs = 0xff;
@@ -5157,17 +5108,17 @@ test "ptr types 1" {
     \\var k: [*:lhs]rhs = 0xff;
     \\var a: [:lhs]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
-    \\var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-    \\var j: [*]align(foo:Car:Bar) rhs = 0xff;
-    \\var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+    \\var j: *align(foo:Car:Bar) rhs = 0xff;
+    \\var j: *align(foo():Car():Bar()) rhs = 0xff;
     \\var x: *align(foo("ok")) rhs = 0xff;
     \\var a: **rhs = 0xff;
-    \\var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var abc: ***align(foo():Car():Bar()) rhs = 0xff;
     \\var xyz: **align(foo():Car():Bar()) rhs = 0xff;
     \\var a: ***rhs = 0xff;
     \\var y: []rhs = 0xff;
@@ -5175,17 +5126,17 @@ test "ptr types 1" {
     \\var k: [*:lhs]rhs = 0xff;
     \\var a: [:lhs]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
-    \\var j: [*]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-    \\var j: [*]align(foo:Car:Bar) rhs = 0xff;
-    \\var j: [*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+    \\var j: *align(foo:Car:Bar) rhs = 0xff;
+    \\var j: *align(foo():Car():Bar()) rhs = 0xff;
     \\var x: *align(foo("ok")) rhs = 0xff;
     \\var a: **rhs = 0xff;
-    \\var abc: **[*]align(foo():Car():Bar()) rhs = 0xff;
+    \\var abc: ***align(foo():Car():Bar()) rhs = 0xff;
     \\var xyz: **align(foo():Car():Bar()) rhs = 0xff;
     \\var a: ***rhs = 0xff;
     \\var y: []rhs = 0xff;
@@ -5193,23 +5144,23 @@ test "ptr types 1" {
     \\var k: [*:lhs]rhs = 0xff;
     \\var a: [:lhs]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [*]align(
     \\  foo(bar.oop(0x12))
     \\)
     \\  rhs = 0xff;
-    \\var j: [*]align(
+    \\var j: *align(
     \\  foo(bar.oop(0x12))
     \\    :Foo()
     \\    :Bar()
     \\)
     \\  rhs = 0xff;
-    \\var j: [*]align(foo:Car:Bar)
+    \\var j: *align(foo:Car:Bar)
     \\  rhs = 0xff;
-    \\var j: [*]align(
+    \\var j: *align(
     \\  foo()
     \\    :Car()
     \\    :Bar()
@@ -5218,7 +5169,7 @@ test "ptr types 1" {
     \\var x: *align(foo("ok"))
     \\  rhs = 0xff;
     \\var a: **rhs = 0xff;
-    \\var abc: **[*]align(
+    \\var abc: ***align(
     \\  foo()
     \\    :Car()
     \\    :Bar()
@@ -5238,7 +5189,7 @@ test "ptr types 1" {
     \\var j: [
     \\  lhs:Foo(T, K)
     \\]rhs = 0xff;
-  ).diff(res, true);
+  );
 }
 
 test "ptr types 2" {
@@ -5247,35 +5198,34 @@ test "ptr types 2" {
   const src =
   \\ var j: [lhs:Foo(T, K)] rhs = 0xff;
   \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
-  \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
+  \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
-    \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-  ).diff(res, true);
+    \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
-    \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-  ).diff(res, true);
+    \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
-    \\var j: [*c]align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
-  ).diff(res, true);
+    \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var j: [
     \\  lhs:Foo(T, K)
     \\]rhs = 0xff;
@@ -5284,11 +5234,9 @@ test "ptr types 2" {
     \\]Foo(Bar.xyz(abc)) = 0xff;
     \\var j: [*c]align(
     \\  foo(bar.oop(0x12))
-    \\    :Foo()
-    \\    :Bar()
     \\)
     \\  rhs = 0xff;
-  ).diff(res, true);
+  );
 }
 
 test "ptr types 3" {
@@ -5303,11 +5251,10 @@ test "ptr types 3" {
   \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc)) = 0xff;
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: *allowzero align(foo("ok")) Rhs
     \\  align(64)
     \\  addrspace(.generic)
@@ -5318,10 +5265,10 @@ test "ptr types 3" {
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const Rhs = 0xff;
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Rhs = 0xff;
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) = 0xff;
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: *allowzero align(foo("ok")) Rhs
     \\  align(64)
     \\  addrspace(.generic)
@@ -5338,10 +5285,10 @@ test "ptr types 3" {
     \\  align(foo("ok"))
     \\  addrspace(Foo(Bar()))
     \\  const volatile Foo(Bar.xyz(abc)) = 0xff;
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: *allowzero align(foo("ok")) Rhs
     \\  align(64)
     \\  addrspace(.generic)
@@ -5364,10 +5311,10 @@ test "ptr types 3" {
     \\  align(foo("ok"))
     \\  addrspace(Foo(Bar()))
     \\  const volatile Foo(Bar.xyz(abc)) = 0xff;
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var x: *allowzero
     \\  align(foo("ok"))
     \\  Rhs
@@ -5397,7 +5344,7 @@ test "ptr types 3" {
     \\  addrspace(Foo(Bar()))
     \\  const volatile
     \\  Foo(Bar.xyz(abc)) = 0xff;
-  ).diff(res, true);
+  );
 }
 
 test "ptr types 4" {
@@ -5418,11 +5365,10 @@ test "ptr types 4" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
     \\  return 0;
     \\}
@@ -5442,10 +5388,10 @@ test "ptr types 4" {
     \\) *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) {
     \\  return 0;
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
     \\  return 0;
     \\}
@@ -5477,10 +5423,10 @@ test "ptr types 4" {
     \\  const volatile Foo(Bar.xyz(abc)) {
     \\  return 0;
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
     \\  return 0;
     \\}
@@ -5512,10 +5458,10 @@ test "ptr types 4" {
     \\  const volatile Foo(Bar.xyz(abc)) {
     \\  return 0;
     \\}
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn foo() *allowzero
     \\  align(foo("ok"))
     \\  Rhs {
@@ -5555,7 +5501,7 @@ test "ptr types 4" {
     \\  Foo(Bar.xyz(abc)) {
     \\  return 0;
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "try/catch 1" {
@@ -5570,29 +5516,28 @@ test "try/catch 1" {
   \\ var abc = someFunc(1, 2, 3) catch expr();
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = try someFunc(1, 2, 3);
     \\var abc = someTestFunc(try someFunc(1, 2, 3));
     \\var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
     \\var abc = someFunc(1, 2, 3) catch |e| 5;
     \\var abc = someFunc(1, 2, 3) catch expr();
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = try someFunc(1, 2, 3);
     \\var abc = someTestFunc(try someFunc(1, 2, 3));
     \\var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
     \\var abc = someFunc(1, 2, 3) catch |e| 5;
     \\var abc = someFunc(1, 2, 3) catch expr();
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = try someFunc(1, 2, 3);
     \\var abc = someTestFunc(try someFunc(1, 2, 3));
     \\var abc = someTestFunc(
@@ -5601,10 +5546,10 @@ test "try/catch 1" {
     \\);
     \\var abc = someFunc(1, 2, 3) catch |e| 5;
     \\var abc = someFunc(1, 2, 3) catch expr();
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = try someFunc(
     \\  1,
     \\  2,
@@ -5621,7 +5566,7 @@ test "try/catch 1" {
     \\  catch |e| 5;
     \\var abc = someFunc(1, 2, 3)
     \\  catch expr();
-  ).diff(res, true);
+  );
 }
 
 test "try/catch 2" {
@@ -5645,11 +5590,10 @@ test "try/catch 2" {
   \\ };
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
@@ -5665,10 +5609,10 @@ test "try/catch 2" {
     \\  someBlock();
     \\  break :blk result("okay");
     \\};
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
@@ -5685,10 +5629,10 @@ test "try/catch 2" {
     \\  someBlock();
     \\  break :blk result("okay");
     \\};
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
@@ -5706,10 +5650,10 @@ test "try/catch 2" {
     \\    someBlock();
     \\    break :blk result("okay");
     \\  };
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3)
     \\  catch return;
     \\var abc = someFunc(1, 2, 3)
@@ -5730,7 +5674,7 @@ test "try/catch 2" {
     \\    someBlock();
     \\    break :blk result("okay");
     \\  };
-  ).diff(res, true);
+  );
 }
 
 test "orelse 1" {
@@ -5761,11 +5705,10 @@ test "orelse 1" {
   \\    orelse expr());
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3) orelse return;
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
@@ -5782,10 +5725,10 @@ test "orelse 1" {
     \\  break :blk result("okay");
     \\};
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3) orelse return;
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
@@ -5802,10 +5745,10 @@ test "orelse 1" {
     \\  break :blk result("okay");
     \\};
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3) orelse return;
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
@@ -5829,10 +5772,10 @@ test "orelse 1" {
     \\  + 4
     \\  - 3
     \\  + (someFunc(1, 2, 3) orelse expr());
-  ).diff(res, true);
+  );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\var abc = someFunc(1, 2, 3)
     \\  orelse return;
     \\var abc = someFunc(1, 2, 3)
@@ -5860,7 +5803,7 @@ test "orelse 1" {
     \\  - 3
     \\  + (someFunc(1, 2, 3)
     \\    orelse expr());
-  ).diff(res, true);
+  );
 }
 
 test "if/else 1" {
@@ -5877,11 +5820,10 @@ test "if/else 1" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x| b else d;
@@ -5890,10 +5832,10 @@ test "if/else 1" {
     \\  if (expr()) |pl| doStuff();
     \\  var z = if (a) b else d;
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x| b else d;
@@ -5902,10 +5844,10 @@ test "if/else 1" {
     \\  if (expr()) |pl| doStuff();
     \\  var z = if (a) b else d;
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x| b else d;
@@ -5914,10 +5856,10 @@ test "if/else 1" {
     \\  if (expr()) |pl| doStuff();
     \\  var z = if (a) b else d;
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x|
@@ -5937,7 +5879,7 @@ test "if/else 1" {
     \\  else
     \\    d;
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "if/else 2" {
@@ -5966,11 +5908,10 @@ test "if/else 2" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  var z = if (a) b: {
     \\    var x = y;
@@ -5993,10 +5934,10 @@ test "if/else 2" {
     \\    var y = someWhat();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  var z = if (a) b: {
     \\    var x = y;
@@ -6019,10 +5960,10 @@ test "if/else 2" {
     \\    var y = someWhat();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  var z = if (a) b: {
     \\    var x = y;
@@ -6045,10 +5986,10 @@ test "if/else 2" {
     \\    var y = someWhat();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  var z = if (a)
     \\    b: {
@@ -6078,7 +6019,7 @@ test "if/else 2" {
     \\    var y = someWhat();
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "if/else 3" {
@@ -6103,11 +6044,10 @@ test "if/else 3" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6124,10 +6064,10 @@ test "if/else 3" {
     \\  } else {
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6144,10 +6084,10 @@ test "if/else 3" {
     \\  } else {
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6164,10 +6104,10 @@ test "if/else 3" {
     \\  } else {
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6186,7 +6126,7 @@ test "if/else 3" {
     \\  } else {
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "if/else 4" {
@@ -6233,11 +6173,10 @@ test "if/else 4" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  {
     \\    if (someExpr()) {
@@ -6257,10 +6196,10 @@ test "if/else 4" {
     \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101)});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  {
     \\    if (someExpr()) {
@@ -6309,10 +6248,10 @@ test "if/else 4" {
     \\    );
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  {
     \\    if (someExpr()) {
@@ -6365,10 +6304,10 @@ test "if/else 4" {
     \\    );
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  {
     \\    if (
@@ -6449,7 +6388,7 @@ test "if/else 4" {
     \\    );
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "if/else 5" {
@@ -6464,11 +6403,10 @@ test "if/else 5" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6478,10 +6416,10 @@ test "if/else 5" {
     \\    var x = 5;
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6491,10 +6429,10 @@ test "if/else 5" {
     \\    var x = 5;
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6504,10 +6442,10 @@ test "if/else 5" {
     \\    var x = 5;
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6518,7 +6456,7 @@ test "if/else 5" {
     \\    var x = 5;
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "if/else 6" {
@@ -6547,11 +6485,10 @@ test "if/else 6" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
@@ -6575,10 +6512,10 @@ test "if/else 6" {
     \\    std.debug.print("done\n", .{});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
@@ -6602,10 +6539,10 @@ test "if/else 6" {
     \\    std.debug.print("done\n", .{});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
@@ -6629,10 +6566,10 @@ test "if/else 6" {
     \\    std.debug.print("done\n", .{});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (some) |*x|
     \\    lbl: {
@@ -6669,7 +6606,7 @@ test "if/else 6" {
     \\    );
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "if/else 7" {
@@ -6684,31 +6621,30 @@ test "if/else 7" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (someNiceCondition(a, b, c)) |x| _ = blk: {
     \\    print('yello world');
     \\  };
     \\  if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (someNiceCondition(a, b, c)) |x| _ = blk: {
     \\    print('yello world');
     \\  };
     \\  if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (someNiceCondition(a, b, c)) |x|
     \\    _ = blk: {
@@ -6717,10 +6653,10 @@ test "if/else 7" {
     \\  if (someNiceCondition(a, b, c)) |x|
     \\    someFancy(callExpr(), a, b);
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  if (
     \\    someNiceCondition(a, b, c)
@@ -6737,7 +6673,7 @@ test "if/else 7" {
     \\      b,
     \\    );
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "switch 1" {
@@ -6753,11 +6689,10 @@ test "switch 1" {
   \\ switch (someExpr(jk)) {}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\label: switch (expr) {
     \\  a => a,
     \\  b, c => c,
@@ -6765,10 +6700,10 @@ test "switch 1" {
     \\  else => f,
     \\},
     \\switch (someExpr(jk)) {}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\label: switch (expr) {
     \\  a => a,
     \\  b, c => c,
@@ -6776,10 +6711,10 @@ test "switch 1" {
     \\  else => f,
     \\},
     \\switch (someExpr(jk)) {}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\label: switch (expr) {
     \\  a => a,
     \\  b, c => c,
@@ -6787,10 +6722,10 @@ test "switch 1" {
     \\  else => f,
     \\},
     \\switch (someExpr(jk)) {}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\label: switch (
     \\  expr
     \\) {
@@ -6802,7 +6737,7 @@ test "switch 1" {
     \\switch (
     \\  someExpr(jk)
     \\) {}
-  ).diff(res, true);
+  );
 }
 
 test "switch 2" {
@@ -6840,11 +6775,10 @@ test "switch 2" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
   \\fn fun(expr: Type) switch (@TypeOf(expr)) {
   \\  .a => TyFoo,
   \\  .b => TyBar,
@@ -6883,10 +6817,10 @@ test "switch 2" {
   \\    else => f,
   \\  }
   \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn fun(
     \\  expr: Type,
     \\) switch (@TypeOf(expr)) {
@@ -6931,10 +6865,10 @@ test "switch 2" {
     \\    else => f,
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn fun(
     \\  expr: Type,
     \\) switch (@TypeOf(expr)) {
@@ -6979,10 +6913,10 @@ test "switch 2" {
     \\    else => f,
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 20 
   res = try format(doc, .{.width = 20}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn fun(
     \\  expr: Type,
     \\) switch (
@@ -7037,7 +6971,7 @@ test "switch 2" {
     \\    else => f,
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "switch 3" {
@@ -7077,11 +7011,10 @@ test "switch 3" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7136,10 +7069,10 @@ test "switch 3" {
     \\  },
     \\  else => f,
     \\},
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7194,10 +7127,10 @@ test "switch 3" {
     \\  },
     \\  else => f,
     \\},
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7252,10 +7185,10 @@ test "switch 3" {
     \\  },
     \\  else => f,
     \\},
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7333,7 +7266,7 @@ test "switch 3" {
     \\  },
     \\  else => f,
     \\},
-  ).diff(res, true);
+  );
 }
 
 test "for 1" {
@@ -7351,11 +7284,10 @@ test "for 1" {
   \\}
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
@@ -7365,10 +7297,10 @@ test "for 1" {
     \\  }
     \\  for (expr) |pl| something();
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
@@ -7378,10 +7310,10 @@ test "for 1" {
     \\  }
     \\  for (expr) |pl| something();
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z|
     \\    lbl: {
@@ -7392,10 +7324,10 @@ test "for 1" {
     \\  }
     \\  for (expr) |pl| something();
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -7414,7 +7346,7 @@ test "for 1" {
     \\  }
     \\  for (expr) |pl| something();
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "for 2" {
@@ -7435,11 +7367,10 @@ test "for 2" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b, c| {
     \\  } else {
@@ -7455,10 +7386,10 @@ test "for 2" {
     \\    var abc = try testS();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b, c| {
     \\  } else {
@@ -7474,10 +7405,10 @@ test "for 2" {
     \\    var abc = try testS();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b, c| {
     \\  } else {
@@ -7497,10 +7428,10 @@ test "for 2" {
     \\    var abc = try testS();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b, c| {
     \\  } else {
@@ -7528,7 +7459,7 @@ test "for 2" {
     \\    var abc = try testS();
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "for 3" {
@@ -7552,11 +7483,10 @@ test "for 3" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
@@ -7576,10 +7506,10 @@ test "for 3" {
     \\    std.debug.print("done\n", .{});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
@@ -7599,10 +7529,10 @@ test "for 3" {
     \\    std.debug.print("done\n", .{});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
@@ -7623,10 +7553,10 @@ test "for 3" {
     \\    std.debug.print("done\n", .{});
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -7658,7 +7588,7 @@ test "for 3" {
     \\    );
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "for 4" {
@@ -7673,35 +7603,34 @@ test "for 4" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z|
     \\    print('yello world')
     \\  else
     \\    someCall();
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -7712,7 +7641,7 @@ test "for 4" {
     \\  else
     \\    someCall();
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "for 5" {
@@ -7725,32 +7654,31 @@ test "for 5" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -7758,7 +7686,7 @@ test "for 5" {
     \\    a..z
     \\  ) |*x, y, *z| {}
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "for 6" {
@@ -7774,11 +7702,10 @@ test "for 6" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\  for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
@@ -7786,10 +7713,10 @@ test "for 6" {
     \\    print('yello world');
     \\  };
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\  for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
@@ -7797,10 +7724,10 @@ test "for 6" {
     \\    print('yello world');
     \\  };
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  lbl: for (someNiceCondition(a, b, c)) |x|
     \\    someFancy(callExpr(), a, b);
@@ -7811,10 +7738,10 @@ test "for 6" {
     \\      print('yello world');
     \\    };
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  lbl: for (
     \\    someNiceCondition(a, b, c)
@@ -7839,7 +7766,7 @@ test "for 6" {
     \\      print('yello world');
     \\    };
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "while 1" {
@@ -7870,11 +7797,10 @@ test "while 1" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
     \\  inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
@@ -7896,10 +7822,10 @@ test "while 1" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
     \\  inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
@@ -7921,10 +7847,10 @@ test "while 1" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
     \\  inline while (someNiceCondition(a, b, c)) |*x|
@@ -7947,10 +7873,10 @@ test "while 1" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -7987,7 +7913,7 @@ test "while 1" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "while 2" {
@@ -8013,11 +7939,10 @@ test "while 2" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
@@ -8035,10 +7960,10 @@ test "while 2" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
@@ -8057,10 +7982,10 @@ test "while 2" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x|
     \\    blk: {
@@ -8083,10 +8008,10 @@ test "while 2" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -8116,7 +8041,7 @@ test "while 2" {
     \\    someCall();
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "while 3" {
@@ -8142,11 +8067,10 @@ test "while 3" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world') else |y| someCall();
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world') else someCall();
@@ -8156,10 +8080,10 @@ test "while 3" {
     \\    print('yello world');
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    print('yello world')
@@ -8178,10 +8102,10 @@ test "while 3" {
     \\    print('yello world');
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    print('yello world')
@@ -8202,10 +8126,10 @@ test "while 3" {
     \\    print('yello world');
     \\  }
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -8241,7 +8165,7 @@ test "while 3" {
     \\    print('yello world');
     \\  }
     \\}
-  ).diff(res, true);
+  );
 }
 
 test "while 4" {
@@ -8261,11 +8185,10 @@ test "while 4" {
   \\ }
   ;
   const al = arena.allocator();
-  const oh = OhSnap{};
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try oh.snap(@src(),
+  try check(res, 
     \\fn testMe() void {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
@@ -8277,10 +8200,10 @@ test "while 4" {
     \\    print('yello world');
     \\  };
     \\}
-  ).diff(res, true);
+  );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
-  try oh.snap(@src(),
+  try check(res, 
     \\fn testMe() void {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
@@ -8293,10 +8216,10 @@ test "while 4" {
     \\      print('yello world');
     \\    };
     \\}
-  ).diff(res, true);
+  );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
@@ -8310,10 +8233,10 @@ test "while 4" {
     \\      print('yello world');
     \\    };
     \\}
-  ).diff(res, true);
+  );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
-  try oh.snap(@src(),
+  try check(res,
     \\fn testMe() void {
     \\  lbl: while (
     \\    someNiceCondition(a, b, c)
@@ -8336,5 +8259,5 @@ test "while 4" {
     \\      print('yello world');
     \\    };
     \\}
-  ).diff(res, true);
+  );
 }

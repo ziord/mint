@@ -25,17 +25,13 @@
     .fingerprint = 0x1dfa678196a77f98, // Changing this has security and trust implications.
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0",
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
     // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .ohsnap = .{
-            .url = "https://github.com/mnemnion/ohsnap/archive/refs/tags/v0.4.2.tar.gz",
-            .hash = "ohsnap-0.4.2-iWxzyiGcAAAbUPJG3B6agP55LfeqGbtTOQ4PcgSGUb9-",
-        },
     },
     .paths = .{
         "build.zig",

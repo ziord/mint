@@ -13,7 +13,7 @@ pub const Format = struct {
   split_groups: IDSet = .empty,
   al: Allocator,
   mem_writer: std.Io.Writer.Allocating,
-  out_writer: std.fs.File.Writer,
+  out_writer: std.Io.File.Writer,
   writer: *std.Io.Writer = undefined,
 
   var WriteBuf: [8192]u8 = undefined;
@@ -39,12 +39,12 @@ pub const Format = struct {
 
   const Stack = std.ArrayList(StackData);
 
-  pub fn init(al: Allocator, cfg: FmtConfig) Self {
+  pub fn init(io: std.Io, al: Allocator, cfg: FmtConfig) Self {
     return .{
       .al = al,
       .cfg = cfg,
       .mem_writer = std.Io.Writer.Allocating.init(al),
-      .out_writer = std.fs.File.Writer.init(std.fs.File.stdout(), &WriteBuf),
+      .out_writer = std.Io.File.Writer.init(std.Io.File.stdout(), io, &WriteBuf),
     };
   }
 

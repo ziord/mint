@@ -1,7 +1,7 @@
-.zig-cache
+zig-*
+.zig-*
 .zed
 .vscode
-zig-out
 .zinc
 *.txt
 .DS_Store

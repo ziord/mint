@@ -132,13 +132,6 @@ pub fn build(b: *std.Build) void {
         .root_module = exe.root_module,
     });
 
-    if (b.lazyDependency("ohsnap", .{
-        .target = target,
-        .optimize = optimize,
-    })) |ohsnap_dep| {
-        exe_tests.root_module.addImport("ohsnap", ohsnap_dep.module("ohsnap"));
-    }
-
     // A run step that will run the second test executable.
     const run_exe_tests = b.addRunArtifact(exe_tests);
 
