@@ -8261,3 +8261,75 @@ test "while 4" {
     \\}
   );
 }
+
+test "zig 0.16.0" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const U = packed union(u2) {
+  \\    a: i2,
+  \\    b: u2,
+  \\};
+  \\
+  \\const u: U = .{ .a = -1 };
+  \\switch (u) {
+  \\    .{ .b = 3 } => {},
+  \\    else => unreachable,
+  \\}
+  ;
+  const al = arena.allocator();
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try check(res,
+    \\const U = packed union(u2) { a: i2, b: u2 };
+    \\const u: U = .{.a = -1};
+    \\
+    \\switch (u) {
+    \\  .{.b = 3} => {},
+    \\  else => unreachable,
+    \\}
+  );
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try check(res,
+    \\const U = packed union(u2) { a: i2, b: u2 };
+    \\const u: U = .{.a = -1};
+    \\
+    \\switch (u) {
+    \\  .{.b = 3} => {},
+    \\  else => unreachable,
+    \\}
+  );
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try check(res,
+    \\const U = packed union(u2) { a: i2, b: u2 };
+    \\const u: U = .{.a = -1};
+    \\
+    \\switch (u) {
+    \\  .{.b = 3} => {},
+    \\  else => unreachable,
+    \\}
+  );
+  // using width: 15
+  res = try format(doc, .{.width = 15}, al);
+  try check(res,
+    \\const U = packed union(
+    \\  u2
+    \\) {
+    \\  a: i2,
+    \\  b: u2,
+    \\};
+    \\const u: U = .{
+    \\  .a = -1,
+    \\};
+    \\
+    \\switch (u) {
+    \\  .{
+    \\    .b = 3,
+    \\  } => {},
+    \\  else => unreachable,
+    \\}
+  );
+}

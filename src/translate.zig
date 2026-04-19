@@ -1379,8 +1379,15 @@ pub const Translate = struct {
     const tag = self.tree.nodeTag(n);
     assert(tag != self.tree.nodeTag(Node.Index.root));
     switch (tag) {
-      .identifier, .number_literal, .string_literal, .char_literal => {
+      .identifier, .number_literal,
+      .string_literal, .char_literal, .unreachable_literal => {
         return self.db.text(self._token(self.tree.nodeMainToken(n)));
+      },
+      .negation => {
+        const expr = self.tree.nodeData(n).node;
+        var sb = self.db.seqb();
+        sb.text("-").append(try self.t(expr));
+        return self.db.group(sb.finish());
       },
       .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => {
         const vd = self.tree.fullVarDecl(n).?;
