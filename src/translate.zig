@@ -901,6 +901,204 @@ pub const Translate = struct {
     return self.db.groupi(id, sb.finish());
   }
 
+  fn tFor(self: *Self, fl: Ast.full.For) TranslateError!*Doc {
+    var sb = self.db.seqb();
+    var tmp = self.db.seqb();
+    if (fl.label_token) |tkn| {
+      tmp.text(self._token(tkn)).text(": ")._();
+    }
+    if (fl.inline_token) |tkn| {
+      tmp.text(self._token(tkn)).space()._();
+    }
+    tmp.text("for (")._();
+    var cond = self.db.seqb().softline();
+    for (fl.ast.inputs, 0..) |n, i| {
+      if (i > 0) cond.text(",").normline()._();
+      cond.append(try self.t(n));
+    }
+    tmp.indent(cond.finish()).softline().text(")")._();
+    sb.group(tmp.finish())._();
+    {
+      tmp = self.db.seqb();
+      tmp.text(" |").text(self._token(fl.payload_token))._();
+      var idx = fl.payload_token + 1;
+      while (self.tree.tokenTag(idx) != .pipe) {
+        tmp.text(self._token(idx))._();
+        if (self.tree.tokenTag(idx) == .comma) {
+          tmp.space()._();
+        }
+        idx += 1;
+      }
+      tmp.text(self._token(idx))._();
+      sb.group(tmp.finish())._();
+    }
+    var then_has_braces = false;
+    const id = d.genGroupID();
+    if (fl.ast.else_expr.unwrap()) |els| {
+      if (self.isEmptyBlock(fl.ast.then_expr)) {
+        then_has_braces = true;
+        sb.text(" {").declline().text("}")._();
+      } else {
+        const then_expr = try self.t(fl.ast.then_expr);
+        const tkn = self.tree.nodeMainToken(fl.ast.then_expr);
+        if (self.isBlock(tkn)) {
+          then_has_braces = true;
+          sb.space().append(then_expr);
+        } else {
+          var flat = self.db.seqb().space().appends(then_expr);
+          var split = self.db.seqb().softline().appends(then_expr);
+          sb.ifsplit(id, self.db.indent(split.finish()), flat.finishSeq())._();
+        }
+      }
+      if (self.isEmptyBlock(els)) {
+        sb.text(" else {").declline().text("}")._();
+      } else {
+        const else_expr = try self.t(els);
+        const tkn = self.tree.nodeMainToken(els);
+        if (then_has_braces or self.isBlock(tkn)) {
+          if (then_has_braces) {
+            sb.text(" else ").append(else_expr);
+          } else {
+            var els_sb = self.db.seqb();
+            els_sb.declline().text("else ").append(else_expr);
+            sb.group(els_sb.finish())._();
+          }
+        } else {
+          var flat = self.db.seqb();
+          var split = self.db.seqb();
+          var rest = self.db.seqb();
+          flat.text(" else ").append(else_expr);
+          split.softline().text("else")._();
+          rest.softline().append(else_expr);
+          split.indent(rest.finish())._();
+          sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
+        }
+      }
+    } else {
+      const tkn = self.tree.nodeMainToken(fl.ast.then_expr);
+      const then = try self.t(fl.ast.then_expr);
+      if (self.isBlock(tkn)) {
+        sb.space().append(then);
+      } else {
+        var flat_e = self.db.seqb().space().appends(then);
+        var split = self.db.seqb().softline().appends(then);
+        sb.ifsplit(id, self.db.indent(split.finish()), flat_e.finishSeq())._();
+      }
+    }
+    return self.db.groupi(id, sb.finish());
+  }
+
+  fn tWhile(self: *Self, wl: Ast.full.While) TranslateError!*Doc {
+    var sb = self.db.seqb();
+    var flat = self.db.seqb();
+    if (wl.label_token) |tkn| {
+      flat.text(self._token(tkn)).text(": ")._();
+    }
+    if (wl.inline_token) |tkn| {
+      flat.text(self._token(tkn)).space()._();
+    }
+    var tmp = self.db.seqb();
+    tmp.text("while (")._();
+    var cond_sb = self.db.seqb();
+    cond_sb.softline().append(try self.t(wl.ast.cond_expr));
+    tmp.indent(cond_sb.finish()).softline().text(")")._();
+    flat.group(tmp.finish())._();
+    if (wl.payload_token) |tkn| {
+      flat.text(" |").text(self._token(tkn))._();
+      if (self.tree.tokenTag(tkn) == .asterisk) {
+        flat.text(self._token(tkn + 1))._();
+      }
+      flat.text("|")._();
+    }
+    const id0 = d.genGroupID();
+    if (wl.ast.cont_expr.unwrap()) |cnt| {
+      var split = flat.copy();
+      var expr_sb = self.db.seqb();
+      expr_sb.softline().append(try self.t(cnt));
+      const expr_d = expr_sb.finish();
+      tmp = self.db.seqb();
+      tmp.text(": (").indent(expr_d).softline().text(")")._();
+      const cont_d = tmp.finish();
+      flat.append(self.db.group(self.db.seqb().space().extends(cont_d).finish()));
+      split.softline().group(cont_d)._();
+      const db = self.db.seqb().ifsplit(id0, split.finishSeq(), flat.finishSeq());
+      sb.groupi(id0, db.finish())._();
+    } else {
+      sb.groupi(id0, flat.finish())._();
+    }
+    var then_has_braces = false;
+    const id = d.genGroupID();
+    if (wl.ast.else_expr.unwrap()) |els| {
+      if (self.isEmptyBlock(wl.ast.then_expr)) {
+        then_has_braces = true;
+        sb.text(" {").declline().text("}")._();
+      } else {
+        const then_expr = try self.t(wl.ast.then_expr);
+        const tkn = self.tree.nodeMainToken(wl.ast.then_expr);
+        if (self.isBlock(tkn)) {
+          then_has_braces = true;
+          sb.space().append(then_expr);
+        } else {
+          var flat_t = self.db.seqb().space().appends(then_expr);
+          var split = self.db.seqb().softline().appends(then_expr);
+          sb.ifsplit(id, self.db.indent(split.finish()), flat_t.finishSeq())._();
+        }
+      }
+      if (self.isEmptyBlock(els)) {
+        sb.text(" else ")._();
+        if (wl.error_token) |tkn| {
+          sb.text("|").text(self._token(tkn)).text("| ")._();
+        }
+        sb.text("{").declline().text("}")._();
+      } else {
+        const else_expr = try self.t(els);
+        const tkn = self.tree.nodeMainToken(els);
+        if (then_has_braces or self.isBlock(tkn)) {
+          if (then_has_braces) {
+            sb.text(" else ")._();
+            if (wl.error_token) |err_tkn| {
+              sb.text("|").text(self._token(err_tkn)).text("| ")._();
+            }
+            sb.append(else_expr);
+          } else {
+            var els_sb = self.db.seqb();
+            els_sb.declline().text("else ")._();
+            if (wl.error_token) |err_tkn| {
+              els_sb.text("|").text(self._token(err_tkn)).text("| ")._();
+            }
+            els_sb.append(else_expr);
+            sb.group(els_sb.finish())._();
+          }
+        } else {
+          var flat_e = self.db.seqb();
+          var split = self.db.seqb();
+          var rest = self.db.seqb();
+          flat_e.text(" else ")._();
+          split.softline().text("else")._();
+          if (wl.error_token) |err_tkn| {
+            flat_e.text("|").text(self._token(err_tkn)).text("| ")._();
+            split.text(" |").text(self._token(err_tkn)).text("|")._();
+          }
+          flat_e.append(else_expr);
+          rest.softline().append(else_expr);
+          split.indent(rest.finish())._();
+          sb.ifsplit(id, split.finishSeq(), flat_e.finishSeq())._();
+        }
+      }
+    } else {
+      const tkn = self.tree.nodeMainToken(wl.ast.then_expr);
+      const then = try self.t(wl.ast.then_expr);
+      if (self.isBlock(tkn)) {
+        sb.space().append(then);
+      } else {
+        var flat_e = self.db.seqb().space().appends(then);
+        var split = self.db.seqb().softline().appends(then);
+        sb.ifsplit(id, self.db.indent(split.finish()), flat_e.finishSeq())._();
+      }
+    }
+    return self.db.groupi(id, sb.finish());
+  }
+
   fn tSwitch(self: *Self, sw: Ast.full.Switch) TranslateError!*Doc {
     var sb = self.db.seqb();
     var tmp = self.db.seqb();
@@ -1107,10 +1305,10 @@ pub const Translate = struct {
     self: *Self,
     n: Node.Index,
     texpr: ?Node.Index,
-    should_softline: bool,
     fields: []const Node.Index,
   ) TranslateError!*Doc {
     var sb = self.db.seqb();
+    const should_softline = fields.len > 0;
     if (texpr) |te| {
       sb.appends(try self.t(te)).text("{")._();
     } else {
@@ -1130,8 +1328,9 @@ pub const Translate = struct {
         args.group(tmp.finish())._();
       }
     }
-    if (args.isEmpty()) {
+    if (fields.len == 0) {
       _ = args.finish();
+      sb.text("}")._();
       return self.db.group(sb.finish());
     }
     const id = d.genGroupID();
@@ -1144,7 +1343,6 @@ pub const Translate = struct {
     self: *Self,
     n: Node.Index,
     texpr: ?Node.Index,
-    should_softline: bool,
     fields: []const Node.Index,
   ) TranslateError!*Doc {
     var sb = self.db.seqb();
@@ -1155,6 +1353,7 @@ pub const Translate = struct {
       const name = self.tree.nodeMainToken(n) - 1;
       sb.text(self._token(name)).text("{")._();
     }
+    const should_softline = fields.len > 0;
     var args = self.db.seqb().softlineIf(should_softline);
     for (fields, 0..) |val, i| {
       var tmp = self.db.seqb();
@@ -1165,8 +1364,9 @@ pub const Translate = struct {
         args.group(tmp.finish())._();
       }
     }
-    if (args.isEmpty()) {
+    if (fields.len == 0) {
       _ = args.finish();
+      sb.text("}")._();
       return self.db.group(sb.finish());
     }
     const id = d.genGroupID();
@@ -1397,6 +1597,26 @@ pub const Translate = struct {
         const ifn = self.tree.ifFull(n);
         return self.tIf(ifn);
       },
+      .for_simple => {
+        const fl = self.tree.forSimple(n);
+        return self.tFor(fl);
+      },
+      .@"for" => {
+        const fl = self.tree.forFull(n);
+        return self.tFor(fl);
+      },
+      .while_cont => {
+        const wl = self.tree.whileCont(n);
+        return self.tWhile(wl);
+      },
+      .while_simple => {
+        const wl = self.tree.whileSimple(n);
+        return self.tWhile(wl);
+      },
+      .@"while" => {
+        const wl = self.tree.whileFull(n);
+        return self.tWhile(wl);
+      },
       .@"switch", .switch_comma => {
         const sw = self.tree.switchFull(n);
         return self.tSwitch(sw);
@@ -1415,6 +1635,16 @@ pub const Translate = struct {
         sb.append(try self.t(lhs));
         sb.text(self._token(self.tree.nodeMainToken(n)))._();
         sb.append(try self.t(rhs));
+        return self.db.group(sb.finish());
+      },
+      .for_range => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_opt_node;
+        var sb = self.db.seqb();
+        sb.append(try self.t(lhs));
+        sb.text(self._token(self.tree.nodeMainToken(n)))._();
+        if (rhs.unwrap()) |_n| {
+          sb.append(try self.t(_n));
+        }
         return self.db.group(sb.finish());
       },
       .builtin_call_two, .builtin_call_two_comma => {
@@ -1452,43 +1682,41 @@ pub const Translate = struct {
       },
       .struct_init, .struct_init_comma => {
         const decl = self.tree.structInit(n);
-        return self.tStructInit(n, null, decl.ast.fields.len > 0, decl.ast.fields);
+        return self.tStructInit(n, null, decl.ast.fields);
       },
       .struct_init_one, .struct_init_one_comma => {
         const first, const second = self.tree.nodeData(n).node_and_opt_node;
         const fields = if (second.unwrap()) |_n| &.{_n} else &.{};
-        return self.tStructInit(n, first, fields.len > 0, fields);
+        return self.tStructInit(n, first, fields);
       },
       .struct_init_dot, .struct_init_dot_comma => {
         const decl = self.tree.structInitDot(n);
-        return self.tStructInit(n, null, decl.ast.fields.len > 0, decl.ast.fields);
+        return self.tStructInit(n, null, decl.ast.fields);
       },
       .struct_init_dot_two, .struct_init_dot_two_comma => {
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
         var buf: [2]Node.Index = undefined;
         const args = unwrapTwo(&buf, first, second);
-        const should_softline = args.len > 0;
-        return self.tStructInit(n, null, should_softline, args);
+        return self.tStructInit(n, null, args);
       },
       .array_init, .array_init_comma => {
         const decl = self.tree.arrayInit(n);
-        return self.tArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements.len > 0, decl.ast.elements);
+        return self.tArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements);
       },
       .array_init_one, .array_init_one_comma => {
         const first, const second = self.tree.nodeData(n).node_and_opt_node;
         const elements = if (second.unwrap()) |_n| &.{_n} else &.{};
-        return self.tArrayInit(n, first, elements.len > 0, elements);
+        return self.tArrayInit(n, first, elements);
       },
       .array_init_dot, .array_init_dot_comma => {
         const decl = self.tree.arrayInitDot(n);
-        return self.tArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements.len > 0, decl.ast.elements);
+        return self.tArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements);
       },
       .array_init_dot_two, .array_init_dot_two_comma => {
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
         var buf: [2]Node.Index = undefined;
         const args = unwrapTwo(&buf, first, second);
-        const should_softline = args.len > 0;
-        return self.tArrayInit(n, null, should_softline, args);
+        return self.tArrayInit(n, null,  args);
       },
       .@"return" => {
         var sb = self.db.seqb().text("return");
@@ -1528,6 +1756,14 @@ pub const Translate = struct {
         var sb = self.db.seqb();
         sb.append(try self.t(lhs));
         sb.text(" = ")._();
+        sb.append(try self.t(rhs));
+        return self.db.group(sb.finish());
+      },
+      .assign_add => {
+        const lhs, const rhs = self.tree.nodeData(n).node_and_node;
+        var sb = self.db.seqb();
+        sb.append(try self.t(lhs));
+        sb.text(" += ")._();
         sb.append(try self.t(rhs));
         return self.db.group(sb.finish());
       },

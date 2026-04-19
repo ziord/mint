@@ -6521,6 +6521,225 @@ test "if/else 5" {
   ).diff(res, true);
 }
 
+test "if/else 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ if (some) |*x| lbl : {
+  \\  print('yello world');
+  \\} else {
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\ if (some) |*x| _ = lbl : {
+  \\  print('yello world');
+  \\} else {
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\if (someCond) |x| _ = blk: {
+  \\  std.debug.print("x is: {}\n", .{x});
+  \\  break :blk void;
+  \\} else {
+  \\  std.debug.print("done\n", .{});
+  \\}
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (some) |*x| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (some) |*x| _ = lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (someCond) |x| _ = blk: {
+    \\    std.debug.print("x is: {}\n", .{x});
+    \\    break :blk void;
+    \\  }
+    \\  else {
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (some) |*x| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (some) |*x| _ = lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (someCond) |x| _ = blk: {
+    \\    std.debug.print("x is: {}\n", .{x});
+    \\    break :blk void;
+    \\  }
+    \\  else {
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (some) |*x| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (some) |*x| _ = lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (someCond) |x| _ = blk: {
+    \\    std.debug.print("x is: {}\n", .{x});
+    \\    break :blk void;
+    \\  }
+    \\  else {
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 20 
+  res = try format(doc, .{.width = 20}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (some) |*x|
+    \\    lbl: {
+    \\      print(
+    \\        'yello world',
+    \\      );
+    \\    }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (some) |*x|
+    \\    _ = lbl: {
+    \\      print(
+    \\        'yello world',
+    \\      );
+    \\    }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (someCond) |x|
+    \\    _ = blk: {
+    \\      std.debug.print(
+    \\        "x is: {}\n",
+    \\        .{x},
+    \\      );
+    \\      break :blk void;
+    \\    }
+    \\  else {
+    \\    std.debug.print(
+    \\      "done\n",
+    \\      .{},
+    \\    );
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "if/else 7" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ if (someNiceCondition(a, b, c)) |x| _ = blk: {
+  \\  print('yello world');
+  \\};
+  \\ if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (someNiceCondition(a, b, c)) |x| _ = blk: {
+    \\    print('yello world');
+    \\  };
+    \\  if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (someNiceCondition(a, b, c)) |x| _ = blk: {
+    \\    print('yello world');
+    \\  };
+    \\  if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (someNiceCondition(a, b, c)) |x|
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\  if (someNiceCondition(a, b, c)) |x|
+    \\    someFancy(callExpr(), a, b);
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  if (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\  if (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\}
+  ).diff(res, true);
+}
+
 test "switch 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -7114,5 +7333,1008 @@ test "switch 3" {
     \\  },
     \\  else => f,
     \\},
+  ).diff(res, true);
+}
+
+test "for 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for (some, 0.., a..z) |*x, y, *z| lbl : {
+  \\  print('yello world');
+  \\}
+  \\ for (some, 0.., a..z) |*x, y, *z| {
+  \\  print('yello world');
+  \\}
+  \\ for (expr) |pl| something();
+  \\}
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  for (some, 0.., a..z) |*x, y, *z| {
+    \\    print('yello world');
+    \\  }
+    \\  for (expr) |pl| something();
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  for (some, 0.., a..z) |*x, y, *z| {
+    \\    print('yello world');
+    \\  }
+    \\  for (expr) |pl| something();
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z|
+    \\    lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  for (some, 0.., a..z) |*x, y, *z| {
+    \\    print('yello world');
+    \\  }
+    \\  for (expr) |pl| something();
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z|
+    \\    lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z| {
+    \\    print('yello world');
+    \\  }
+    \\  for (expr) |pl| something();
+    \\}
+  ).diff(res, true);
+}
+
+test "for 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for (some, a..k) |a, b, c| {} else {var j = testM(;)}
+  \\ for (some, 0.., a..z) |*x, y, *z| lbl : {
+  \\  print('yello world');
+  \\} else someStuff();
+  \\ inline for (some, 0.., a..z) |*x, y, *z| lbl : {
+  \\  print('yello world');
+  \\} else {
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, a..k) |a, b, c| {
+    \\  } else {
+    \\  }
+    \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  } else someStuff();
+    \\  inline for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, a..k) |a, b, c| {
+    \\  } else {
+    \\  }
+    \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  } else someStuff();
+    \\  inline for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, a..k) |a, b, c| {
+    \\  } else {
+    \\  }
+    \\  for (some, 0.., a..z) |*x, y, *z|
+    \\    lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  else
+    \\    someStuff();
+    \\  inline for (some, 0.., a..z) |*x, y, *z|
+    \\    lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, a..k) |a, b, c| {
+    \\  } else {
+    \\  }
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z|
+    \\    lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  else
+    \\    someStuff();
+    \\  inline for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z|
+    \\    lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "for 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for (some, 0.., a..z) |*x, y, *z| {
+  \\  print('yello world');
+  \\} else {
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\ for (some, a..k) |a, b, c| exprMe() else {var j = testS();}
+  \\for (0..10) |x| _ = blk: {
+  \\  std.debug.print("x is: {}\n", .{x});
+  \\  break :blk void;
+  \\} else {
+  \\  std.debug.print("done\n", .{});
+  \\}
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| {
+    \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  for (some, a..k) |a, b, c| exprMe()
+    \\  else {
+    \\    var j = testS();
+    \\  }
+    \\  for (0..10) |x| _ = blk: {
+    \\    std.debug.print("x is: {}\n", .{x});
+    \\    break :blk void;
+    \\  }
+    \\  else {
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| {
+    \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  for (some, a..k) |a, b, c| exprMe()
+    \\  else {
+    \\    var j = testS();
+    \\  }
+    \\  for (0..10) |x| _ = blk: {
+    \\    std.debug.print("x is: {}\n", .{x});
+    \\    break :blk void;
+    \\  }
+    \\  else {
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| {
+    \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  for (some, a..k) |a, b, c| exprMe()
+    \\  else {
+    \\    var j = testS();
+    \\  }
+    \\  for (0..10) |x|
+    \\    _ = blk: {
+    \\      std.debug.print("x is: {}\n", .{x});
+    \\      break :blk void;
+    \\    }
+    \\  else {
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z| {
+    \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  for (some, a..k) |a, b, c|
+    \\    exprMe()
+    \\  else {
+    \\    var j = testS();
+    \\  }
+    \\  for (0..10) |x|
+    \\    _ = blk: {
+    \\      std.debug.print(
+    \\        "x is: {}\n",
+    \\        .{x},
+    \\      );
+    \\      break :blk void;
+    \\    }
+    \\  else {
+    \\    std.debug.print(
+    \\      "done\n",
+    \\      .{},
+    \\    );
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "for 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for (some, 0.., a..z) |*x, y, *z| 
+  \\  print('yello world')
+  \\ else
+  \\  someCall();
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z|
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z|
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\}
+  ).diff(res, true);
+}
+
+test "for 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for (some, 0.., a..z) |*x, y, *z| {
+  \\ }
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| {}
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| {}
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| {}
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z| {}
+    \\}
+  ).diff(res, true);
+}
+
+test "for 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+  \\ for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+  \\ for (someNiceCondition(a, b, c)) |x| _ = blk: {
+  \\  print('yello world');
+  \\};
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) |x| _ = blk: {
+    \\    print('yello world');
+    \\  };
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) |x| _ = blk: {
+    \\    print('yello world');
+    \\  };
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: for (someNiceCondition(a, b, c)) |x|
+    \\    someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) |x|
+    \\    someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) |x|
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: for (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\  for (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\  for (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
+  ).diff(res, true);
+}
+
+test "while 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+  \\ }
+  \\ inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+  \\ } else |y| {
+  \\ }
+  \\ inline while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+  \\  print('yello world');
+  \\ } else |y| {
+  \\  someCall();
+  \\ }
+  \\ while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+  \\  print('yello world');
+  \\ } else |y| {
+  \\  someCall();
+  \\ }
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+  \\  print('yello world');
+  \\ } else |y| {
+  \\  someCall();
+  \\ }
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
+    \\  inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+    \\  } else |y| {
+    \\  }
+    \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
+    \\  inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+    \\  } else |y| {
+    \\  }
+    \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
+    \\  inline while (someNiceCondition(a, b, c)) |*x|
+    \\  : (j += 5) {
+    \\  } else |y| {
+    \\  }
+    \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |*x|
+    \\  : (j += 5) {}
+    \\  inline while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |*x|
+    \\  : (j += 5) {
+    \\  } else |y| {
+    \\  }
+    \\  inline while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |*x|
+    \\  : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5) {
+    \\    print('yello world');
+    \\  } else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "while 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ while (someNiceCondition(a, b, c)) |x| blk: {
+  \\  print('yello world');
+  \\ } else {
+  \\  someCall();
+  \\ }
+  \\ while (someNiceCondition(a, b, c)) |x| blk: {
+  \\  print('yello world');
+  \\ } else blk2: {
+  \\  someCall();
+  \\ };
+  \\ inline while (someNiceCondition(a, b, c)) |x| : (j += 5) 
+  \\  print('yello world')
+  \\  else |y| {
+  \\  someCall();
+  \\ }
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x| blk: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| blk: {
+    \\    print('yello world');
+    \\  } else blk2: {
+    \\    someCall();
+    \\  };
+    \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world')
+    \\  else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x| blk: {
+    \\    print('yello world');
+    \\  }
+    \\  else {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| blk: {
+    \\    print('yello world');
+    \\  } else blk2: {
+    \\    someCall();
+    \\  };
+    \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x|
+    \\    blk: {
+    \\      print('yello world');
+    \\    }
+    \\  else {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x|
+    \\    blk: {
+    \\      print('yello world');
+    \\    }
+    \\  else
+    \\    blk2: {
+    \\      someCall();
+    \\    };
+    \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    blk: {
+    \\      print('yello world');
+    \\    }
+    \\  else {
+    \\    someCall();
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\    blk: {
+    \\      print('yello world');
+    \\    }
+    \\  else
+    \\    blk2: {
+    \\      someCall();
+    \\    };
+    \\  inline while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    print('yello world')
+    \\  else |y| {
+    \\    someCall();
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "while 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) 
+  \\  print('yello world')
+  \\  else |y| 
+  \\  someCall();
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) 
+  \\  print('yello world')
+  \\  else someCall();
+  \\ inline while (someNiceCondition(a, b, c))
+  \\  print('yello world')
+  \\  else someCall();
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) 
+  \\  print('yello world');
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += someExpr(5, abc, jkl)) {
+  \\  print('yello world');
+  \\  }
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world') else |y| someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world') else someCall();
+    \\  inline while (someNiceCondition(a, b, c)) print('yello world') else someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world');
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += someExpr(5, abc, jkl)) {
+    \\    print('yello world');
+    \\  }
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else |y|
+    \\    someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  inline while (someNiceCondition(a, b, c))
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world');
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += someExpr(5, abc, jkl)) {
+    \\    print('yello world');
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else |y|
+    \\    someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  inline while (someNiceCondition(a, b, c))
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world');
+    \\  while (someNiceCondition(a, b, c)) |x|
+    \\  : (j += someExpr(5, abc, jkl)) {
+    \\    print('yello world');
+    \\  }
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    print('yello world')
+    \\  else |y|
+    \\    someCall();
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  inline while (
+    \\    someNiceCondition(a, b, c)
+    \\  )
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    print('yello world');
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (
+    \\    j += someExpr(5, abc, jkl)
+    \\  ) {
+    \\    print('yello world');
+    \\  }
+    \\}
+  ).diff(res, true);
+}
+
+test "while 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+  \\  print('yello world');
+  \\}
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) blk: {
+  \\  print('yello world');
+  \\}
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) _ = blk: {
+  \\  print('yello world');
+  \\};
+  \\ }
+  ;
+  const al = arena.allocator();
+  const oh = OhSnap{};
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) blk: {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) _ = blk: {
+    \\    print('yello world');
+    \\  };
+    \\}
+  ).diff(res, true);
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) blk: {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
+  ).diff(res, true);
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    blk: {
+    \\      print('yello world');
+    \\    }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
+  ).diff(res, true);
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try oh.snap(@src(),
+    \\fn testMe() void {
+    \\  lbl: while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5) {
+    \\    print('yello world');
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    blk: {
+    \\      print('yello world');
+    \\    }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
   ).diff(res, true);
 }
