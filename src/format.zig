@@ -106,7 +106,12 @@ pub const Format = struct {
         },
         .line => |*d| {
           switch (d.ty) {
-            .hard => return true,
+            .hard => {
+              if (sm.mode == .split or stack.items.len == 0) {
+                return true;
+              }
+              width = @intCast(self.cfg.width);
+            },
             .decl, .soft => {
               // soft/decl is "" in flat mode (len = 0)
               if (sm.mode == .split) {

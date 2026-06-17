@@ -91,6 +91,10 @@ pub const SeqBuilder = struct {
     _ = self;
   }
 
+  pub inline fn len(self: *@This()) usize {
+    return self.docs.items.len;
+  }
+
   pub inline fn isEmpty(self: *@This()) bool {
     return self.docs.items.len == 0;
   }
@@ -106,18 +110,34 @@ pub const SeqBuilder = struct {
   }
 
   pub fn text(self: *@This(), s: []const u8) *@This() {
+    if (self.db.disable_writes) {
+      self.append(self.db.empty());
+      return self;
+    }
     const t = Doc.new(.{.text = Text{.s = s}}, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
   }
 
   pub fn space(self: *@This()) *@This() {
+    if (self.db.disable_writes) {
+      self.append(self.db.empty());
+      return self;
+    }
     const t = Doc.new(.{.text = Text{.s = " "}}, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
   }
 
+  pub fn spaceIf(self: *@This(), cond: bool) *@This() {
+    return if (cond) self.space() else self;
+  }
+
   pub inline fn line(self: *@This(), ty: Line.Ty) *@This() {
+    if (self.db.disable_writes) {
+      self.append(self.db.empty());
+      return self;
+    }
     const l = Doc.new(.{.line = Line{.ty = ty}}, self.al);
     util.listAppend(l, &self.docs, self.al);
     return self;
@@ -141,6 +161,57 @@ pub const SeqBuilder = struct {
 
   pub fn declline(self: *@This()) *@This() {
     return self.line(.decl);
+  }
+
+  pub fn decllineOrSpace(self: *@This(), decl_cond: bool) void {
+    if (decl_cond) {
+      self.declline()._();
+    } else {
+      self.space()._();
+    }
+  }
+
+  pub fn spaceOrDeclline(self: *@This(), space_cond: bool) void {
+    if (space_cond) {
+      self.space()._();
+    } else {
+      self.declline()._();
+    }
+  }
+
+  pub fn decllineOrSoftline(self: *@This(), decl_cond: bool) void {
+    if (decl_cond) {
+      self.declline()._();
+    } else {
+      self.softline()._();
+    }
+  }
+
+  pub fn softlineOrDeclline(self: *@This(), soft_cond: bool) void {
+    if (soft_cond) {
+      self.softline()._();
+    } else {
+      self.declline()._();
+    }
+  }
+
+  pub fn decllineOrNormline(self: *@This(), decl_cond: bool) void {
+    if (decl_cond) {
+      self.declline()._();
+    } else {
+      self.normline()._();
+    }
+  }
+
+  pub fn normlineOrDeclline(self: *@This(), norm_cond: bool) void {
+    if (norm_cond) {
+      self.normline()._();
+    } else {
+      self.declline()._();
+    }
+  }
+  pub fn decllineIf(self: *@This(), cond: bool) *@This() {
+    return if (cond) self.line(.decl) else self;
   }
 
   pub fn group(self: *@This(), docs: []*Doc) *@This() {
@@ -238,6 +309,9 @@ pub const DocBuilder = struct {
   al: Allocator,
   builders: [BUILDERS_LEN]SeqBuilder = undefined,
   len: usize = 0,
+  // FIXME: need to handle this in a better/more efficient way 
+  /// skip all write operations on a SeqBuilder
+  disable_writes: bool = false,
 
   const BUILDERS_LEN = 4096;
 
@@ -283,8 +357,16 @@ pub const DocBuilder = struct {
     return self.line(.norm);
   }
 
+  pub fn declline(self: *@This()) *Doc {
+    return self.line(.decl);
+  }
+
   pub fn seq(self: *@This(), docs: []*Doc) *Doc {
     return Doc.new(.{.seq = Seq{.docs = docs}}, self.al);
+  }
+
+  pub fn empty(self: *@This()) *Doc {
+    return Doc.new(.{.seq = Seq{.docs = &.{}}}, self.al);
   }
 
   pub fn group(self: *@This(), docs: []*Doc) *Doc {

@@ -11,8 +11,8 @@ fn check(got: []const u8, expected: []const u8) !void {
 }
 
 fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
-  var t = try ts.Translate.init(src, al, .zig);
-  return t.translate();
+  var t = try ts.Translate.init(al, std.testing.io);
+  return t.translate("test.zig", src, .zig);
 }
 
 fn format(doc: *fmt.Doc, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
@@ -149,7 +149,7 @@ test "vardecl 3" {
   defer arena.deinit();
   const src =
   \\ const g: [*:Bar]Foo = box(abc, bar, baz);
-  \\ const g: [*c:Bar]Foo = box(abc, bar, baz);
+  \\ const g: [*c]Foo = box(abc, bar, baz);
   \\ const g: [:Bar]Foo = box(abc, bar, baz);
   \\ const e: *const Foo = box(abc, bar, baz);
   \\ const f: [*]const Foo = box(abc, bar, baz);
@@ -159,7 +159,7 @@ test "vardecl 3" {
   \\ const f: *[]const Foo = box(abc, bar, baz);
   \\ const f: []const Foo(Axe, Bxe, Cxe, Dxe, box(),) = box(abc, bar, baz,);
   \\ const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
-  \\ const g: [*c:Bar] const Foo = box(abc, bar, baz);
+  \\ const g: [*c] const Foo = box(abc, bar, baz);
   \\ const g: [:Bar] const Foo = box(abc, bar, baz);
   ;
   const al = arena.allocator();
@@ -168,6 +168,7 @@ test "vardecl 3" {
   var res = try format(doc, .{}, al);
   try check(res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
+    \\const g: [*c]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
     \\const e: *const Foo = box(abc, bar, baz);
     \\const f: [*]const Foo = box(abc, bar, baz);
@@ -177,13 +178,14 @@ test "vardecl 3" {
     \\const f: *[]const Foo = box(abc, bar, baz);
     \\const f: []const Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
     \\const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
-    \\const Foo = box(abc, bar, baz);
+    \\const g: [*c]const Foo = box(abc, bar, baz);
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
   try check(res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
+    \\const g: [*c]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
     \\const e: *const Foo = box(abc, bar, baz);
     \\const f: [*]const Foo = box(abc, bar, baz);
@@ -197,13 +199,18 @@ test "vardecl 3" {
     \\  baz,
     \\);
     \\const g: [*:Bar]const Foo = x.box(abc(), bar, baz);
-    \\const Foo = box(abc, bar, baz);
+    \\const g: [*c]const Foo = box(abc, bar, baz);
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
   try check(res,
     \\const g: [*:Bar]Foo = box(
+    \\  abc,
+    \\  bar,
+    \\  baz,
+    \\);
+    \\const g: [*c]Foo = box(
     \\  abc,
     \\  bar,
     \\  baz,
@@ -257,7 +264,7 @@ test "vardecl 3" {
     \\  bar,
     \\  baz,
     \\);
-    \\const Foo = box(
+    \\const g: [*c]const Foo = box(
     \\  abc,
     \\  bar,
     \\  baz,
@@ -461,7 +468,6 @@ test "vardecl 5" {
     \\  self.token_token.token2_token()
     \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
-    \\
     \\var buffer align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
@@ -469,7 +475,6 @@ test "vardecl 5" {
     \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var a align(b) = c;
-    \\
     \\var a: b align(c) = d;
   );
   // using width: 100
@@ -481,14 +486,12 @@ test "vardecl 5" {
     \\  align(64) = text(
     \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
-    \\
     \\var buffer align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
     \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var a align(b) = c;
-    \\
     \\var a: b align(c) = d;
   );
   // using width: 60
@@ -507,7 +510,6 @@ test "vardecl 5" {
     \\  self.token_token.token2_token()
     \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
-    \\
     \\var buffer align(64) = undefined;
     \\var buffer
     \\  align(64) = text(
@@ -515,7 +517,6 @@ test "vardecl 5" {
     \\    .token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var a align(b) = c;
-    \\
     \\var a: b align(c) = d;
   );
   // using width: 30
@@ -538,7 +539,6 @@ test "vardecl 5" {
     \\      lhs,
     \\    ),
     \\);
-    \\
     \\var buffer
     \\  align(64) = undefined;
     \\var buffer
@@ -551,7 +551,6 @@ test "vardecl 5" {
     \\    ),
     \\);
     \\var a align(b) = c;
-    \\
     \\var a: b align(c) = d;
   );
 }
@@ -570,6 +569,7 @@ test "vardecl 6" {
     \\threadlocal const x = expr;
   );
 }
+
 test "vardecl.chains 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -1465,7 +1465,7 @@ test "fundecl 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src =
-  \\ fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype,) A(T) {
+  \\ fn foo(x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype, ...,) A(T) {
   \\  var x = 5;
   \\    print("just testing!");
   \\   var x: i32, const y: u32 = foo_(bar(1, 2));
@@ -1477,7 +1477,7 @@ test "fundecl 1" {
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
   try check(res,
-    \\fn foo(x: std.ArrayList(T), comptime x: i32, ..., noalias y: u2, k: anytype) A(T) {
+    \\fn foo(x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype, ...) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
@@ -1490,9 +1490,9 @@ test "fundecl 1" {
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
-    \\  ...,
     \\  noalias y: u2,
     \\  k: anytype,
+    \\  ...,
     \\) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -1506,9 +1506,9 @@ test "fundecl 1" {
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
-    \\  ...,
     \\  noalias y: u2,
     \\  k: anytype,
+    \\  ...,
     \\) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -1522,9 +1522,9 @@ test "fundecl 1" {
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
-    \\  ...,
     \\  noalias y: u2,
     \\  k: anytype,
+    \\  ...,
     \\) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -1670,6 +1670,7 @@ test "fundecl 5" {
   const src =
   \\ inline fn foo5(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
+  \\
   \\ pub inline fn foo6(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
   ;
@@ -1740,6 +1741,7 @@ test "fundecl 6" {
   const src =
   \\ export fn foo7(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
+  \\
   \\ pub export fn foo8(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T) {
   \\ }
   ;
@@ -1809,6 +1811,7 @@ test "fundecl 7" {
   defer arena.deinit();
   const src =
   \\ extern fn foo9(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
+  \\
   \\ pub extern fn foo10(comptime T: type, x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype) A(T);
   ;
   const al = arena.allocator();
@@ -2277,6 +2280,7 @@ test "fundecl 16" {
   \\fn ship() b: {break :b void;} {
   \\ return voidExpr();  
   \\}
+  \\
   \\fn ship(x: u32, y: TypeExpr) b: {var x = getType(); break :b setType(x);} {
   \\ return voidExpr();  
   \\}
@@ -2351,6 +2355,248 @@ test "fundecl 16" {
     \\  break :b setType(x);
     \\} {
     \\  return voidExpr();
+    \\}
+  );
+}
+
+test "fundecl 17" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo(... // abc
+  \\ ) void { if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();}
+  \\
+  \\ fn bar(x: anytype // abc
+  \\ ) void {
+  \\ const result =
+  \\   if (attr_doc) |doc| blk: {
+  \\     var tmp = self.db.seqb();
+  \\     if (top_comments) |c_doc| {
+  \\       tmp.declline().append(c_doc);
+  \\     } else if (lb_has_trailing) {
+  \\       tmp.declline()._();
+  \\     } else {
+  \\       tmp.softline()._();
+  \\     }
+  \\     tmp.append(doc);
+  \\     const has_comment = top_comments != null or lb_has_trailing;
+  \\     break :blk CallResult{.sb = tmp, .has_comment = has_comment, .softline = true};
+  \\   }
+  \\   else if (fn_tkn) |ftkn| try self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
+  \\   else try self.tCallArgs(id, params, lb_has_trailing, top_comments, can_add_trailing_comma);
+  \\}
+  ;
+  const al = arena.allocator();
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try check(res,
+    \\fn foo(
+    \\  ... // abc
+    \\) void {
+    \\  if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();
+    \\}
+    \\
+    \\fn bar(
+    \\  x: anytype // abc
+    \\) void {
+    \\  const result = if (attr_doc) |doc| blk: {
+    \\    var tmp = self.db.seqb();
+    \\    if (top_comments) |c_doc| {
+    \\      tmp.declline().append(c_doc);
+    \\    } else if (lb_has_trailing) {
+    \\      tmp.declline()._();
+    \\    } else {
+    \\      tmp.softline()._();
+    \\    }
+    \\    tmp.append(doc);
+    \\    const has_comment = top_comments != null or lb_has_trailing;
+    \\    break :blk CallResult{.sb = tmp, .has_comment = has_comment, .softline = true};
+    \\  } else if (fn_tkn) |ftkn|
+    \\    try self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
+    \\  else
+    \\    try self.tCallArgs(id, params, lb_has_trailing, top_comments, can_add_trailing_comma);
+    \\}
+  );
+  // default width: 80
+  res = try format(doc, .{.width = 80}, al);
+  try check(res,
+    \\fn foo(
+    \\  ... // abc
+    \\) void {
+    \\  if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();
+    \\}
+    \\
+    \\fn bar(
+    \\  x: anytype // abc
+    \\) void {
+    \\  const result = if (attr_doc) |doc| blk: {
+    \\    var tmp = self.db.seqb();
+    \\    if (top_comments) |c_doc| {
+    \\      tmp.declline().append(c_doc);
+    \\    } else if (lb_has_trailing) {
+    \\      tmp.declline()._();
+    \\    } else {
+    \\      tmp.softline()._();
+    \\    }
+    \\    tmp.append(doc);
+    \\    const has_comment = top_comments != null or lb_has_trailing;
+    \\    break :blk CallResult{
+    \\      .sb = tmp,
+    \\      .has_comment = has_comment,
+    \\      .softline = true,
+    \\    };
+    \\  } else if (fn_tkn) |ftkn|
+    \\    try self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
+    \\  else
+    \\    try self.tCallArgs(
+    \\      id,
+    \\      params,
+    \\      lb_has_trailing,
+    \\      top_comments,
+    \\      can_add_trailing_comma,
+    \\    );
+    \\}
+  );
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try check(res,
+    \\fn foo(
+    \\  ... // abc
+    \\) void {
+    \\  if (last_tkn) |tkn|
+    \\    flat.decllineIf(self.tknHasTC(tkn))._();
+    \\}
+    \\
+    \\fn bar(
+    \\  x: anytype // abc
+    \\) void {
+    \\  const result = if (attr_doc) |doc| blk: {
+    \\    var tmp = self.db.seqb();
+    \\    if (top_comments) |c_doc| {
+    \\      tmp.declline().append(c_doc);
+    \\    } else if (lb_has_trailing) {
+    \\      tmp.declline()._();
+    \\    } else {
+    \\      tmp.softline()._();
+    \\    }
+    \\    tmp.append(doc);
+    \\    const has_comment = top_comments != null
+    \\      or lb_has_trailing;
+    \\    break :blk CallResult{
+    \\      .sb = tmp,
+    \\      .has_comment = has_comment,
+    \\      .softline = true,
+    \\    };
+    \\  } else if (fn_tkn) |ftkn|
+    \\    try self.tFnParams(
+    \\      id,
+    \\      ftkn,
+    \\      params,
+    \\      lb_has_trailing,
+    \\      top_comments,
+    \\    )
+    \\  else
+    \\    try self.tCallArgs(
+    \\      id,
+    \\      params,
+    \\      lb_has_trailing,
+    \\      top_comments,
+    \\      can_add_trailing_comma,
+    \\    );
+    \\}
+  );
+}
+
+test "fundecl 18" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo(x:u32, y:usize, z: usize, ... // abc
+  \\ ) void { if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();}
+  \\
+  \\ fn bar(x: anytype // abc
+  \\ ) void {
+  \\ const result =
+  \\   if (attr_doc) |doc| blk: {
+  \\     var tmp = self.db.seqb();
+  \\     if (top_comments) |c_doc| {
+  \\       tmp.declline().append(c_doc);
+  \\     } else if (lb_has_trailing) {
+  \\       tmp.declline()._();
+  \\     } else {
+  \\       tmp.softline()._();
+  \\     }
+  \\     tmp.append(doc);
+  \\     const has_comment = top_comments != null or lb_has_trailing;
+  \\     break :blk CallResult{.sb = tmp, .has_comment = has_comment, .softline = true};
+  \\   }
+  \\   else if (fn_tkn) |ftkn| try self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
+  \\   else try self.tCallArgs(id, params, lb_has_trailing, top_comments, can_add_trailing_comma);
+  \\}
+  ;
+  const al = arena.allocator();
+  // using width: 30
+  const doc = try translate(src, al);
+  const res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo(
+    \\  x: u32,
+    \\  y: usize,
+    \\  z: usize,
+    \\  ... // abc
+    \\) void {
+    \\  if (last_tkn) |tkn|
+    \\    flat.decllineIf(
+    \\      self.tknHasTC(tkn),
+    \\    )
+    \\      ._();
+    \\}
+    \\
+    \\fn bar(
+    \\  x: anytype // abc
+    \\) void {
+    \\  const result = if (
+    \\    attr_doc
+    \\  ) |doc| blk: {
+    \\    var tmp = self.db.seqb();
+    \\    if (
+    \\      top_comments
+    \\    ) |c_doc| {
+    \\      tmp.declline()
+    \\        .append(c_doc);
+    \\    } else if (
+    \\      lb_has_trailing
+    \\    ) {
+    \\      tmp.declline()._();
+    \\    } else {
+    \\      tmp.softline()._();
+    \\    }
+    \\    tmp.append(doc);
+    \\    const has_comment = top_comments
+    \\      != null
+    \\      or lb_has_trailing;
+    \\    break :blk CallResult{
+    \\      .sb = tmp,
+    \\      .has_comment = has_comment,
+    \\      .softline = true,
+    \\    };
+    \\  } else if (fn_tkn) |ftkn|
+    \\    try self.tFnParams(
+    \\      id,
+    \\      ftkn,
+    \\      params,
+    \\      lb_has_trailing,
+    \\      top_comments,
+    \\    )
+    \\  else
+    \\    try self.tCallArgs(
+    \\      id,
+    \\      params,
+    \\      lb_has_trailing,
+    \\      top_comments,
+    \\      can_add_trailing_comma,
+    \\    );
     \\}
   );
 }
@@ -3653,14 +3899,17 @@ test "containerdecl 2" {
   \\ const Ty = struct {
   \\  xabc: []const u8,
   \\  y123: u32,
+  \\
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay"};
   \\ }
+  \\
   \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{  .al = al,       .cfg = cfg,     .mem_writer = std.Io.Writer.Allocating.init(al),     .out_writer = std.fs.File.Writer.init(std.fs.File.stdout(), &WriteBuf),   };
   \\ }
+  \\
   \\  pub noinline fn foo(self: @This()) Foo!@This(a, b, c, d) {
   \\   var j = Ty{.x = "yay", .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff, .y = 0xff};
   \\   return .{.x = "yay"};
@@ -3913,6 +4162,7 @@ test "containerdecl 4" {
   \\ const Ty = union(enum) {
   \\  x: []const u8,
   \\  y: u32,
+  \\
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
@@ -3921,6 +4171,7 @@ test "containerdecl 4" {
   \\ const Ty = union(Foo) {
   \\  x: []const u8,
   \\  y: u32,
+  \\
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
@@ -4113,7 +4364,6 @@ test "containerdecl 6" {
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
@@ -4128,7 +4378,6 @@ test "containerdecl 6" {
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
@@ -4143,7 +4392,6 @@ test "containerdecl 6" {
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
@@ -4166,7 +4414,6 @@ test "containerdecl 6" {
     \\) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
     \\  pub fn foo(
     \\    self: @This(),
     \\  ) @This() {
@@ -4355,10 +4602,12 @@ test "containerdecl 9" {
   \\ const Ty = union(enum(Foo(a, b, c))) {
   \\  x: []const u8,
   \\  y: u32,
+  \\
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
   \\ }
+  \\
   \\ const fox = 0xdeadbeef;
   \\ const fox = enum {a, b, c};
   \\};
@@ -4452,15 +4701,17 @@ test "containerdecl 10" {
   \\ const Ty = union(enum(Foo(a, b, c))) {
   \\  x: []const u8,
   \\  y: u32,
+  \\ abc: []const u8,
+  \\ x: usize,
+  \\
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
   \\ }
-  \\ abc: []const u8,
+  \\
   \\ const fox1 = 0xdeadbeef;
   \\ const fox2 = enum {a, b, c};
   \\ const fox3 = union (big) {a, b, c};
-  \\ x: usize,
   \\};
   ;
   const al = arena.allocator();
@@ -4471,19 +4722,17 @@ test "containerdecl 10" {
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
     \\
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\
-    \\  abc: []const u8,
-    \\
     \\  const fox1 = 0xdeadbeef;
     \\  const fox2 = enum { a, b, c };
     \\  const fox3 = union(big) { a, b, c };
-    \\
-    \\  x: usize,
     \\};
   );
   // default width: 80
@@ -4492,19 +4741,17 @@ test "containerdecl 10" {
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
     \\
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\
-    \\  abc: []const u8,
-    \\
     \\  const fox1 = 0xdeadbeef;
     \\  const fox2 = enum { a, b, c };
     \\  const fox3 = union(big) { a, b, c };
-    \\
-    \\  x: usize,
     \\};
   );
   // using width: 60
@@ -4513,19 +4760,17 @@ test "containerdecl 10" {
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
     \\
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
     \\
-    \\  abc: []const u8,
-    \\
     \\  const fox1 = 0xdeadbeef;
     \\  const fox2 = enum { a, b, c };
     \\  const fox3 = union(big) { a, b, c };
-    \\
-    \\  x: usize,
     \\};
   );
   // using width: 30
@@ -4536,6 +4781,8 @@ test "containerdecl 10" {
     \\) {
     \\  x: []const u8,
     \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
     \\
     \\  pub fn foo(
     \\    self: @This(),
@@ -4550,8 +4797,6 @@ test "containerdecl 10" {
     \\    };
     \\  }
     \\
-    \\  abc: []const u8,
-    \\
     \\  const fox1 = 0xdeadbeef;
     \\  const fox2 = enum {
     \\    a,
@@ -4563,8 +4808,6 @@ test "containerdecl 10" {
     \\    b,
     \\    c,
     \\  };
-    \\
-    \\  x: usize,
     \\};
   );
 }
@@ -4578,6 +4821,7 @@ test "containerdecl 11" {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
   \\ }
+  \\
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
@@ -4671,12 +4915,12 @@ test "containerdecl 12" {
   \\ const Ty = union(enum) {
   \\  x: []const u8,
   \\  y: u32,
+  \\ abc: []const u8,
+  \\ x: usize,
   \\  pub fn foo(self: @This()) @This() {
   \\   var j = Ty{.x = "yay", .y = 0xff};
   \\   return .{.x = "yay", .y = 0xff};
   \\ }
-  \\ abc: []const u8,
-  \\ x: usize,
   \\ pub fn x() void {}
   \\};
   ;
@@ -4688,15 +4932,12 @@ test "containerdecl 12" {
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
+    \\  abc: []const u8,
+    \\  x: usize,
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
-    \\
-    \\  abc: []const u8,
-    \\  x: usize,
-    \\
     \\  pub fn x() void {}
     \\};
   );
@@ -4706,15 +4947,12 @@ test "containerdecl 12" {
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
+    \\  abc: []const u8,
+    \\  x: usize,
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
-    \\
-    \\  abc: []const u8,
-    \\  x: usize,
-    \\
     \\  pub fn x() void {}
     \\};
   );
@@ -4724,15 +4962,12 @@ test "containerdecl 12" {
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
+    \\  abc: []const u8,
+    \\  x: usize,
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
     \\    return .{.x = "yay", .y = 0xff};
     \\  }
-    \\
-    \\  abc: []const u8,
-    \\  x: usize,
-    \\
     \\  pub fn x() void {}
     \\};
   );
@@ -4742,7 +4977,8 @@ test "containerdecl 12" {
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
-    \\
+    \\  abc: []const u8,
+    \\  x: usize,
     \\  pub fn foo(
     \\    self: @This(),
     \\  ) @This() {
@@ -4755,10 +4991,6 @@ test "containerdecl 12" {
     \\      .y = 0xff,
     \\    };
     \\  }
-    \\
-    \\  abc: []const u8,
-    \\  x: usize,
-    \\
     \\  pub fn x() void {}
     \\};
   );
@@ -4768,29 +5000,41 @@ test "containerdecl 13" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src =
-  \\ pub const Ty = union(enum) {
+  \\y: []u8,
+  \\abc: []const u8,
+  \\z: u32,
+  \\
+  \\y: []u8,
+  \\abc: []const u8,
+  \\z: u32,
+  \\
+  \\pub const Ty = union(enum) {
   \\  x: []const u8,
   \\  y: u32,
-  \\ const fox1 = 0xdeadbeef;
-  \\ const fox1 = struct{};
+  \\
+  \\  const fox1 = 0xdeadbeef;
+  \\  const fox1 = struct {};
   \\};
-  \\ var x = 5;
-  \\ y: []u8,
-  \\ abc: []const u8,
-  \\ z: u32,
+  \\var x = 5;
+  \\
   \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
   \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
   \\const Ty = union(enum(Foo(a, b, c))) {};
-  \\ var x = 5;
-  \\ y: []u8,
-  \\ abc: []const u8,
-  \\ z: u32,
+  \\var x = 5;
   ;
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4800,22 +5044,22 @@ test "containerdecl 13" {
     \\};
     \\var x = 5;
     \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
-    \\
     \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {};
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4825,22 +5069,22 @@ test "containerdecl 13" {
     \\};
     \\var x = 5;
     \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
-    \\
     \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {};
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4849,23 +5093,23 @@ test "containerdecl 13" {
     \\  const fox1 = struct {};
     \\};
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
     \\
     \\pub const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {};
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\
     \\pub const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4874,10 +5118,6 @@ test "containerdecl 13" {
     \\  const fox1 = struct {};
     \\};
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
     \\
     \\pub const Ty = union(
     \\  enum(Foo)
@@ -4893,10 +5133,6 @@ test "containerdecl 13" {
     \\  enum(Foo(a, b, c))
     \\) {};
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
 }
 
@@ -4904,81 +5140,69 @@ test "containerdecl 14" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src =
+  \\ y: []u8,
+  \\ abc: []const u8,
+  \\ z: u32,
+  \\ y: []u8,
+  \\ abc: []const u8,
+  \\ z: u32,
+  \\ var x = 5;
   \\ pub const Ty = 0xff;
   \\ var x = 5;
-  \\ y: []u8,
-  \\ abc: []const u8,
-  \\ z: u32,
-  \\ var x = 5;
-  \\ y: []u8,
-  \\ abc: []const u8,
-  \\ z: u32,
   ;
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\var x = 5;
     \\pub const Ty = 0xff;
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
-    \\
-    \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\var x = 5;
     \\pub const Ty = 0xff;
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
-    \\
-    \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\var x = 5;
     \\pub const Ty = 0xff;
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
-    \\
-    \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
   try check(res,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\y: []u8,
+    \\abc: []const u8,
+    \\z: u32,
+    \\var x = 5;
     \\pub const Ty = 0xff;
     \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
-    \\
-    \\var x = 5;
-    \\
-    \\y: []u8,
-    \\abc: []const u8,
-    \\z: u32,
   );
 }
 
@@ -5075,16 +5299,13 @@ test "ptr types 1" {
   \\ var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
   \\ var j: *align(foo:Car:Bar) rhs = 0xff;
   \\ var j: *align(foo():Car():Bar()) rhs = 0xff;
-  \\
   \\ var x: *align(foo("ok")) rhs = 0xff;
   \\ var a: **rhs = 0xff;
   \\ var abc: ***align(foo():Car():Bar()) rhs = 0xff;
   \\ var xyz: **align(foo():Car():Bar()) rhs = 0xff;
   \\ var a: ***rhs = 0xff;
-  \\
   \\ var y: []rhs = 0xff;
   \\ var y: []const rhs = 0xff;
-  \\
   \\ var k: [*:lhs]rhs = 0xff;
   \\ var a: [:lhs]rhs = 0xff;
   \\ var j: [lhs:Foo(T, K)] rhs = 0xff;
@@ -5244,6 +5465,7 @@ test "ptr types 3" {
   defer arena.deinit();
   const src =
   \\ var x: *allowzero align(foo("ok")) Rhs align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
+  \\
   \\ var x: *allowzero align(foo("ok")) Rhs = 0xff;
   \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) Rhs = 0xff;
   \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) const Rhs = 0xff;
@@ -5354,12 +5576,15 @@ test "ptr types 4" {
   \\ fn foo() *allowzero align(foo("ok")) Rhs {
   \\   return 0;
   \\}
+  \\
   \\ fn foo() *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc)) {
   \\   return 0;
   \\}
+  \\
   \\ fn foo(abc: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc))) *allowzero align(foo("ok")) Rhs {
   \\   return 0;
   \\}
+  \\
   \\ fn foo(abc: *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc))) *allowzero addrspace(Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc)) {
   \\   return 0;
   \\}
@@ -5511,7 +5736,6 @@ test "try/catch 1" {
   \\ var abc = try someFunc(1, 2, 3);
   \\ var abc = someTestFunc(try someFunc(1, 2, 3));
   \\ var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
-  \\
   \\ var abc = someFunc(1, 2, 3) catch |e| 5;
   \\ var abc = someFunc(1, 2, 3) catch expr();
   ;
@@ -5991,12 +6215,11 @@ test "if/else 2" {
   res = try format(doc, .{.width = 20}, al);
   try check(res,
     \\fn testing() void {
-    \\  var z = if (a)
-    \\    b: {
-    \\      var x = y;
-    \\    }
-    \\  else
-    \\    d;
+    \\  var z = if (
+    \\    a
+    \\  ) b: {
+    \\    var x = y;
+    \\  } else d;
     \\  if (someExpr()) {
     \\    var x = someOther();
     \\  } else {
@@ -6170,7 +6393,6 @@ test "if/else 4" {
   \\      );
   \\    }
   \\}
-  \\}
   ;
   const al = arena.allocator();
   // using width: 100
@@ -6186,14 +6408,38 @@ test "if/else 4" {
     \\    } else {
     \\    }
     \\  }
-    \\  if ((lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()) or (lhs.isData() and lhs.data().node.modifier.isFrozen())) {
-    \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs)});
+    \\  if (
+    \\    (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen())
+    \\      or (lhs.isData() and lhs.data().node.modifier.isFrozen())
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs)},
+    \\    );
     \\  }
-    \\  if (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen() or lhs.isData() and lhs.data().node.modifier.isFrozen()) {
-    \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs)});
+    \\  if (
+    \\    lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()
+    \\      or lhs.isData() and lhs.data().node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs)},
+    \\    );
     \\  }
-    \\  if (lhs.isStruct() and lhs.strukt().node.modifier.isFrozen() or lhs.isData() and lhs.data().node.modifier.isFrozen()) {
-    \\    return self.error_(true, open.lhs_name.toToken(), "cannot open frozen type '{s}'", .{self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101)});
+    \\  if (
+    \\    lhs.isStruct() and lhs.strukt().node.modifier.isFrozen()
+    \\      or lhs.isData() and lhs.data().node.modifier.isFrozen()
+    \\  ) {
+    \\    return self.error_(
+    \\      true,
+    \\      open.lhs_name.toToken(),
+    \\      "cannot open frozen type '{s}'",
+    \\      .{self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101)},
+    \\    );
     \\  }
     \\}
   );
@@ -6492,22 +6738,23 @@ test "if/else 6" {
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
     \\  }
+    \\  if (some) |*x|
+    \\    _ = lbl: {
+    \\      print('yello world');
+    \\    }
     \\  else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  if (some) |*x| _ = lbl: {
-    \\    print('yello world');
-    \\  }
-    \\  else {
-    \\    someCall();
-    \\    var abc = try testS();
-    \\  }
-    \\  if (someCond) |x| _ = blk: {
-    \\    std.debug.print("x is: {}\n", .{x});
-    \\    break :blk void;
-    \\  }
+    \\  if (someCond) |x|
+    \\    _ = blk: {
+    \\      std.debug.print("x is: {}\n", .{x});
+    \\      break :blk void;
+    \\    }
     \\  else {
     \\    std.debug.print("done\n", .{});
     \\  }
@@ -6519,22 +6766,23 @@ test "if/else 6" {
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
     \\  }
+    \\  if (some) |*x|
+    \\    _ = lbl: {
+    \\      print('yello world');
+    \\    }
     \\  else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  if (some) |*x| _ = lbl: {
-    \\    print('yello world');
-    \\  }
-    \\  else {
-    \\    someCall();
-    \\    var abc = try testS();
-    \\  }
-    \\  if (someCond) |x| _ = blk: {
-    \\    std.debug.print("x is: {}\n", .{x});
-    \\    break :blk void;
-    \\  }
+    \\  if (someCond) |x|
+    \\    _ = blk: {
+    \\      std.debug.print("x is: {}\n", .{x});
+    \\      break :blk void;
+    \\    }
     \\  else {
     \\    std.debug.print("done\n", .{});
     \\  }
@@ -6546,22 +6794,23 @@ test "if/else 6" {
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\    var abc = try testS();
     \\  }
+    \\  if (some) |*x|
+    \\    _ = lbl: {
+    \\      print('yello world');
+    \\    }
     \\  else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  if (some) |*x| _ = lbl: {
-    \\    print('yello world');
-    \\  }
-    \\  else {
-    \\    someCall();
-    \\    var abc = try testS();
-    \\  }
-    \\  if (someCond) |x| _ = blk: {
-    \\    std.debug.print("x is: {}\n", .{x});
-    \\    break :blk void;
-    \\  }
+    \\  if (someCond) |x|
+    \\    _ = blk: {
+    \\      std.debug.print("x is: {}\n", .{x});
+    \\      break :blk void;
+    \\    }
     \\  else {
     \\    std.debug.print("done\n", .{});
     \\  }
@@ -6571,13 +6820,13 @@ test "if/else 6" {
   res = try format(doc, .{.width = 20}, al);
   try check(res,
     \\fn testMe() void {
-    \\  if (some) |*x|
-    \\    lbl: {
-    \\      print(
-    \\        'yello world',
-    \\      );
-    \\    }
-    \\  else {
+    \\  if (
+    \\    some
+    \\  ) |*x| lbl: {
+    \\    print(
+    \\      'yello world',
+    \\    );
+    \\  } else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
@@ -6676,6 +6925,78 @@ test "if/else 7" {
   );
 }
 
+test "if/else 8" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn testing() void {
+  \\_ = if (k) |x| blk: {
+  \\    std.debug.print("x is: {}\n", .{x});
+  \\    break :blk void;
+  \\} else { //
+  \\    std.debug.print("done\n", .{});
+  \\};
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  _ = if (k) |x| blk: {
+    \\    std.debug.print("x is: {}\n", .{x});
+    \\    break :blk void;
+    \\  } else { //
+    \\    std.debug.print("done\n", .{});
+    \\  };
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  _ = if (k) |x| blk: {
+    \\    std.debug.print(
+    \\      "x is: {}\n",
+    \\      .{x},
+    \\    );
+    \\    break :blk void;
+    \\  } else { //
+    \\    std.debug.print(
+    \\      "done\n",
+    \\      .{},
+    \\    );
+    \\  };
+    \\}
+  );
+}
+
+test "if/else 9" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void { if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();
+    \\}
+  );
+  // using width: 50
+  res = try format(doc, .{.width = 50}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  if (last_tkn) |tkn|
+    \\    flat.decllineIf(self.tknHasTC(tkn))._();
+    \\}
+  );
+}
+
 test "switch 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -6754,6 +7075,7 @@ test "switch 2" {
   \\  else => f
   \\};
   \\}
+  \\
   \\ fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
   \\ .a => TyFoo, .b => TyBar, else => TyBaz} {
   \\   return 
@@ -6764,6 +7086,7 @@ test "switch 2" {
   \\  else => f
   \\};
   \\}
+  \\
   \\ fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
   \\ .a => TyFoo, .b => TyBar, else => TyBaz} {
   \\ switch (expr)  {
@@ -7068,7 +7391,7 @@ test "switch 3" {
     \\    return self.tBinaryExpr(n, tag);
     \\  },
     \\  else => f,
-    \\},
+    \\}
   );
   // default width: 80
   res = try format(doc, .{.width = 80}, al);
@@ -7126,7 +7449,7 @@ test "switch 3" {
     \\    return self.tBinaryExpr(n, tag);
     \\  },
     \\  else => f,
-    \\},
+    \\}
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
@@ -7184,7 +7507,7 @@ test "switch 3" {
     \\    return self.tBinaryExpr(n, tag);
     \\  },
     \\  else => f,
-    \\},
+    \\}
   );
   // using width: 30 
   res = try format(doc, .{.width = 30}, al);
@@ -7265,7 +7588,7 @@ test "switch 3" {
     \\    );
     \\  },
     \\  else => f,
-    \\},
+    \\}
   );
 }
 
@@ -7315,10 +7638,9 @@ test "for 1" {
   res = try format(doc, .{.width = 60}, al);
   try check(res,
     \\fn testMe() void {
-    \\  for (some, 0.., a..z) |*x, y, *z|
-    \\    lbl: {
-    \\      print('yello world');
-    \\    }
+    \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
     \\  }
@@ -7333,10 +7655,9 @@ test "for 1" {
     \\    some,
     \\    0..,
     \\    a..z
-    \\  ) |*x, y, *z|
-    \\    lbl: {
-    \\      print('yello world');
-    \\    }
+    \\  ) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
     \\  for (
     \\    some,
     \\    0..,
@@ -7354,7 +7675,7 @@ test "for 2" {
   defer arena.deinit();
   const src =
   \\ fn testMe() void {
-  \\ for (some, a..k) |a, b, c| {} else {var j = testM(;)}
+  \\ for (some, a..k) |a, b| {} else {var j = testM();}
   \\ for (some, 0.., a..z) |*x, y, *z| lbl : {
   \\  print('yello world');
   \\} else someStuff();
@@ -7372,16 +7693,16 @@ test "for 2" {
   var res = try format(doc, .{.width = 100}, al);
   try check(res,
     \\fn testMe() void {
-    \\  for (some, a..k) |a, b, c| {
+    \\  for (some, a..k) |a, b| {
     \\  } else {
+    \\    var j = testM();
     \\  }
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
     \\  } else someStuff();
     \\  inline for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
-    \\  }
-    \\  else {
+    \\  } else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
@@ -7391,16 +7712,16 @@ test "for 2" {
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
-    \\  for (some, a..k) |a, b, c| {
+    \\  for (some, a..k) |a, b| {
     \\  } else {
+    \\    var j = testM();
     \\  }
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
     \\  } else someStuff();
     \\  inline for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
-    \\  }
-    \\  else {
+    \\  } else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
@@ -7410,20 +7731,16 @@ test "for 2" {
   res = try format(doc, .{.width = 60}, al);
   try check(res,
     \\fn testMe() void {
-    \\  for (some, a..k) |a, b, c| {
+    \\  for (some, a..k) |a, b| {
     \\  } else {
+    \\    var j = testM();
     \\  }
-    \\  for (some, 0.., a..z) |*x, y, *z|
-    \\    lbl: {
-    \\      print('yello world');
-    \\    }
-    \\  else
-    \\    someStuff();
-    \\  inline for (some, 0.., a..z) |*x, y, *z|
-    \\    lbl: {
-    \\      print('yello world');
-    \\    }
-    \\  else {
+    \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  } else someStuff();
+    \\  inline for (some, 0.., a..z) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  } else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
@@ -7433,28 +7750,24 @@ test "for 2" {
   res = try format(doc, .{.width = 30}, al);
   try check(res,
     \\fn testMe() void {
-    \\  for (some, a..k) |a, b, c| {
+    \\  for (some, a..k) |a, b| {
     \\  } else {
+    \\    var j = testM();
     \\  }
     \\  for (
     \\    some,
     \\    0..,
     \\    a..z
-    \\  ) |*x, y, *z|
-    \\    lbl: {
-    \\      print('yello world');
-    \\    }
-    \\  else
-    \\    someStuff();
+    \\  ) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  } else someStuff();
     \\  inline for (
     \\    some,
     \\    0..,
     \\    a..z
-    \\  ) |*x, y, *z|
-    \\    lbl: {
-    \\      print('yello world');
-    \\    }
-    \\  else {
+    \\  ) |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  } else {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
@@ -7473,7 +7786,7 @@ test "for 3" {
   \\  someCall();
   \\  var abc = try testS();
   \\}
-  \\ for (some, a..k) |a, b, c| exprMe() else {var j = testS();}
+  \\ for (some, a..k) |a, b| exprMe() else {var j = testS();}
   \\for (0..10) |x| _ = blk: {
   \\  std.debug.print("x is: {}\n", .{x});
   \\  break :blk void;
@@ -7494,7 +7807,7 @@ test "for 3" {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  for (some, a..k) |a, b, c| exprMe()
+    \\  for (some, a..k) |a, b| exprMe()
     \\  else {
     \\    var j = testS();
     \\  }
@@ -7517,7 +7830,7 @@ test "for 3" {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  for (some, a..k) |a, b, c| exprMe()
+    \\  for (some, a..k) |a, b| exprMe()
     \\  else {
     \\    var j = testS();
     \\  }
@@ -7540,7 +7853,7 @@ test "for 3" {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  for (some, a..k) |a, b, c| exprMe()
+    \\  for (some, a..k) |a, b| exprMe()
     \\  else {
     \\    var j = testS();
     \\  }
@@ -7568,7 +7881,7 @@ test "for 3" {
     \\    someCall();
     \\    var abc = try testS();
     \\  }
-    \\  for (some, a..k) |a, b, c|
+    \\  for (some, a..k) |a, b|
     \\    exprMe()
     \\  else {
     \\    var j = testS();
@@ -7930,7 +8243,7 @@ test "while 2" {
   \\  print('yello world');
   \\ } else blk2: {
   \\  someCall();
-  \\ };
+  \\ }
   \\ inline while (someNiceCondition(a, b, c)) |x| : (j += 5) 
   \\  print('yello world')
   \\  else |y| {
@@ -7946,15 +8259,14 @@ test "while 2" {
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
-    \\  }
-    \\  else {
+    \\  } else {
     \\    someCall();
     \\  }
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
     \\  } else blk2: {
     \\    someCall();
-    \\  };
+    \\  }
     \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world')
     \\  else |y| {
     \\    someCall();
@@ -7967,15 +8279,14 @@ test "while 2" {
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
-    \\  }
-    \\  else {
+    \\  } else {
     \\    someCall();
     \\  }
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
     \\  } else blk2: {
     \\    someCall();
-    \\  };
+    \\  }
     \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    print('yello world')
     \\  else |y| {
@@ -7987,21 +8298,16 @@ test "while 2" {
   res = try format(doc, .{.width = 60}, al);
   try check(res,
     \\fn testMe() void {
-    \\  while (someNiceCondition(a, b, c)) |x|
-    \\    blk: {
-    \\      print('yello world');
-    \\    }
-    \\  else {
+    \\  while (someNiceCondition(a, b, c)) |x| blk: {
+    \\    print('yello world');
+    \\  } else {
     \\    someCall();
     \\  }
-    \\  while (someNiceCondition(a, b, c)) |x|
-    \\    blk: {
-    \\      print('yello world');
-    \\    }
-    \\  else
-    \\    blk2: {
-    \\      someCall();
-    \\    };
+    \\  while (someNiceCondition(a, b, c)) |x| blk: {
+    \\    print('yello world');
+    \\  } else blk2: {
+    \\    someCall();
+    \\  }
     \\  inline while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    print('yello world')
     \\  else |y| {
@@ -8015,23 +8321,18 @@ test "while 2" {
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
-    \\  ) |x|
-    \\    blk: {
-    \\      print('yello world');
-    \\    }
-    \\  else {
+    \\  ) |x| blk: {
+    \\    print('yello world');
+    \\  } else {
     \\    someCall();
     \\  }
     \\  while (
     \\    someNiceCondition(a, b, c)
-    \\  ) |x|
-    \\    blk: {
-    \\      print('yello world');
-    \\    }
-    \\  else
-    \\    blk2: {
-    \\      someCall();
-    \\    };
+    \\  ) |x| blk: {
+    \\    print('yello world');
+    \\  } else blk2: {
+    \\    someCall();
+    \\  }
     \\  inline while (
     \\    someNiceCondition(a, b, c)
     \\  ) |x|
@@ -8224,10 +8525,9 @@ test "while 4" {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
     \\  }
-    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
-    \\    blk: {
-    \\      print('yello world');
-    \\    }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) blk: {
+    \\    print('yello world');
+    \\  }
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    _ = blk: {
     \\      print('yello world');
@@ -8247,10 +8547,9 @@ test "while 4" {
     \\  while (
     \\    someNiceCondition(a, b, c)
     \\  ) |x|
-    \\  : (j += 5)
-    \\    blk: {
-    \\      print('yello world');
-    \\    }
+    \\  : (j += 5) blk: {
+    \\    print('yello world');
+    \\  }
     \\  while (
     \\    someNiceCondition(a, b, c)
     \\  ) |x|
@@ -8283,8 +8582,8 @@ test "zig 0.16.0" {
   var res = try format(doc, .{.width = 100}, al);
   try check(res,
     \\const U = packed union(u2) { a: i2, b: u2 };
-    \\const u: U = .{.a = -1};
     \\
+    \\const u: U = .{.a = -1};
     \\switch (u) {
     \\  .{.b = 3} => {},
     \\  else => unreachable,
@@ -8294,8 +8593,8 @@ test "zig 0.16.0" {
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const U = packed union(u2) { a: i2, b: u2 };
-    \\const u: U = .{.a = -1};
     \\
+    \\const u: U = .{.a = -1};
     \\switch (u) {
     \\  .{.b = 3} => {},
     \\  else => unreachable,
@@ -8305,8 +8604,8 @@ test "zig 0.16.0" {
   res = try format(doc, .{.width = 60}, al);
   try check(res,
     \\const U = packed union(u2) { a: i2, b: u2 };
-    \\const u: U = .{.a = -1};
     \\
+    \\const u: U = .{.a = -1};
     \\switch (u) {
     \\  .{.b = 3} => {},
     \\  else => unreachable,
@@ -8321,15 +8620,9349 @@ test "zig 0.16.0" {
     \\  a: i2,
     \\  b: u2,
     \\};
+    \\
     \\const u: U = .{
     \\  .a = -1,
     \\};
-    \\
     \\switch (u) {
     \\  .{
     \\    .b = 3,
     \\  } => {},
     \\  else => unreachable,
     \\}
+  );
+}
+
+test "comments/vardecl 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const // start me
+  \\fox3 = // haha
+  \\ union ( // open sesame
+  \\ big) 
+  \\ {// start 
+  \\a, b, c};// end
+  \\
+  \\var buffer
+  \\  align( // begin
+  \\ 64) // end
+  \\  addrspace(.generic)
+  \\  linksection(
+  \\    ".my_custom_section" // clearance?
+  \\  ) = undefined;
+  \\
+  \\var buffer: Type // my bad
+  \\  align( 
+  \\ 64) 
+  \\  addrspace(. //just testing '.'
+  \\ generic)
+  \\  linksection(
+  \\    ".my_custom_section"
+  \\  ) = undefined;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const // start me
+    \\fox3 = // haha
+    \\union( // open sesame
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\}; // end
+    \\
+    \\var buffer
+    \\  align( // begin
+    \\    64
+    \\  ) // end
+    \\  addrspace(.generic)
+    \\  linksection(
+    \\    ".my_custom_section" // clearance?
+    \\  ) = undefined;
+    \\
+    \\var buffer: Type // my bad
+    \\  align(64)
+    \\  addrspace(
+    \\    . //just testing '.'
+    \\    generic
+    \\  )
+    \\  linksection(".my_custom_section") = undefined;
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\const // start me
+    \\fox3 = // haha
+    \\union( // open sesame
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\}; // end
+    \\
+    \\var buffer
+    \\  align( // begin
+    \\    64
+    \\  ) // end
+    \\  addrspace(
+    \\    .generic
+    \\  )
+    \\  linksection(
+    \\    ".my_custom_section" // clearance?
+    \\  ) = undefined;
+    \\
+    \\var buffer: Type // my bad
+    \\  align(
+    \\    64
+    \\  )
+    \\  addrspace(
+    \\    . //just testing '.'
+    \\    generic
+    \\  )
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = undefined;
+  );
+}
+
+test "comments/vardecl 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const // start me
+  \\fox3 = // haha
+  \\ union ( // open sesame
+  \\ big) 
+  \\ {// start 
+  \\a, b, c};// end
+  \\
+  \\var buffer
+  \\  align( // begin
+  \\ 64) // end
+  \\  addrspace(.generic)
+  \\  linksection(
+  \\    ".my_custom_section" // clearance?
+  \\  ) = undefined;
+  \\
+  \\var buffer: Type // my bad
+  \\  align( 
+  \\ 64) 
+  \\  addrspace(. //just testing '.'
+  \\ generic)
+  \\  linksection(
+  \\    ".my_custom_section"
+  \\  ) = undefined;
+  \\var // var
+  \\ x // x
+  \\ = // equal
+  \\ foo(abc, bar, baz); // init
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const // start me
+    \\fox3 = // haha
+    \\union( // open sesame
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\}; // end
+    \\
+    \\var buffer
+    \\  align( // begin
+    \\    64
+    \\  ) // end
+    \\  addrspace(.generic)
+    \\  linksection(
+    \\    ".my_custom_section" // clearance?
+    \\  ) = undefined;
+    \\
+    \\var buffer: Type // my bad
+    \\  align(64)
+    \\  addrspace(
+    \\    . //just testing '.'
+    \\    generic
+    \\  )
+    \\  linksection(".my_custom_section") = undefined;
+    \\var // var
+    \\x // x
+    \\= // equal
+    \\foo(abc, bar, baz); // init
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\const // start me
+    \\fox3 = // haha
+    \\union( // open sesame
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\}; // end
+    \\
+    \\var buffer
+    \\  align( // begin
+    \\    64
+    \\  ) // end
+    \\  addrspace(
+    \\    .generic
+    \\  )
+    \\  linksection(
+    \\    ".my_custom_section" // clearance?
+    \\  ) = undefined;
+    \\
+    \\var buffer: Type // my bad
+    \\  align(
+    \\    64
+    \\  )
+    \\  addrspace(
+    \\    . //just testing '.'
+    \\    generic
+    \\  )
+    \\  linksection(
+    \\    ".my_custom_section"
+    \\  ) = undefined;
+    \\var // var
+    \\x // x
+    \\= // equal
+    \\foo(
+    \\  abc,
+    \\  bar,
+    \\  baz,
+    \\); // init
+  );
+}
+
+test "comments/call 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ // this is a line comment x
+  \\ // this is a line comment y
+  \\ // this is a line comment z
+  \\
+  \\ // this is a line comment a
+  \\ // this is a line comment b
+  \\ // this is a line comment c
+  \\ foo_bar
+  // \\ // another
+  \\ ( // testing ab12
+  \\ // call's doc
+  \\call // apologies
+  \\( // link
+  \\ // psych!
+  \\), // testing
+  \\ // foo2's doc
+  \\ foo2_sync(
+  \\ // This fixes abc
+  \\ // This is another 123
+  \\ // and the last
+  \\ 123 , just, "axis"
+  \\, // testing e
+  \\ "test" // yesterday
+  \\, // oh yeah!
+  \\),
+  \\ call2(), call3(x),
+  \\), 
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\// this is a line comment x
+    \\// this is a line comment y
+    \\// this is a line comment z
+    \\
+    \\// this is a line comment a
+    \\// this is a line comment b
+    \\// this is a line comment c
+    \\foo_bar( // testing ab12
+    \\  // call's doc
+    \\  call // apologies
+    \\  ( // link
+    \\    // psych!
+    \\  ), // testing
+    \\  // foo2's doc
+    \\  foo2_sync(
+    \\    // This fixes abc
+    \\    // This is another 123
+    \\    // and the last
+    \\    123,
+    \\    just,
+    \\    "axis", // testing e
+    \\    "test" // yesterday
+    \\    , // oh yeah!
+    \\  ),
+    \\  call2(),
+    \\  call3(x),
+    \\),
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\// this is a line comment x
+    \\// this is a line comment y
+    \\// this is a line comment z
+    \\
+    \\// this is a line comment a
+    \\// this is a line comment b
+    \\// this is a line comment c
+    \\foo_bar( // testing ab12
+    \\  // call's doc
+    \\  call // apologies
+    \\  ( // link
+    \\    // psych!
+    \\  ), // testing
+    \\  // foo2's doc
+    \\  foo2_sync(
+    \\    // This fixes abc
+    \\    // This is another 123
+    \\    // and the last
+    \\    123,
+    \\    just,
+    \\    "axis", // testing e
+    \\    "test" // yesterday
+    \\    , // oh yeah!
+    \\  ),
+    \\  call2(),
+    \\  call3(
+    \\    x,
+    \\  ),
+    \\),
+  );
+}
+
+test "comments/call 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ doCall( // opening
+  \\   // inner
+  \\ tst
+  \\ ), // closing
+  \\ doCall( // opening
+  \\   // inner
+  \\   // long comment
+  \\   // another long comment
+  \\   // another long comment
+  \\   //
+  \\ ), // closing
+  \\
+  \\ foo(b, a // not end)
+  \\), // capture next
+  \\  foobar(. //just testing '.'
+  \\ generic),
+  \\ fox_pot(
+  \\call // apologies
+  \\( // link
+  \\ // psych S!
+  \\ // psych!
+  \\ // psych!
+  \\)
+  \\), // testing
+  \\ foo2_sync(
+  \\ // This fixes abc
+  \\ // This is another 123
+  \\ // and the last
+  \\ 123 , just, "axis"
+  \\, // testing e
+  \\ "test" // yesterday
+  \\, // oh yeah!
+  \\),
+  \\call // apologies
+  \\( // a long trailing
+  \\  cricket(a, b())
+  \\), // not ya
+  \\call // apologies
+  \\( // a long trailing
+  \\) // not ya
+  \\,
+  \\
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\doCall( // opening
+    \\  // inner
+    \\  tst,
+    \\), // closing
+    \\doCall( // opening
+    \\  // inner
+    \\  // long comment
+    \\  // another long comment
+    \\  // another long comment
+    \\  //
+    \\), // closing
+    \\
+    \\foo(
+    \\  b,
+    \\  a // not end)
+    \\), // capture next
+    \\foobar(
+    \\  . //just testing '.'
+    \\  generic,
+    \\),
+    \\fox_pot(
+    \\  call // apologies
+    \\  ( // link
+    \\    // psych S!
+    \\    // psych!
+    \\    // psych!
+    \\  ),
+    \\), // testing
+    \\foo2_sync(
+    \\  // This fixes abc
+    \\  // This is another 123
+    \\  // and the last
+    \\  123,
+    \\  just,
+    \\  "axis", // testing e
+    \\  "test" // yesterday
+    \\  , // oh yeah!
+    \\),
+    \\call // apologies
+    \\( // a long trailing
+    \\  cricket(a, b()),
+    \\), // not ya
+    \\call // apologies
+    \\( // a long trailing
+    \\) // not ya
+    \\,
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\doCall( // opening
+    \\  // inner
+    \\  tst,
+    \\), // closing
+    \\doCall( // opening
+    \\  // inner
+    \\  // long comment
+    \\  // another long comment
+    \\  // another long comment
+    \\  //
+    \\), // closing
+    \\
+    \\foo(
+    \\  b,
+    \\  a // not end)
+    \\), // capture next
+    \\foobar(
+    \\  . //just testing '.'
+    \\  generic,
+    \\),
+    \\fox_pot(
+    \\  call // apologies
+    \\  ( // link
+    \\    // psych S!
+    \\    // psych!
+    \\    // psych!
+    \\  ),
+    \\), // testing
+    \\foo2_sync(
+    \\  // This fixes abc
+    \\  // This is another 123
+    \\  // and the last
+    \\  123,
+    \\  just,
+    \\  "axis", // testing e
+    \\  "test" // yesterday
+    \\  , // oh yeah!
+    \\),
+    \\call // apologies
+    \\( // a long trailing
+    \\  cricket(
+    \\    a,
+    \\    b(),
+    \\  ),
+    \\), // not ya
+    \\call // apologies
+    \\( // a long trailing
+    \\) // not ya
+    \\,
+  );
+}
+
+test "comments/call 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  // builtin calls
+  const src =
+  \\ fn fun(expr: Type) switch // 0
+  \\ (@TypeOf(expr)) { // a
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} { // b
+  \\  var x = @This // 0
+  \\ (// 1
+  \\  // in doc
+  \\ a, // one
+  \\ b, c.foo(1, 2, "oxff")
+  \\  // end doc
+  \\ ) // 3
+  \\ ;
+  \\  var y = @This(a, // two
+  \\ b, c.foo(1, 2, "oxff") // last
+  \\ );
+  \\  var z = @This(a, // three
+  \\ b, c.foo(1, 2, "oxff"), // final
+  \\ );
+  \\   return 
+  \\label: switch (expr)  { // 1
+  \\  a => a, // 2
+  \\  b, c => c, // 3
+  \\  inline d...e => e, // 4
+  \\  else => f, //foo
+  \\}; // 5
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch // 0
+    \\(@TypeOf(expr)) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  var x = @This // 0
+    \\  ( // 1
+    \\    // in doc
+    \\    a, // one
+    \\    b,
+    \\    c.foo(1, 2, "oxff")
+    \\    // end doc
+    \\  ) // 3
+    \\  ;
+    \\  var y = @This(
+    \\    a, // two
+    \\    b,
+    \\    c.foo(1, 2, "oxff") // last
+    \\  );
+    \\  var z = @This(
+    \\    a, // three
+    \\    b,
+    \\    c.foo(1, 2, "oxff"), // final
+    \\  );
+    \\  return label: switch (expr) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch // 0
+    \\(
+    \\  @TypeOf(expr)
+    \\) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  var x = @This // 0
+    \\  ( // 1
+    \\    // in doc
+    \\    a, // one
+    \\    b,
+    \\    c.foo(
+    \\      1,
+    \\      2,
+    \\      "oxff",
+    \\    )
+    \\    // end doc
+    \\  ) // 3
+    \\  ;
+    \\  var y = @This(
+    \\    a, // two
+    \\    b,
+    \\    c.foo(
+    \\      1,
+    \\      2,
+    \\      "oxff",
+    \\    ) // last
+    \\  );
+    \\  var z = @This(
+    \\    a, // three
+    \\    b,
+    \\    c.foo(
+    \\      1,
+    \\      2,
+    \\      "oxff",
+    \\    ), // final
+    \\  );
+    \\  return label: switch (
+    \\    expr
+    \\  ) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+  );
+}
+
+test "comments/chains 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\var sb = self.db.xyz(a, b(),);
+  \\var sb = self_db_xyz(a, b(),);
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var sb = self.db.xyz(a, b());
+    \\var sb = self_db_xyz(a, b());
+  );
+  // using width: 15 
+  res = try format(doc, .{.width = 15}, al);
+  try check(res,
+    \\var sb = self.db.xyz(
+    \\  a,
+    \\  b(),
+    \\);
+    \\var sb = self_db_xyz(
+    \\  a,
+    \\  b(),
+    \\);
+  );
+}
+
+test "comments/chains 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var x = foo // yes
+  \\ . // two
+  \\ bar // a
+  \\ ( // first
+  \\ a, b, c()
+  \\ ) // last
+  \\ ; // end
+  \\
+  \\ var y = foo // yes
+  \\ . // two
+  \\ bar // a
+  \\ ( // first
+  \\ a // one
+  \\ , // comma
+  \\ b // two
+  \\ , // comma
+  \\ c() // three
+  \\ , // last comma
+  \\ ) // last
+  \\ ; // end
+  \\
+  \\ var z = foo.bar // yes
+  \\ . // two
+  \\ bar // a
+  \\ ( // first
+  \\ // inline comment 1
+  \\ // inline comment 2
+  \\ a // one
+  \\ , // comma
+  \\ b // two
+  \\ , // comma
+  \\ c(
+  \\ a // my a
+  \\ . // my .
+  \\ b // my b
+  \\ ( // lbr
+  \\ 0x1 // 1
+  \\, // comma
+  \\ 0x2 // 2
+  \\ , // comma
+  \\ "three" // 3
+  \\ ) // rbr
+  \\ , // last comma
+  \\ a() // my a
+  \\ . // my .
+  \\ b // my b
+  \\ (1, 2, 3), // my args
+  \\) // three
+  \\ ).car // last
+  \\ ()
+  \\ ; // end
+  \\
+  \\ var z = foo.bar
+  \\ . 
+  \\ bar 
+  \\ ( 
+  \\ a
+  \\ , 
+  \\ b
+  \\ ,
+  \\ c()
+  \\ ).car 
+  \\ ()
+  \\ ; // end
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var x = foo // yes
+    \\. // two
+    \\bar // a
+    \\( // first
+    \\  a,
+    \\  b,
+    \\  c(),
+    \\) // last
+    \\; // end
+    \\
+    \\var y = foo // yes
+    \\. // two
+    \\bar // a
+    \\( // first
+    \\  a // one
+    \\  , // comma
+    \\  b // two
+    \\  , // comma
+    \\  c() // three
+    \\  , // last comma
+    \\) // last
+    \\; // end
+    \\
+    \\var z = foo.bar // yes
+    \\. // two
+    \\bar // a
+    \\( // first
+    \\  // inline comment 1
+    \\  // inline comment 2
+    \\  a // one
+    \\  , // comma
+    \\  b // two
+    \\  , // comma
+    \\  c(
+    \\    a // my a
+    \\    . // my .
+    \\    b // my b
+    \\    ( // lbr
+    \\      0x1 // 1
+    \\      , // comma
+    \\      0x2 // 2
+    \\      , // comma
+    \\      "three" // 3
+    \\    ) // rbr
+    \\    , // last comma
+    \\    a() // my a
+    \\    . // my .
+    \\    b // my b
+    \\    (1, 2, 3), // my args
+    \\  ) // three
+    \\)
+    \\  .car // last
+    \\  (); // end
+    \\
+    \\var z = foo.bar.bar(a, b, c()).car(); // end
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var x = foo // yes
+    \\. // two
+    \\bar // a
+    \\( // first
+    \\  a,
+    \\  b,
+    \\  c(),
+    \\) // last
+    \\; // end
+    \\
+    \\var y = foo // yes
+    \\. // two
+    \\bar // a
+    \\( // first
+    \\  a // one
+    \\  , // comma
+    \\  b // two
+    \\  , // comma
+    \\  c() // three
+    \\  , // last comma
+    \\) // last
+    \\; // end
+    \\
+    \\var z = foo.bar // yes
+    \\. // two
+    \\bar // a
+    \\( // first
+    \\  // inline comment 1
+    \\  // inline comment 2
+    \\  a // one
+    \\  , // comma
+    \\  b // two
+    \\  , // comma
+    \\  c(
+    \\    a // my a
+    \\    . // my .
+    \\    b // my b
+    \\    ( // lbr
+    \\      0x1 // 1
+    \\      , // comma
+    \\      0x2 // 2
+    \\      , // comma
+    \\      "three" // 3
+    \\    ) // rbr
+    \\    , // last comma
+    \\    a() // my a
+    \\      . // my .
+    \\      b // my b
+    \\      (
+    \\        1,
+    \\        2,
+    \\        3,
+    \\      ), // my args
+    \\  ) // three
+    \\)
+    \\  .car // last
+    \\  (); // end
+    \\
+    \\var z = foo.bar.bar(a, b, c())
+    \\  .car(); // end
+  );
+}
+
+test "comments/chains 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\var ky = self.group(
+  \\  self.seqb()
+  \\    .text("Group(")
+  \\    .indent(
+  \\      self.seqb()
+  \\        .softline()
+  \\        .text(id)
+  \\        .text(",")
+  \\        .normline()
+  \\        .appends(_d)
+  \\        .finish(),
+  \\    )
+  \\    .softline()
+  \\    .text(")")
+  \\    .finish(),
+  \\);
+  \\var sb = self.db.xyz()
+  \\  .pkzy.aaa.seqb()
+  \\  .appends(lhs)
+  \\  .sb.ifsplit(
+  \\ // inline comment 1
+  \\ // inline comment 2
+  \\
+  \\ // inline comment 3
+  \\    id,
+  \\    self.db.indent(
+  \\      self.db // that way
+  \\        .seqb() // haha 
+  \\      .softline().text(".").text(self._token(rhs)).finish(),
+  \\    )
+  \\      .self.db.seqb(
+  \\
+  \\ // inline comment 1
+  \\ // inline comment 2
+  \\
+  \\    )
+  \\      .text(".")
+  \\      .text(self._token(rhs))
+  \\      .finish(),
+  \\  )
+  \\  ._();
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var ky = self.group(
+    \\  self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb().softline().text(id).text(",").normline().appends(_d).finish(),
+    \\    )
+    \\    .softline()
+    \\    .text(")")
+    \\    .finish(),
+    \\);
+    \\var sb = self.db.xyz()
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    // inline comment 1
+    \\    // inline comment 2
+    \\
+    \\    // inline comment 3
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db // that way
+    \\      .seqb() // haha
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(self._token(rhs))
+    \\        .finish(),
+    \\    )
+    \\      .self.db.seqb(
+    \\        // inline comment 1
+    \\        // inline comment 2
+    \\      )
+    \\      .text(".")
+    \\      .text(self._token(rhs))
+    \\      .finish(),
+    \\  )
+    \\  ._();
+  );
+  // using width: 20
+  res = try format(doc, .{.width = 20}, al);
+  try check(res,
+    \\var ky = self.group(
+    \\  self.seqb()
+    \\    .text("Group(")
+    \\    .indent(
+    \\      self.seqb()
+    \\        .softline()
+    \\        .text(id)
+    \\        .text(",")
+    \\        .normline()
+    \\        .appends(_d)
+    \\        .finish(),
+    \\    )
+    \\    .softline()
+    \\    .text(")")
+    \\    .finish(),
+    \\);
+    \\var sb = self.db.xyz()
+    \\  .pkzy.aaa.seqb()
+    \\  .appends(lhs)
+    \\  .sb.ifsplit(
+    \\    // inline comment 1
+    \\    // inline comment 2
+    \\
+    \\    // inline comment 3
+    \\    id,
+    \\    self.db.indent(
+    \\      self.db // that way
+    \\      .seqb() // haha
+    \\        .softline()
+    \\        .text(".")
+    \\        .text(
+    \\          self._token(
+    \\            rhs,
+    \\          ),
+    \\        )
+    \\        .finish(),
+    \\    )
+    \\      .self.db.seqb(
+    \\        // inline comment 1
+    \\        // inline comment 2
+    \\      )
+    \\      .text(".")
+    \\      .text(
+    \\        self._token(
+    \\          rhs,
+    \\        ),
+    \\      )
+    \\      .finish(),
+    \\  )
+    \\  ._();
+  );
+}
+
+test "comments/fundecl 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn // comment fn
+  \\foo2 // comment name
+  \\ ( // comment bracket
+  \\  comptime T: type, // comment comptime
+  \\  x // before
+  \\ : // right there
+  \\  ArrayList() // after
+  \\, // comma me surprised
+  \\  comptime // see me
+  \\ x: // again again
+  \\ i32, // aha here we are
+  \\  noalias // from here
+  \\ y: u2, // to here
+  \\  k: anytype,
+  \\  noalias y: u2,
+  \\  k: anytype,
+  \\  ... // first time?
+  \\, // second time?
+  \\) // just for funsies 
+  \\ A(T) { // start there
+  \\  // nothing to prove
+  \\}// good stuff
+  \\
+  \\pub // comment 1
+  \\ fn // comment 2
+  \\ fantasticFooBar // comment 3
+  \\ (  // comment 4
+  \\  comptime   // comment 5
+  \\ T  // comment 6
+  \\: // comment 6b
+  \\ type // comment 7
+  \\ , // comment 8
+  \\  x: std_ArrayList(T),
+  \\  comptime x: i32,
+  \\  noalias y: u2,
+  \\  k: anytype,
+  \\)  // comment a
+  \\align(64)  // comment b
+  \\addrspace(// copium
+  \\.generic)  // comment c
+  \\callconv(.c)  // comment d
+  \\A(T) // yeah sure
+  \\ { // aha!
+  \\  // var x = 5;
+  \\  print("just testing!");
+  \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\} // end aha!
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\  comptime T: type, // comment comptime
+    \\  x // before
+    \\  : // right there
+    \\  ArrayList() // after
+    \\  , // comma me surprised
+    \\  comptime // see me
+    \\  x: // again again
+    \\  i32, // aha here we are
+    \\  noalias // from here
+    \\  y: u2, // to here
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ... // first time?
+    \\  , // second time?
+    \\) // just for funsies
+    \\A(T) { // start there
+    \\  // nothing to prove
+    \\} // good stuff
+    \\
+    \\pub // comment 1
+    \\fn // comment 2
+    \\fantasticFooBar // comment 3
+    \\( // comment 4
+    \\  comptime // comment 5
+    \\  T // comment 6
+    \\  : // comment 6b
+    \\  type // comment 7
+    \\  , // comment 8
+    \\  x: std_ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) // comment a
+    \\align(64) // comment b
+    \\addrspace( // copium
+    \\  .generic
+    \\) // comment c
+    \\callconv(.c) // comment d
+    \\A(T) // yeah sure
+    \\{ // aha!
+    \\  // var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\} // end aha!
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\  comptime T: type, // comment comptime
+    \\  x // before
+    \\  : // right there
+    \\  ArrayList() // after
+    \\  , // comma me surprised
+    \\  comptime // see me
+    \\  x: // again again
+    \\  i32, // aha here we are
+    \\  noalias // from here
+    \\  y: u2, // to here
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ... // first time?
+    \\  , // second time?
+    \\) // just for funsies
+    \\A(
+    \\  T,
+    \\) { // start there
+    \\  // nothing to prove
+    \\} // good stuff
+    \\
+    \\pub // comment 1
+    \\fn // comment 2
+    \\fantasticFooBar // comment 3
+    \\( // comment 4
+    \\  comptime // comment 5
+    \\  T // comment 6
+    \\  : // comment 6b
+    \\  type // comment 7
+    \\  , // comment 8
+    \\  x: std_ArrayList(
+    \\    T,
+    \\  ),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) // comment a
+    \\align(
+    \\  64
+    \\) // comment b
+    \\addrspace( // copium
+    \\  .generic
+    \\) // comment c
+    \\callconv(
+    \\  .c
+    \\) // comment d
+    \\A(
+    \\  T,
+    \\) // yeah sure
+    \\{ // aha!
+    \\  // var x = 5;
+    \\  print(
+    \\    "just testing!",
+    \\  );
+    \\  var x: i32, const y: u32 = foo_(
+    \\    bar(
+    \\      1,
+    \\      2,
+    \\    ),
+    \\  );
+    \\} // end aha!
+  );
+}
+
+test "comments/fundecl 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ // last one!
+  \\ j: usize,
+  \\
+  \\ fooIsLong(),
+  \\ // yippee!
+  \\ fn foo() void {// testing you
+  \\ x();
+  \\}
+  \\
+  \\ fn foo() void {// testing you
+  \\}
+  \\
+  \\ fn foo() void {
+  \\ var x // dont
+  \\ = ( - // haha
+  \\ j)(abc);
+  \\ var x: Type align(12) // dont
+  \\ = ( - // haha
+  \\ j)(abc);
+  \\ var x: Type align(12)
+  \\ = ( - 
+  \\ j)(abc);
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\// last one!
+    \\j: usize,
+    \\
+    \\fooIsLong(),
+    \\// yippee!
+    \\fn foo() void { // testing you
+    \\  x();
+    \\}
+    \\
+    \\fn foo() void { // testing you
+    \\}
+    \\
+    \\fn foo() void {
+    \\  var x // dont
+    \\  = (- // haha
+    \\    j)(abc);
+    \\  var x: Type
+    \\    align(12) // dont
+    \\  = (- // haha
+    \\    j)(abc);
+    \\  var x: Type align(12) = (-j)(abc);
+    \\}
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\// last one!
+    \\j: usize,
+    \\
+    \\fooIsLong(),
+    \\// yippee!
+    \\fn foo() void { // testing you
+    \\  x();
+    \\}
+    \\
+    \\fn foo() void { // testing you
+    \\}
+    \\
+    \\fn foo() void {
+    \\  var x // dont
+    \\  = (- // haha
+    \\    j)(
+    \\    abc,
+    \\  );
+    \\  var x: Type
+    \\    align(
+    \\      12
+    \\    ) // dont
+    \\  = (- // haha
+    \\    j)(
+    \\    abc,
+    \\  );
+    \\  var x: Type
+    \\    align(
+    \\      12
+    \\    ) = (-j)(
+    \\    abc,
+    \\  );
+    \\}
+  );
+}
+
+test "comments/fundecl 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub // comment 1
+  \\ fn // comment 2
+  \\ fantasticFooBar // comment 3
+  \\ (  // comment 4
+  \\ // this is a top level comment 1
+  \\ // this is a top level comment 2
+  \\ // this is a top level comment 3
+  \\  comptime   // comment 5
+  \\ T  // comment 6
+  \\: // comment 6b
+  \\ type // comment 7
+  \\ , // comment 8
+  \\  x: std_ArrayList(T),
+  \\  comptime x: i32,
+  \\  noalias y: u2,
+  \\  k: anytype,
+  \\)  // comment a
+  \\align(64)  // comment b
+  \\addrspace(// copium
+  \\.generic)  // comment c
+  \\linksection(".my_custom_section")
+  \\A(T) // yeah sure
+  \\{ // aha!
+  \\  // var x = 5;
+  \\  print("just testing!");
+  \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+  \\} // end aha!
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\pub // comment 1
+    \\fn // comment 2
+    \\fantasticFooBar // comment 3
+    \\( // comment 4
+    \\  // this is a top level comment 1
+    \\  // this is a top level comment 2
+    \\  // this is a top level comment 3
+    \\  comptime // comment 5
+    \\  T // comment 6
+    \\  : // comment 6b
+    \\  type // comment 7
+    \\  , // comment 8
+    \\  x: std_ArrayList(T),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) // comment a
+    \\align(64) // comment b
+    \\addrspace( // copium
+    \\  .generic
+    \\) // comment c
+    \\linksection(".my_custom_section")
+    \\A(T) // yeah sure
+    \\{ // aha!
+    \\  // var x = 5;
+    \\  print("just testing!");
+    \\  var x: i32, const y: u32 = foo_(bar(1, 2));
+    \\} // end aha!
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\pub // comment 1
+    \\fn // comment 2
+    \\fantasticFooBar // comment 3
+    \\( // comment 4
+    \\  // this is a top level comment 1
+    \\  // this is a top level comment 2
+    \\  // this is a top level comment 3
+    \\  comptime // comment 5
+    \\  T // comment 6
+    \\  : // comment 6b
+    \\  type // comment 7
+    \\  , // comment 8
+    \\  x: std_ArrayList(
+    \\    T,
+    \\  ),
+    \\  comptime x: i32,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\) // comment a
+    \\align(
+    \\  64
+    \\) // comment b
+    \\addrspace( // copium
+    \\  .generic
+    \\) // comment c
+    \\linksection(
+    \\  ".my_custom_section"
+    \\)
+    \\A(
+    \\  T,
+    \\) // yeah sure
+    \\{ // aha!
+    \\  // var x = 5;
+    \\  print(
+    \\    "just testing!",
+    \\  );
+    \\  var x: i32, const y: u32 = foo_(
+    \\    bar(
+    \\      1,
+    \\      2,
+    \\    ),
+    \\  );
+    \\} // end aha!
+  );
+}
+
+test "comments/fundecl 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ extern // first one
+  \\fn // comment fn
+  \\foo2 // comment name
+  \\ ( // comment bracket
+  \\) // just for funsies 
+  \\ A(T); 
+  \\
+  \\pub extern // first one
+  \\fn // comment fn
+  \\foo2 // comment name
+  \\ ( // comment bracket
+  \\ // inside this function
+  \\) // just for funsies 
+  \\ A(T); 
+  \\
+  \\ extern // first one
+  \\fn // comment fn
+  \\foo2 // comment name
+  \\ ( // comment bracket
+  \\  comptime T: type, // comment comptime
+  \\  x // before
+  \\ : // right there
+  \\  ArrayList(T(A, B)) // after
+  \\, // comma me surprised
+  \\  comptime // see me
+  \\ x: // again again
+  \\ i32, // aha here we are
+  \\  noalias // from here
+  \\ y: u2, // to here
+  \\  k: anytype,
+  \\  noalias y: u2,
+  \\  k: anytype,
+  \\  ... // first time?
+  \\, // second time?
+  \\) // just for funsies 
+  \\ A(T); 
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\extern // first one
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\) // just for funsies
+    \\A(T);
+    \\
+    \\pub extern // first one
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\  // inside this function
+    \\) // just for funsies
+    \\A(T);
+    \\
+    \\extern // first one
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\  comptime T: type, // comment comptime
+    \\  x // before
+    \\  : // right there
+    \\  ArrayList(T(A, B)) // after
+    \\  , // comma me surprised
+    \\  comptime // see me
+    \\  x: // again again
+    \\  i32, // aha here we are
+    \\  noalias // from here
+    \\  y: u2, // to here
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ... // first time?
+    \\  , // second time?
+    \\) // just for funsies
+    \\A(T);
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\extern // first one
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\) // just for funsies
+    \\A(T);
+    \\
+    \\pub extern // first one
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\  // inside this function
+    \\) // just for funsies
+    \\A(T);
+    \\
+    \\extern // first one
+    \\fn // comment fn
+    \\foo2 // comment name
+    \\( // comment bracket
+    \\  comptime T: type, // comment comptime
+    \\  x // before
+    \\  : // right there
+    \\  ArrayList(
+    \\    T(
+    \\      A,
+    \\      B,
+    \\    ),
+    \\  ) // after
+    \\  , // comma me surprised
+    \\  comptime // see me
+    \\  x: // again again
+    \\  i32, // aha here we are
+    \\  noalias // from here
+    \\  y: u2, // to here
+    \\  k: anytype,
+    \\  noalias y: u2,
+    \\  k: anytype,
+    \\  ... // first time?
+    \\  , // second time?
+    \\) // just for funsies
+    \\A(T);
+  );
+}
+
+test "comments/block 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc1 = blk: { // opening
+  \\   // the first
+  \\   someBlock();
+  \\   // the second
+  \\   someOtherBlock();
+  \\   // the third
+  \\   break :blk result("okay");
+  \\ }; // closing
+  \\
+  \\ // the top level in the middle
+  \\ var abc2 = someFunc(1, 2, 3) catch {
+  \\   someBlock();
+  \\ };
+  \\
+  \\ var abc3 = blk // label
+  \\ : // colon
+  \\ { // block open
+  \\   someBlock(); // first
+  \\   someOtherBlock(); // second
+  \\   break :blk result("okay"); // last
+  \\ } // block close
+  \\; // semi
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var abc1 = blk: { // opening
+    \\  // the first
+    \\  someBlock();
+    \\  // the second
+    \\  someOtherBlock();
+    \\  // the third
+    \\  break :blk result("okay");
+    \\}; // closing
+    \\
+    \\// the top level in the middle
+    \\var abc2 = someFunc(1, 2, 3) catch {
+    \\  someBlock();
+    \\};
+    \\
+    \\var abc3 = blk // label
+    \\: // colon
+    \\{ // block open
+    \\  someBlock(); // first
+    \\  someOtherBlock(); // second
+    \\  break :blk result("okay"); // last
+    \\} // block close
+    \\; // semi
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var abc1 = blk: { // opening
+    \\  // the first
+    \\  someBlock();
+    \\  // the second
+    \\  someOtherBlock();
+    \\  // the third
+    \\  break :blk result("okay");
+    \\}; // closing
+    \\
+    \\// the top level in the middle
+    \\var abc2 = someFunc(1, 2, 3)
+    \\  catch {
+    \\    someBlock();
+    \\  };
+    \\
+    \\var abc3 = blk // label
+    \\: // colon
+    \\{ // block open
+    \\  someBlock(); // first
+    \\  someOtherBlock(); // second
+    \\  break :blk result(
+    \\    "okay",
+    \\  ); // last
+    \\} // block close
+    \\; // semi
+  );
+}
+
+test "comments/containerdecl 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const fox3 = extern // first?
+  \\ union // test here
+  \\ ( // lbrack
+  \\ big // arg
+  \\ ) // start 
+  \\ // again?
+  \\ 
+  \\ { // lbrace
+  \\ a // first
+  \\ , // comma
+  \\ b // second
+  \\ , // comma
+  \\ c // third
+  \\ , // comma
+  \\ } // rbrace
+  \\ ; // semi
+  \\
+  \\ const fox3 = extern // first?
+  \\ union // test here
+  \\ ( // lbrack
+  \\ enum // abc
+  \\ ( // xyz
+  \\ big // jkl
+  \\ ) // arg
+  \\ ) // start 
+  \\ { // lbrace
+  \\ a // first
+  \\ , // comma
+  \\ b // second
+  \\ , // comma
+  \\ c // third
+  \\ , // comma
+  \\ } // rbrace
+  \\ ; // semi
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  big // arg
+    \\) // start
+    \\// again?
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c // third
+    \\  , // comma
+    \\} // rbrace
+    \\; // semi
+    \\
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c // third
+    \\  , // comma
+    \\} // rbrace
+    \\; // semi
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  big // arg
+    \\) // start
+    \\// again?
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c // third
+    \\  , // comma
+    \\} // rbrace
+    \\; // semi
+    \\
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c // third
+    \\  , // comma
+    \\} // rbrace
+    \\; // semi
+  );
+}
+
+test "comments/containerdecl 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const fox3 =
+  \\ union // test here
+  \\ ( // lbrack
+  \\ enum // abc
+  \\ ( // xyz
+  \\ big // jkl
+  \\ ) // arg
+  \\ ) // start 
+  \\ { // lbrace
+  \\ a // first
+  \\ , // comma
+  \\ b // second
+  \\ , // comma
+  \\ c // third
+  \\ , 
+  \\ } // rbrace
+  \\ ; // semi
+  \\
+  \\ const fox3 = extern // first?
+  \\ union // test here
+  \\ ( // lbrack
+  \\ enum // abc
+  \\ ( // xyz
+  \\ big // jkl
+  \\ ) // arg
+  \\ ) // start 
+  \\ { // lbrace
+  \\ a // first
+  \\ , // comma
+  \\ b // second
+  \\ , // comma
+  \\ c, 
+  \\ } // rbrace
+  \\ ; // semi
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const fox3 = union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c // third
+    \\  ,
+    \\} // rbrace
+    \\; // semi
+    \\
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c,
+    \\} // rbrace
+    \\; // semi
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const fox3 = union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c // third
+    \\  ,
+    \\} // rbrace
+    \\; // semi
+    \\
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c,
+    \\} // rbrace
+    \\; // semi
+  );
+}
+
+test "comments/containerdecl 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const fox3 = extern // first?
+  \\ union // test here
+  \\ ( // lbrack
+  \\ enum // abc
+  \\ ( // xyz
+  \\ big // jkl
+  \\ ) // arg
+  \\ ) // start 
+  \\ { // lbrace
+  \\ a // first
+  \\ , // comma
+  \\ b // second
+  \\ , // comma
+  \\ c, 
+  \\ } // rbrace
+  \\ ; // semi
+  \\ const fox2 = enum // start here
+  \\ {a, b, c} // the end
+  \\ ;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c,
+    \\} // rbrace
+    \\; // semi
+    \\const fox2 = enum // start here
+    \\{
+    \\  a,
+    \\  b,
+    \\  c,
+    \\} // the end
+    \\;
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\  enum // abc
+    \\  ( // xyz
+    \\    big // jkl
+    \\  ) // arg
+    \\) // arg
+    \\{ // lbrace
+    \\  a // first
+    \\  , // comma
+    \\  b // second
+    \\  , // comma
+    \\  c,
+    \\} // rbrace
+    \\; // semi
+    \\const fox2 = enum // start here
+    \\{
+    \\  a,
+    \\  b,
+    \\  c,
+    \\} // the end
+    \\;
+  );
+}
+
+test "comments/containerdecl 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const fox2 = enum {a, b, c} // the end
+  \\ ;
+  \\ const fox3 = union (big) // start 
+  \\ {a, b, c};
+  \\ const fox3 = union (big) 
+  \\ {// start 
+  \\a, b, c}// end
+  \\ ; // last
+  \\ const fox3 = union ( // open sesame
+  \\ big) 
+  \\ {// start 
+  \\a, b, c};// end
+  \\ const fox3 = union (
+  \\ big) 
+  \\ {
+  \\a, b, c};
+  \\ const fox3 = struct(
+  \\ big) 
+  \\ {
+  \\ // this could be a doc 1
+  \\ // this could be a doc 2
+  \\a, b, 
+  \\ // this could be a doc 3
+  \\ // this could be a doc 4
+  \\ c};
+  \\ const fox3 = struct(
+  \\ big) 
+  \\ {
+  \\ // this could be a doc 1
+  \\ // this could be a doc 2
+  \\a, b, 
+  \\ // this could be a doc 3
+  \\ // this could be a doc 4
+  \\ c // this one should trail
+  \\};
+  \\pub const FmtConfig = struct {
+  \\  width: u32 = 80,
+  \\  indent: u8 = 2,
+  \\  decl_line_seps: u8 = 2,
+  \\  writer: enum (u3) {
+  \\    file,
+  \\    out,
+  \\    mem, // meh
+  \\  } = .mem
+  \\ // testing at end
+  \\};
+  \\pub const FmtConfig = struct {
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const fox2 = enum {
+    \\  a,
+    \\  b,
+    \\  c,
+    \\} // the end
+    \\;
+    \\const fox3 = union(big) // start
+    \\{
+    \\  a,
+    \\  b,
+    \\  c,
+    \\};
+    \\const fox3 = union(big) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\} // end
+    \\; // last
+    \\const fox3 = union( // open sesame
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\}; // end
+    \\const fox3 = union(big) { a, b, c };
+    \\const fox3 = struct(big) {
+    \\  // this could be a doc 1
+    \\  // this could be a doc 2
+    \\  a,
+    \\  b,
+    \\  // this could be a doc 3
+    \\  // this could be a doc 4
+    \\  c,
+    \\};
+    \\const fox3 = struct(big) {
+    \\  // this could be a doc 1
+    \\  // this could be a doc 2
+    \\  a,
+    \\  b,
+    \\  // this could be a doc 3
+    \\  // this could be a doc 4
+    \\  c // this one should trail
+    \\};
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) {
+    \\    file,
+    \\    out,
+    \\    mem, // meh
+    \\  } = .mem
+    \\  // testing at end
+    \\};
+    \\pub const FmtConfig = struct {};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const fox2 = enum {
+    \\  a,
+    \\  b,
+    \\  c,
+    \\} // the end
+    \\;
+    \\const fox3 = union(
+    \\  big
+    \\) // start
+    \\{
+    \\  a,
+    \\  b,
+    \\  c,
+    \\};
+    \\const fox3 = union(
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\} // end
+    \\; // last
+    \\const fox3 = union( // open sesame
+    \\  big
+    \\) { // start
+    \\  a,
+    \\  b,
+    \\  c,
+    \\}; // end
+    \\const fox3 = union(big) {
+    \\  a,
+    \\  b,
+    \\  c,
+    \\};
+    \\const fox3 = struct(big) {
+    \\  // this could be a doc 1
+    \\  // this could be a doc 2
+    \\  a,
+    \\  b,
+    \\  // this could be a doc 3
+    \\  // this could be a doc 4
+    \\  c,
+    \\};
+    \\const fox3 = struct(big) {
+    \\  // this could be a doc 1
+    \\  // this could be a doc 2
+    \\  a,
+    \\  b,
+    \\  // this could be a doc 3
+    \\  // this could be a doc 4
+    \\  c // this one should trail
+    \\};
+    \\pub const FmtConfig = struct {
+    \\  width: u32 = 80,
+    \\  indent: u8 = 2,
+    \\  decl_line_seps: u8 = 2,
+    \\  writer: enum(u3) {
+    \\    file,
+    \\    out,
+    \\    mem, // meh
+    \\  } = .mem
+    \\  // testing at end
+    \\};
+    \\pub const FmtConfig = struct {};
+  );
+}
+
+test "comments/containerdecl 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ comptime // here here
+  \\ x // first
+  \\ : // yes
+  \\ Ty // the type
+  \\ = // seems
+  \\ okay() // okay
+  \\ , // finally
+  \\
+  \\ comptime // here here
+  \\ x2 // first
+  \\ : // yes
+  \\ Ty // the type
+  \\ = // seems
+  \\ okay() // okay
+  \\ , // finally
+  \\
+  \\ const T = struct {
+  \\ comptime // here here
+  \\ x // first
+  \\ : // yes
+  \\ Ty // the type
+  \\ = // seems
+  \\ okay() // okay
+  \\ ,// finally
+  \\
+  \\ comptime // here here
+  \\ y // first
+  \\ : // yes
+  \\ Ty // the type
+  \\ = // seems
+  \\ cool() // cool
+  \\ ,// finally
+  \\
+  \\ z // first
+  \\ : // yes
+  \\ Ty // the type
+  \\ = // seems
+  \\ cool() // cool
+  \\ ,// finally
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\comptime // here here
+    \\x // first
+    \\: // yes
+    \\Ty // the type
+    \\= // seems
+    \\okay() // okay
+    \\, // finally
+    \\
+    \\comptime // here here
+    \\x2 // first
+    \\: // yes
+    \\Ty // the type
+    \\= // seems
+    \\okay() // okay
+    \\, // finally
+    \\
+    \\const T = struct {
+    \\  comptime // here here
+    \\  x // first
+    \\  : // yes
+    \\  Ty // the type
+    \\  = // seems
+    \\  okay() // okay
+    \\  , // finally
+    \\
+    \\  comptime // here here
+    \\  y // first
+    \\  : // yes
+    \\  Ty // the type
+    \\  = // seems
+    \\  cool() // cool
+    \\  , // finally
+    \\
+    \\  z // first
+    \\  : // yes
+    \\  Ty // the type
+    \\  = // seems
+    \\  cool() // cool
+    \\  , // finally
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\comptime // here here
+    \\x // first
+    \\: // yes
+    \\Ty // the type
+    \\= // seems
+    \\okay() // okay
+    \\, // finally
+    \\
+    \\comptime // here here
+    \\x2 // first
+    \\: // yes
+    \\Ty // the type
+    \\= // seems
+    \\okay() // okay
+    \\, // finally
+    \\
+    \\const T = struct {
+    \\  comptime // here here
+    \\  x // first
+    \\  : // yes
+    \\  Ty // the type
+    \\  = // seems
+    \\  okay() // okay
+    \\  , // finally
+    \\
+    \\  comptime // here here
+    \\  y // first
+    \\  : // yes
+    \\  Ty // the type
+    \\  = // seems
+    \\  cool() // cool
+    \\  , // finally
+    \\
+    \\  z // first
+    \\  : // yes
+    \\  Ty // the type
+    \\  = // seems
+    \\  cool() // cool
+    \\  , // finally
+    \\};
+  );
+}
+
+test "comments/containerdecl 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const fox3 = extern // first?
+  \\ union // test here
+  \\ ( // lbrack
+  \\ enum // arg
+  \\ // first
+  \\
+  \\
+  \\
+  \\ ) // start 
+  \\ // again?
+  \\ 
+  \\ { // lbrace
+  \\};
+  \\
+  \\ const fox3 = extern // first?
+  \\ union // test here
+  \\ ( // lbrack
+  \\ enum // arg
+  \\ // first
+  \\ ) // start 
+  \\ // again?
+  \\ 
+  \\ {
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\enum // arg
+    \\// first
+    \\) // start
+    \\// again?
+    \\{ // lbrace
+    \\};
+    \\
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\enum // arg
+    \\// first
+    \\) // start
+    \\// again?
+    \\{};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\enum // arg
+    \\// first
+    \\) // start
+    \\// again?
+    \\{ // lbrace
+    \\};
+    \\
+    \\const fox3 = extern // first?
+    \\union // test here
+    \\( // lbrack
+    \\enum // arg
+    \\// first
+    \\) // start
+    \\// again?
+    \\{};
+  );
+}
+
+test "comments/containerdecl 7" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const T = struct {
+  \\  mem: u8, // y
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const T = struct {
+    \\  mem: u8, // y
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const T = struct {
+    \\  mem: u8, // y
+    \\};
+  );
+}
+
+test "comments/if/else 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\ // first one
+  \\ if // again 
+  \\ ( // lb
+  \\ a // cond
+  \\ ) //
+  \\ { // good
+  \\ // nothing here
+  \\ } // last
+  \\
+  \\ if // 1 
+  \\ ( // 2
+  \\ a // c
+  \\ ) // 3
+  \\ b // 4
+  \\ else // 5
+  \\ d // 6
+  \\ ; // 7
+  \\
+  \\ if //
+  \\ ( //
+  \\ a //
+  \\ ) // 
+  \\ | //
+  \\ x //
+  \\
+  \\ |//
+  \\ b //
+  \\ else //
+  \\ d //
+  \\ ; //
+  \\ 
+  \\ if //
+  \\ ( //
+  \\ a //
+  \\ ) // 
+  \\ | //
+  \\ * //
+  \\ 
+  \\ x //
+  \\ |//
+  \\ b //
+  \\ else //
+  \\ d //
+  \\ ; //
+  \\
+  \\ if //
+  \\ ( //
+  \\ a //
+  \\ ) // 
+  \\ | //
+  \\ x //
+  \\ |//
+  \\ b //
+  \\ else //
+  \\ | //
+  \\
+  \\ y //
+  \\
+  \\ |//
+  \\ d //
+  \\ ; // 
+  \\
+  \\ if // 
+  \\ ( //
+  \\ expr() //
+  \\ ) //
+  \\ doStuff() //
+  \\ ; //
+  \\
+  \\ if // 
+  \\ ( //
+  \\ expr() //
+  \\ ) //
+  \\ | //
+  \\ pl //
+  \\ | //
+  \\ doStuff() //
+  \\ ; //
+  \\
+  \\ var z = if
+  \\ ( 
+  \\ a 
+  \\ )
+  \\ b else d;
+  \\
+  \\ var z = if
+  \\ ( 
+  \\ a 
+  \\ )
+  \\ b else {
+  \\ bad();
+  \\};
+  \\
+  \\ var z = if //
+  \\ ( //
+  \\ a //
+  \\ ) //
+  \\ b else d;
+  \\
+  \\ var z = if //
+  \\ ( //
+  \\ a //
+  \\ ) //
+  \\ b //
+  \\ else //
+  \\ d //
+  \\ ; //
+  \\}
+  \\
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  // first one
+    \\  if // again
+    \\  ( // lb
+    \\    a // cond
+    \\  ) //
+    \\  { // good
+    \\    // nothing here
+    \\  } // last
+    \\
+    \\  if // 1
+    \\  ( // 2
+    \\    a // c
+    \\  ) // 3
+    \\    b // 4
+    \\  else // 5
+    \\    d // 6
+    \\  ; // 7
+    \\
+    \\  if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    b //
+    \\  else //
+    \\    d //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  x //
+    \\  | //
+    \\    b //
+    \\  else //
+    \\    d //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    b //
+    \\  else //
+    \\  | //
+    \\  y //
+    \\  | //
+    \\    d //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    expr() //
+    \\  ) //
+    \\    doStuff() //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    expr() //
+    \\  ) //
+    \\  | //
+    \\  pl //
+    \\  | //
+    \\    doStuff() //
+    \\  ; //
+    \\
+    \\  var z = if (a) b else d;
+    \\
+    \\  var z = if (a) b
+    \\  else {
+    \\    bad();
+    \\  };
+    \\
+    \\  var z = if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\    b
+    \\  else
+    \\    d;
+    \\
+    \\  var z = if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\    b //
+    \\  else //
+    \\    d //
+    \\  ; //
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  // first one
+    \\  if // again
+    \\  ( // lb
+    \\    a // cond
+    \\  ) //
+    \\  { // good
+    \\    // nothing here
+    \\  } // last
+    \\
+    \\  if // 1
+    \\  ( // 2
+    \\    a // c
+    \\  ) // 3
+    \\    b // 4
+    \\  else // 5
+    \\    d // 6
+    \\  ; // 7
+    \\
+    \\  if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    b //
+    \\  else //
+    \\    d //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  x //
+    \\  | //
+    \\    b //
+    \\  else //
+    \\    d //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    b //
+    \\  else //
+    \\  | //
+    \\  y //
+    \\  | //
+    \\    d //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    expr() //
+    \\  ) //
+    \\    doStuff() //
+    \\  ; //
+    \\
+    \\  if //
+    \\  ( //
+    \\    expr() //
+    \\  ) //
+    \\  | //
+    \\  pl //
+    \\  | //
+    \\    doStuff() //
+    \\  ; //
+    \\
+    \\  var z = if (a) b else d;
+    \\
+    \\  var z = if (a) b
+    \\  else {
+    \\    bad();
+    \\  };
+    \\
+    \\  var z = if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\    b
+    \\  else
+    \\    d;
+    \\
+    \\  var z = if //
+    \\  ( //
+    \\    a //
+    \\  ) //
+    \\    b //
+    \\  else //
+    \\    d //
+    \\  ; //
+    \\}
+  );
+}
+
+test "comments/if/else 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn testing() void {
+  \\  var z = if (a) //
+  \\ b: {
+  \\    var x = y;
+  \\  } else //
+  \\ d;
+  \\
+  \\  if //
+  \\ ( //
+  \\ someExpr() //
+  \\ ) //
+  \\  { //
+  \\    var x = someOther();
+  \\  } // 
+  \\
+  \\  if //
+  \\ ( //
+  \\ someExpr() //
+  \\ ) //
+  \\ { //
+  \\    var x = someOther();
+  \\  } // 
+  \\ else //
+  \\ |pay| { //
+  \\    var y = someWhat();
+  \\  } //
+  \\
+  \\  if //
+  \\ ( //
+  \\ someExpr() //
+  \\ ) //
+  \\ { //
+  \\    var x = someOther();
+  \\  } // 
+  \\ else //
+  \\ | //
+  \\ pay //
+  \\ | // 
+  \\ { //
+  \\    var y = someWhat();
+  \\  } //
+  \\
+  \\  if //
+  \\ ( // 
+  \\ someExpr() //
+  \\ ) // 
+  \\ { //
+  \\    var x = someOther();
+  \\  } //
+  \\ else //
+  \\ if //
+  \\ ( //
+  \\ someOtherExpr() //
+  \\ ) //
+  \\ { //
+  \\    var y = someWhat();
+  \\  } // 
+  \\ else //
+  \\ { //
+  \\    var y = someElseWhat();
+  \\  } //
+  \\
+  \\  if //
+  \\ ( // 
+  \\ someExpr() //
+  \\ ) // 
+  \\ { //
+  \\    var x = someOther();
+  \\  } //
+  \\ else if //
+  \\ ( //
+  \\ someOtherExpr() //
+  \\ ) //
+  \\ { //
+  \\    var y = someWhat();
+  \\  } // 
+  \\ else //
+  \\ { //
+  \\    var y = someElseWhat();
+  \\  } //
+  \\  if (someExpr()) |*payload| {
+  \\    var x = someOther();
+  \\  } else {
+  \\    var y = someWhat();
+  \\  }
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  var z = if (a) //
+    \\  b: {
+    \\    var x = y;
+    \\  } else //
+    \\  d;
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else //
+    \\  |pay| { //
+    \\    var y = someWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else //
+    \\  | //
+    \\  pay //
+    \\  | //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else //
+    \\  if //
+    \\  ( //
+    \\    someOtherExpr() //
+    \\  ) //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var y = someElseWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else if //
+    \\  ( //
+    \\    someOtherExpr() //
+    \\  ) //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var y = someElseWhat();
+    \\  } //
+    \\  if (someExpr()) |*payload| {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  var z = if (a) //
+    \\  b: {
+    \\    var x = y;
+    \\  } else //
+    \\  d;
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else //
+    \\  |pay| { //
+    \\    var y = someWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else //
+    \\  | //
+    \\  pay //
+    \\  | //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else //
+    \\  if //
+    \\  ( //
+    \\    someOtherExpr() //
+    \\  ) //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var y = someElseWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther();
+    \\  } //
+    \\  else if //
+    \\  ( //
+    \\    someOtherExpr() //
+    \\  ) //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var y = someElseWhat();
+    \\  } //
+    \\  if (someExpr()) |*payload| {
+    \\    var x = someOther();
+    \\  } else {
+    \\    var y = someWhat();
+    \\  }
+    \\}
+  );
+}
+
+test "comments/if/else 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testing() void {
+  \\ if //
+  \\ ( //
+  \\ someExpr() //
+  \\ ) //
+  \\ { //
+  \\} //
+  \\ else //
+  \\ { //
+  \\  var y = someWhat();
+  \\} //
+  \\
+  \\ if //
+  \\ ( //
+  \\ someExpr() // 
+  \\ ) // 
+  \\ { //
+  \\ var x = someOther(); //
+  \\} //
+  \\ else //
+  \\ {
+  \\}
+  \\
+  \\ if //
+  \\ ( //
+  \\ someExpr()
+  \\ ) // 
+  \\ {
+  \\} 
+  \\ else //
+  \\ {
+  \\}
+  \\
+  \\ if // 
+  \\ ( //
+  \\ someExpr() //
+  \\ ) //
+  \\ | //
+  \\ * //
+  \\
+  \\ payload //
+  \\ | //
+  \\ { //
+  \\} //
+  \\ else //
+  \\ { //
+  \\} //
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther(); //
+    \\  } //
+    \\  else //
+    \\  {
+    \\  }
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr()
+    \\  ) //
+    \\  {
+    \\  } else //
+    \\  {
+    \\  }
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  payload //
+    \\  | //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\  } //
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testing() void {
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var y = someWhat();
+    \\  } //
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  { //
+    \\    var x = someOther(); //
+    \\  } //
+    \\  else //
+    \\  {
+    \\  }
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr()
+    \\  ) //
+    \\  {
+    \\  } else //
+    \\  {
+    \\  }
+    \\
+    \\  if //
+    \\  ( //
+    \\    someExpr() //
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  payload //
+    \\  | //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\  } //
+    \\}
+  );
+}
+
+test "comments/if/else 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ if //
+  \\ ( //
+  \\ some
+  \\ ) //
+  \\ |*x| //
+  \\ lbl : {
+  \\  print('yello world');
+  \\} else // 
+  \\ {
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\ if (some) |*x| //
+  \\ _ = lbl : {
+  \\  print('yello world');
+  \\} else { //
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\if (someCond) |x| _ = blk: { //
+  \\  std.debug.print("x is: {}\n", .{x});
+  \\  break :blk void;
+  \\} else { //
+  \\  std.debug.print("done\n", .{});
+  \\}
+  \\
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if //
+    \\  ( //
+    \\    some
+    \\  ) //
+    \\  |*x| //
+    \\  lbl: {
+    \\    print('yello world');
+    \\  } else //
+    \\  {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (some) |*x| //
+    \\    _ = lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  else { //
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (someCond) |x|
+    \\    _ = blk: { //
+    \\      std.debug.print("x is: {}\n", .{x});
+    \\      break :blk void;
+    \\    }
+    \\  else { //
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if //
+    \\  ( //
+    \\    some
+    \\  ) //
+    \\  |*x| //
+    \\  lbl: {
+    \\    print('yello world');
+    \\  } else //
+    \\  {
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (some) |*x| //
+    \\    _ = lbl: {
+    \\      print('yello world');
+    \\    }
+    \\  else { //
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  if (someCond) |x|
+    \\    _ = blk: { //
+    \\      std.debug.print(
+    \\        "x is: {}\n",
+    \\        .{x},
+    \\      );
+    \\      break :blk void;
+    \\    }
+    \\  else { //
+    \\    std.debug.print(
+    \\      "done\n",
+    \\      .{},
+    \\    );
+    \\  }
+    \\}
+  );
+}
+
+test "comments/if/else 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ if //
+  \\ ( //
+  \\ someNiceCondition(a, b, c)
+  \\ ) // 
+  \\ |//
+  \\ x //
+  \\ | //
+  \\ _ = blk: { //
+  \\  print('yello world');
+  \\}; //
+  \\ if (someNiceCondition(a, b, c)) |x| //
+  \\ someFancy(callExpr(), a, b);
+  \\ }
+  \\
+  \\
+  \\
+  \\ fn testing() void {
+  \\  if //
+  \\ ( //
+  \\ cond()
+  \\ ) // 
+  \\ {  var x = 5; } // 
+  \\ else //
+  \\ voidExpr();
+  \\  if (cond()) //
+  \\  voidExpr() else //
+  \\ {
+  \\ var x = 5;
+  \\ }
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if //
+    \\  ( //
+    \\    someNiceCondition(a, b, c)
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    _ = blk: { //
+    \\      print('yello world');
+    \\    }; //
+    \\  if (someNiceCondition(a, b, c)) |x| //
+    \\    someFancy(callExpr(), a, b);
+    \\}
+    \\
+    \\fn testing() void {
+    \\  if //
+    \\  ( //
+    \\    cond()
+    \\  ) //
+    \\  {
+    \\    var x = 5;
+    \\  } //
+    \\  else //
+    \\  voidExpr();
+    \\  if (cond()) //
+    \\    voidExpr()
+    \\  else //
+    \\  {
+    \\    var x = 5;
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if //
+    \\  ( //
+    \\    someNiceCondition(a, b, c)
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    _ = blk: { //
+    \\      print('yello world');
+    \\    }; //
+    \\  if (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x| //
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\}
+    \\
+    \\fn testing() void {
+    \\  if //
+    \\  ( //
+    \\    cond()
+    \\  ) //
+    \\  {
+    \\    var x = 5;
+    \\  } //
+    \\  else //
+    \\  voidExpr();
+    \\  if (cond()) //
+    \\    voidExpr()
+    \\  else //
+    \\  {
+    \\    var x = 5;
+    \\  }
+    \\}
+  );
+}
+
+test "comments/for 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for //
+  \\ ( //
+  \\ // some top level comment 1
+  \\ // some top level comment 2
+  \\ some //
+  \\ , //
+  \\ 0.. //
+  \\ , //
+  \\ a //
+  \\ .. //
+  \\ z //
+  \\ // some bottom level comment 1
+  \\ // some bottom level comment 2
+  \\ ) //
+  \\ | //
+  \\ * //
+  \\ x //
+  \\ , //
+  \\ y //
+  \\ , //
+  \\ * //
+  \\ z //
+  \\ | //
+  \\ lbl : {
+  \\  print('yello world');
+  \\}
+  \\
+  \\ for //
+  \\ ( //
+  \\
+  \\ some //
+  \\ , //
+  \\ 0.. //
+  \\ , //
+  \\ a //
+  \\ .. //
+  \\ z //
+  \\ ) //
+  \\ | //
+  \\ * //
+  \\ x //
+  \\ , //
+  \\ y //
+  \\ , //
+  \\ * //
+  \\ z //
+  \\ | //
+  \\ { //
+  \\  print('yello world');
+  \\}
+  \\
+  \\ for //
+  \\ ( //
+  \\
+  \\ some //
+  \\ , //
+  \\ 0.. //
+  \\ , //
+  \\ a //
+  \\ .. //
+  \\ z //
+  \\ ) //
+  \\ | //
+  \\ *
+  \\ x
+  \\ , //
+  \\ y
+  \\ , //
+  \\ *
+  \\ z //
+  \\ | //
+  \\ { //
+  \\  print('yello world');
+  \\}
+  \\
+  \\ for //
+  \\ (//
+  \\ expr//
+  \\ ) // 
+  \\ | //
+  \\ pl //
+  \\ | //
+  \\ something();
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for //
+    \\  ( //
+    \\    // some top level comment 1
+    \\    // some top level comment 2
+    \\    some //
+    \\    , //
+    \\    0.. //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    z //
+    \\    // some bottom level comment 1
+    \\    // some bottom level comment 2
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  x //
+    \\  , //
+    \\  y //
+    \\  , //
+    \\  * //
+    \\  z //
+    \\  | //
+    \\  lbl: {
+    \\    print('yello world');
+    \\  }
+    \\
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    0.. //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    z //
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  x //
+    \\  , //
+    \\  y //
+    \\  , //
+    \\  * //
+    \\  z //
+    \\  | //
+    \\  { //
+    \\    print('yello world');
+    \\  }
+    \\
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    0.. //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    z //
+    \\  ) //
+    \\  | //
+    \\  *x, //
+    \\  y, //
+    \\  *z //
+    \\  | //
+    \\  { //
+    \\    print('yello world');
+    \\  }
+    \\
+    \\  for //
+    \\  ( //
+    \\    expr //
+    \\  ) //
+    \\  | //
+    \\  pl //
+    \\  | //
+    \\    something();
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for //
+    \\  ( //
+    \\    // some top level comment 1
+    \\    // some top level comment 2
+    \\    some //
+    \\    , //
+    \\    0.. //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    z //
+    \\    // some bottom level comment 1
+    \\    // some bottom level comment 2
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  x //
+    \\  , //
+    \\  y //
+    \\  , //
+    \\  * //
+    \\  z //
+    \\  | //
+    \\  lbl: {
+    \\    print('yello world');
+    \\  }
+    \\
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    0.. //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    z //
+    \\  ) //
+    \\  | //
+    \\  * //
+    \\  x //
+    \\  , //
+    \\  y //
+    \\  , //
+    \\  * //
+    \\  z //
+    \\  | //
+    \\  { //
+    \\    print('yello world');
+    \\  }
+    \\
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    0.. //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    z //
+    \\  ) //
+    \\  | //
+    \\  *x, //
+    \\  y, //
+    \\  *z //
+    \\  | //
+    \\  { //
+    \\    print('yello world');
+    \\  }
+    \\
+    \\  for //
+    \\  ( //
+    \\    expr //
+    \\  ) //
+    \\  | //
+    \\  pl //
+    \\  | //
+    \\    something();
+    \\}
+  );
+}
+
+test "comments/for 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn testMe() void {
+  \\for //
+  \\( //
+  \\some //
+  \\, //
+  \\a //
+  \\.. //
+  \\k //
+  \\) //
+  \\| //
+  \\a //
+  \\, //
+  \\b //
+  \\| // 
+  \\{ //
+  \\} //
+  \\else //
+  \\{ //
+  \\var j = testMe();
+  \\} //
+  \\
+  \\for //
+  \\( //
+  \\some //
+  \\, //
+  \\a //
+  \\.. //
+  \\k //
+  \\) //
+  \\| //
+  \\a //
+  \\, //
+  \\b //
+  \\| // 
+  \\{ //
+  \\} //
+  \\else //
+  \\{ //
+  \\} //
+  \\
+  \\for 
+  \\(
+  \\some, //
+  \\0..,
+  \\a..z
+  \\) //
+  \\|*x, y, *z|  //
+  \\lbl : {
+  \\ print('yello world');
+  \\}
+  \\ else //
+  \\someStuff();
+  \\inline //
+  \\for //
+  \\( //
+  \\some //
+  \\, 
+  \\0 //
+  \\.. //
+  \\, // 
+  \\a..z //
+  \\) //
+  \\|*x, y, *z| lbl : {
+  \\ print('yello world');
+  \\}
+  \\ // 
+  \\else { //
+  \\ someCall();
+  \\ var abc = try testS();
+  \\
+  \\inline //
+  \\for //
+  \\( //
+  \\some //
+  \\, 
+  \\0 //
+  \\.. //
+  \\, // 
+  \\a..z //
+  \\) //
+  \\|*x, y, *z| lbl : {
+  \\ print('yello world');
+  \\}
+  \\else { //
+  \\ someCall();
+  \\ var abc = try testS();
+  \\
+  \\if (foo) lbl : {
+  \\ print('yello world');
+  \\}// 
+  \\else { //
+  \\ someCall();
+  \\ var abc = try testS();
+  \\
+  \\if (foo) lbl : {
+  \\ print('yello world');
+  \\}
+  \\else { //
+  \\ someCall();
+  \\ var abc = try testS();
+  \\}
+  \\}
+  \\}
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    k //
+    \\  ) //
+    \\  | //
+    \\  a //
+    \\  , //
+    \\  b //
+    \\  | //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var j = testMe();
+    \\  } //
+    \\
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    k //
+    \\  ) //
+    \\  | //
+    \\  a //
+    \\  , //
+    \\  b //
+    \\  | //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\  } //
+    \\
+    \\  for (
+    \\    some, //
+    \\    0..,
+    \\    a..z
+    \\  ) //
+    \\  |*x, y, *z| //
+    \\  lbl: {
+    \\    print('yello world');
+    \\  } else //
+    \\  someStuff();
+    \\  inline //
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    ,
+    \\    0 //
+    \\    .. //
+    \\    , //
+    \\    a..z //
+    \\  ) //
+    \\  |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  //
+    \\  else { //
+    \\    someCall();
+    \\    var abc = try testS();
+    \\
+    \\    inline //
+    \\    for //
+    \\    ( //
+    \\      some //
+    \\      ,
+    \\      0 //
+    \\      .. //
+    \\      , //
+    \\      a..z //
+    \\    ) //
+    \\    |*x, y, *z| lbl: {
+    \\      print('yello world');
+    \\    } else { //
+    \\      someCall();
+    \\      var abc = try testS();
+    \\
+    \\      if (foo) lbl: {
+    \\        print('yello world');
+    \\      } //
+    \\      else { //
+    \\        someCall();
+    \\        var abc = try testS();
+    \\
+    \\        if (foo) lbl: {
+    \\          print('yello world');
+    \\        } else { //
+    \\          someCall();
+    \\          var abc = try testS();
+    \\        }
+    \\      }
+    \\    }
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    k //
+    \\  ) //
+    \\  | //
+    \\  a //
+    \\  , //
+    \\  b //
+    \\  | //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    var j = testMe();
+    \\  } //
+    \\
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    , //
+    \\    a //
+    \\    .. //
+    \\    k //
+    \\  ) //
+    \\  | //
+    \\  a //
+    \\  , //
+    \\  b //
+    \\  | //
+    \\  { //
+    \\  } //
+    \\  else //
+    \\  { //
+    \\  } //
+    \\
+    \\  for (
+    \\    some, //
+    \\    0..,
+    \\    a..z
+    \\  ) //
+    \\  |*x, y, *z| //
+    \\  lbl: {
+    \\    print('yello world');
+    \\  } else //
+    \\  someStuff();
+    \\  inline //
+    \\  for //
+    \\  ( //
+    \\    some //
+    \\    ,
+    \\    0 //
+    \\    .. //
+    \\    , //
+    \\    a..z //
+    \\  ) //
+    \\  |*x, y, *z| lbl: {
+    \\    print('yello world');
+    \\  }
+    \\  //
+    \\  else { //
+    \\    someCall();
+    \\    var abc = try testS();
+    \\
+    \\    inline //
+    \\    for //
+    \\    ( //
+    \\      some //
+    \\      ,
+    \\      0 //
+    \\      .. //
+    \\      , //
+    \\      a..z //
+    \\    ) //
+    \\    |*x, y, *z| lbl: {
+    \\      print('yello world');
+    \\    } else { //
+    \\      someCall();
+    \\      var abc = try testS();
+    \\
+    \\      if (foo) lbl: {
+    \\        print('yello world');
+    \\      } //
+    \\      else { //
+    \\        someCall();
+    \\        var abc = try testS();
+    \\
+    \\        if (foo) lbl: {
+    \\          print(
+    \\            'yello world',
+    \\          );
+    \\        } else { //
+    \\          someCall();
+    \\          var abc = try testS();
+    \\        }
+    \\      }
+    \\    }
+    \\  }
+    \\}
+  );
+}
+
+test "comments/for 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for //
+  \\ ( //
+  \\ some, 0.., a..z
+  \\ ) //
+  \\ |*x, y, *z| { //
+  \\  print('yello world');
+  \\} //
+  \\ else // 
+  \\ { //
+  \\  someCall();
+  \\  var abc = try testS();
+  \\}
+  \\ for  //
+  \\ (some, x, a..k //
+  \\ ) |a, b, c| //
+  \\ exprMe() else // 
+  \\ {var j = testS();}
+  \\for (0..10) |x| // 
+  \\ _ = blk: { //
+  \\  std.debug.print("x is: {}\n", .{x});
+  \\  break :blk void;
+  \\} //
+  \\ else { //
+  \\  std.debug.print("done\n", .{});
+  \\}
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for //
+    \\  ( //
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) //
+    \\  |*x, y, *z| { //
+    \\    print('yello world');
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  for //
+    \\  (
+    \\    some,
+    \\    x,
+    \\    a..k //
+    \\  ) |a, b, c| //
+    \\    exprMe()
+    \\  else //
+    \\  {
+    \\    var j = testS();
+    \\  }
+    \\  for (0..10) |x| //
+    \\    _ = blk: { //
+    \\      std.debug.print("x is: {}\n", .{x});
+    \\      break :blk void;
+    \\    } //
+    \\  else { //
+    \\    std.debug.print("done\n", .{});
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for //
+    \\  ( //
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) //
+    \\  |*x, y, *z| { //
+    \\    print('yello world');
+    \\  } //
+    \\  else //
+    \\  { //
+    \\    someCall();
+    \\    var abc = try testS();
+    \\  }
+    \\  for //
+    \\  (
+    \\    some,
+    \\    x,
+    \\    a..k //
+    \\  ) |a, b, c| //
+    \\    exprMe()
+    \\  else //
+    \\  {
+    \\    var j = testS();
+    \\  }
+    \\  for (0..10) |x| //
+    \\    _ = blk: { //
+    \\      std.debug.print(
+    \\        "x is: {}\n",
+    \\        .{x},
+    \\      );
+    \\      break :blk void;
+    \\    } //
+    \\  else { //
+    \\    std.debug.print(
+    \\      "done\n",
+    \\      .{},
+    \\    );
+    \\  }
+    \\}
+  );
+}
+
+test "comments/for 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ for (some, 0.., a..z) |*x, y, *z| //
+  \\  print('yello world')
+  \\ else //
+  \\  someCall();
+  \\
+  \\ for (some, 0.., a..z) |*x, y, *z| //
+  \\ {
+  \\ }
+  \\ }
+  \\
+  \\ fn testMe() void {
+  \\ lbl: //
+  \\ for (someNiceCondition(a, b, c)) |x| //
+  \\ someFancy(callExpr(), a, b);
+  \\ for (someNiceCondition(a, b, c)) // 
+  \\ |x| //
+  \\ someFancy(callExpr(), a, b);
+  \\ for //
+  \\ ( //
+  \\ someNiceCondition(a, b, c)
+  \\ ) // 
+  \\ | //
+  \\ x //
+  \\ | //
+  \\ someFancy(callExpr(), a, b);
+  \\ for (someNiceCondition(a, b, c)) //
+  \\ |x| _ = blk: {
+  \\  print('yello world');
+  \\}; //
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for (some, 0.., a..z) |*x, y, *z| //
+    \\    print('yello world')
+    \\  else //
+    \\    someCall();
+    \\
+    \\  for (some, 0.., a..z) |*x, y, *z| //
+    \\  {}
+    \\}
+    \\
+    \\fn testMe() void {
+    \\  lbl: //
+    \\  for (someNiceCondition(a, b, c)) |x| //
+    \\    someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) //
+    \\  |x| //
+    \\    someFancy(callExpr(), a, b);
+    \\  for //
+    \\  ( //
+    \\    someNiceCondition(a, b, c)
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    someFancy(callExpr(), a, b);
+    \\  for (someNiceCondition(a, b, c)) //
+    \\  |x|
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    }; //
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z| //
+    \\    print('yello world')
+    \\  else //
+    \\    someCall();
+    \\
+    \\  for (
+    \\    some,
+    \\    0..,
+    \\    a..z
+    \\  ) |*x, y, *z| //
+    \\  {}
+    \\}
+    \\
+    \\fn testMe() void {
+    \\  lbl: //
+    \\  for (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x| //
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\  for (
+    \\    someNiceCondition(a, b, c)
+    \\  ) //
+    \\  |x| //
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\  for //
+    \\  ( //
+    \\    someNiceCondition(a, b, c)
+    \\  ) //
+    \\  | //
+    \\  x //
+    \\  | //
+    \\    someFancy(
+    \\      callExpr(),
+    \\      a,
+    \\      b,
+    \\    );
+    \\  for (
+    \\    someNiceCondition(a, b, c)
+    \\  ) //
+    \\  |x|
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    }; //
+    \\}
+  );
+}
+
+test "comments/while 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ while // a
+  \\ ( // b
+  \\ someNiceCondition(a, b, c) // c
+  \\ ) // d
+  \\ | // e
+  \\ * // f
+  \\ x // g
+  \\ | // h
+  \\ : // i
+  \\ (// j
+  \\ j
+  \\ +=
+  \\ 5) // k
+  \\ { // l
+  \\ } // m
+  \\
+  \\ inline // a
+  \\ while // b
+  \\ ( // c
+  \\ someNiceCondition(a, b, c)
+  \\ ) // d
+  \\ | // e
+  \\ *x // f
+  \\ | // g
+  \\ : // h
+  \\ ( // i
+  \\ j += 5
+  \\ ) // j
+  \\ { // k
+  \\ } // l
+  \\ else // m
+  \\ // n
+  \\ | // o
+  \\ y // p
+  \\ | // q
+  \\ { // r
+  \\ } // s
+  \\
+  \\ inline while (someNiceCondition(a, b, c)) // a
+  \\ |x| : (
+  \\ // first stuff
+  \\ j += 5) {
+  \\  print('yello world');
+  \\ } else |y| // b
+  \\ {
+  \\  someCall();
+  \\ }
+  \\ while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+  \\  print('yello world');
+  \\ } // a
+  \\ else |y| {
+  \\  someCall();
+  \\ }
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) // a
+  \\ {
+  \\  print('yello world');
+  \\ } else |y| // b
+  \\ {
+  \\  someCall();
+  \\ }
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  while // a
+    \\  ( // b
+    \\    someNiceCondition(a, b, c) // c
+    \\  ) // d
+    \\  | // e
+    \\  * // f
+    \\  x // g
+    \\  | // h
+    \\  : // i
+    \\  ( // j
+    \\    j += 5
+    \\  ) // k
+    \\  { // l
+    \\  } // m
+    \\
+    \\  inline // a
+    \\  while // b
+    \\  ( // c
+    \\    someNiceCondition(a, b, c)
+    \\  ) // d
+    \\  | // e
+    \\  *x // f
+    \\  | // g
+    \\  : // h
+    \\  ( // i
+    \\    j += 5
+    \\  ) // j
+    \\  { // k
+    \\  } // l
+    \\  else // m
+    \\  // n
+    \\  | // o
+    \\  y // p
+    \\  | // q
+    \\  { // r
+    \\  } // s
+    \\
+    \\  inline while (someNiceCondition(a, b, c)) // a
+    \\  |x| : (
+    \\    // first stuff
+    \\    j += 5
+    \\  ) {
+    \\    print('yello world');
+    \\  } else |y| // b
+    \\  {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
+    \\    print('yello world');
+    \\  } // a
+    \\  else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) // a
+    \\  {
+    \\    print('yello world');
+    \\  } else |y| // b
+    \\  {
+    \\    someCall();
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  while // a
+    \\  ( // b
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ) // c
+    \\  ) // d
+    \\  | // e
+    \\  * // f
+    \\  x // g
+    \\  | // h
+    \\  : // i
+    \\  ( // j
+    \\    j += 5
+    \\  ) // k
+    \\  { // l
+    \\  } // m
+    \\
+    \\  inline // a
+    \\  while // b
+    \\  ( // c
+    \\    someNiceCondition(a, b, c)
+    \\  ) // d
+    \\  | // e
+    \\  *x // f
+    \\  | // g
+    \\  : // h
+    \\  ( // i
+    \\    j += 5
+    \\  ) // j
+    \\  { // k
+    \\  } // l
+    \\  else // m
+    \\  // n
+    \\  | // o
+    \\  y // p
+    \\  | // q
+    \\  { // r
+    \\  } // s
+    \\
+    \\  inline while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) // a
+    \\  |x|
+    \\  : (
+    \\    // first stuff
+    \\    j += 5
+    \\  ) {
+    \\    print('yello world');
+    \\  } else |y| // b
+    \\  {
+    \\    someCall();
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |*x|
+    \\  : (j += 5) {
+    \\    print('yello world');
+    \\  } // a
+    \\  else |y| {
+    \\    someCall();
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5) // a
+    \\  {
+    \\    print('yello world');
+    \\  } else |y| // b
+    \\  {
+    \\    someCall();
+    \\  }
+    \\}
+  );
+}
+
+test "comments/while 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ while (someNiceCondition(a, b, c)) |x| // a
+  \\ blk: {
+  \\  print('yello world');
+  \\ } else {
+  \\  someCall();
+  \\ }
+  \\ while (someNiceCondition(a, b, c)) |x| // a
+  \\ blk: {
+  \\  print('yello world');
+  \\ } else // b
+  \\ blk2: {
+  \\  someCall();
+  \\ }
+  \\ inline while (someNiceCondition(a, b, c)) |x| : // a
+  \\ (j += 5) 
+  \\  print('yello world')
+  \\  else |y| { // b
+  \\  someCall();
+  \\ }
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  while (someNiceCondition(a, b, c)) |x| // a
+    \\  blk: {
+    \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| // a
+    \\  blk: {
+    \\    print('yello world');
+    \\  } else // b
+    \\  blk2: {
+    \\    someCall();
+    \\  }
+    \\  inline while (someNiceCondition(a, b, c)) |x| : // a
+    \\  (j += 5)
+    \\    print('yello world')
+    \\  else |y| { // b
+    \\    someCall();
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x| // a
+    \\  blk: {
+    \\    print('yello world');
+    \\  } else {
+    \\    someCall();
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x| // a
+    \\  blk: {
+    \\    print('yello world');
+    \\  } else // b
+    \\  blk2: {
+    \\    someCall();
+    \\  }
+    \\  inline while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : // a
+    \\  (j += 5)
+    \\    print('yello world')
+    \\  else |y| { // b
+    \\    someCall();
+    \\  }
+    \\}
+  );
+}
+
+test "comments/while 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testme() void {
+  \\ while (true) blk: {
+  \\     std.debug.print("yello world", .{});
+  \\     break :blk voidexpr();
+  \\   }
+  \\   else {
+  \\     std.debug.print("bye world", .{});
+  \\   }
+  \\ for (true) |*f| blk: {
+  \\     std.debug.print("yello world", .{});
+  \\     break :blk voidexpr();
+  \\   }
+  \\   else {
+  \\     std.debug.print("bye world", .{});
+  \\   }
+  \\ if (true) blk: {
+  \\     std.debug.print("yello world", .{});
+  \\     break :blk voidexpr();
+  \\   }
+  \\   else {
+  \\     std.debug.print("bye world", .{});
+  \\   }
+  \\ }
+  \\ fn testMe() void {
+  \\ while (true) blk: // a
+  \\ {
+  \\     std.debug.print("yello world", .{});
+  \\     break :blk voidExpr();
+  \\   }
+  \\   else { // b
+  \\     std.debug.print("bye world", .{});
+  \\   }
+  \\ while // a
+  \\ (someNiceCondition(a, b, c)) |x| : (j += 5) 
+  \\  print('yello world')
+  \\  else |y| 
+  \\  someCall();
+  \\ while (someNiceCondition(a, b, c)) | // a
+  \\ x| : (j += 5) 
+  \\  print('yello world')
+  \\  else someCall();
+  \\ inline while (someNiceCondition(a, b, c) // a
+  \\ )
+  \\  print('yello world')
+  \\  else // b
+  \\ someCall();
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += 5) // a
+  \\  print('yello world');
+  \\ while (someNiceCondition(a, b, c)) |x| : (j += someExpr(5, abc, jkl)) { // a
+  \\  print('yello world');
+  \\  } // b
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testme() void {
+    \\  while (true) blk: {
+    \\    std.debug.print("yello world", .{});
+    \\    break :blk voidexpr();
+    \\  } else {
+    \\    std.debug.print("bye world", .{});
+    \\  }
+    \\  for (true) |*f| blk: {
+    \\    std.debug.print("yello world", .{});
+    \\    break :blk voidexpr();
+    \\  } else {
+    \\    std.debug.print("bye world", .{});
+    \\  }
+    \\  if (true) blk: {
+    \\    std.debug.print("yello world", .{});
+    \\    break :blk voidexpr();
+    \\  } else {
+    \\    std.debug.print("bye world", .{});
+    \\  }
+    \\}
+    \\fn testMe() void {
+    \\  while (true) blk: // a
+    \\  {
+    \\    std.debug.print("yello world", .{});
+    \\    break :blk voidExpr();
+    \\  } else { // b
+    \\    std.debug.print("bye world", .{});
+    \\  }
+    \\  while // a
+    \\  (someNiceCondition(a, b, c)) |x| : (j += 5)
+    \\    print('yello world')
+    \\  else |y|
+    \\    someCall();
+    \\  while (someNiceCondition(a, b, c)) | // a
+    \\  x| : (j += 5)
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  inline while (
+    \\    someNiceCondition(a, b, c) // a
+    \\  )
+    \\    print('yello world')
+    \\  else // b
+    \\    someCall();
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) // a
+    \\    print('yello world');
+    \\  while (someNiceCondition(a, b, c)) |x| : (j += someExpr(5, abc, jkl)) { // a
+    \\    print('yello world');
+    \\  } // b
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testme() void {
+    \\  while (true) blk: {
+    \\    std.debug.print(
+    \\      "yello world",
+    \\      .{},
+    \\    );
+    \\    break :blk voidexpr();
+    \\  } else {
+    \\    std.debug.print(
+    \\      "bye world",
+    \\      .{},
+    \\    );
+    \\  }
+    \\  for (true) |*f| blk: {
+    \\    std.debug.print(
+    \\      "yello world",
+    \\      .{},
+    \\    );
+    \\    break :blk voidexpr();
+    \\  } else {
+    \\    std.debug.print(
+    \\      "bye world",
+    \\      .{},
+    \\    );
+    \\  }
+    \\  if (true) blk: {
+    \\    std.debug.print(
+    \\      "yello world",
+    \\      .{},
+    \\    );
+    \\    break :blk voidexpr();
+    \\  } else {
+    \\    std.debug.print(
+    \\      "bye world",
+    \\      .{},
+    \\    );
+    \\  }
+    \\}
+    \\fn testMe() void {
+    \\  while (true) blk: // a
+    \\  {
+    \\    std.debug.print(
+    \\      "yello world",
+    \\      .{},
+    \\    );
+    \\    break :blk voidExpr();
+    \\  } else { // b
+    \\    std.debug.print(
+    \\      "bye world",
+    \\      .{},
+    \\    );
+    \\  }
+    \\  while // a
+    \\  (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5)
+    \\    print('yello world')
+    \\  else |y|
+    \\    someCall();
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) | // a
+    \\  x|
+    \\  : (j += 5)
+    \\    print('yello world')
+    \\  else
+    \\    someCall();
+    \\  inline while (
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ) // a
+    \\  )
+    \\    print('yello world')
+    \\  else // b
+    \\    someCall();
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5) // a
+    \\    print('yello world');
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (
+    \\    j += someExpr(5, abc, jkl)
+    \\  ) { // a
+    \\    print('yello world');
+    \\  } // b
+    \\}
+  );
+}
+
+test "comments/while 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ lbl // a
+  \\ : // b
+  \\ while // c 
+  \\ (someNiceCondition(a, b, c)) |x| : (j += 5) {
+  \\  print('yello world');
+  \\}
+  \\ while (someNiceCondition2(a, b, c)) |x| : (j += 5) blk: {
+  \\  print('yello world');
+  \\}
+  \\ while (someNiceCondition(a, b, c)) |x| : // a
+  \\ (j += 5) // b
+  \\ _ = blk: {
+  \\  print('yello world');
+  \\};
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  lbl // a
+    \\  : // b
+    \\  while // c
+    \\  (someNiceCondition(a, b, c)) |x| : (j += 5) {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition2(a, b, c)) |x| : (j += 5) blk: {
+    \\    print('yello world');
+    \\  }
+    \\  while (someNiceCondition(a, b, c)) |x| : // a
+    \\  (j += 5) // b
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  lbl // a
+    \\  : // b
+    \\  while // c
+    \\  (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : (j += 5) {
+    \\    print('yello world');
+    \\  }
+    \\  while (
+    \\    someNiceCondition2(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    )
+    \\  ) |x|
+    \\  : (j += 5) blk: {
+    \\    print('yello world');
+    \\  }
+    \\  while (
+    \\    someNiceCondition(a, b, c)
+    \\  ) |x|
+    \\  : // a
+    \\  (j += 5) // b
+    \\    _ = blk: {
+    \\      print('yello world');
+    \\    };
+    \\}
+  );
+}
+
+test "comments/block-label" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ if (true) blk: {
+  \\ } else {
+  \\   foo();
+  \\ }
+  \\ for (true) |f| blk: {
+  \\ } else {
+  \\   foo();
+  \\ }
+  \\ while (true) blk: {
+  \\ } else {
+  \\   foo();
+  \\ }
+  \\ if (true) //
+  \\ blk //
+  \\ : {
+  \\ } else {
+  \\   foo();
+  \\ }
+  \\ for (true) |f| //
+  \\ blk //
+  \\ : {
+  \\ } else {
+  \\   foo();
+  \\ }
+  \\ while (true) //
+  \\ blk //
+  \\ : {
+  \\ } else {
+  \\   foo();
+  \\ }
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if (true) blk: {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  for (true) |f| blk: {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  while (true) blk: {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  if (true) //
+    \\  blk //
+    \\  : {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  for (true) |f| //
+    \\  blk //
+    \\  : {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  while (true) //
+    \\  blk //
+    \\  : {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if (true) blk: {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  for (true) |f| blk: {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  while (true) blk: {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  if (true) //
+    \\  blk //
+    \\  : {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  for (true) |f| //
+    \\  blk //
+    \\  : {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\  while (true) //
+    \\  blk //
+    \\  : {
+    \\  } else {
+    \\    foo();
+    \\  }
+    \\}
+  );
+}
+
+test "comments/if-for-while 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ if (someCondition()) // a
+  \\   myExpr();
+  \\ if (someCondition()) // a
+  \\   myExpr()
+  \\  else // b
+  \\    myBar();
+  \\ if (someCondition()) |*c| // a
+  \\   myExpr()
+  \\  else // b
+  \\    myBar();
+  \\ if (someCondition()) // a
+  \\   myExpr()
+  \\  else |err| // b
+  \\    myBar();
+  \\ if (someCondition()) |*c| // a
+  \\   myExpr()
+  \\  else |err| // b
+  \\    myBar();
+  \\ var x = if (someCondition()) |*c| // a
+  \\   myExpr()
+  \\  else |err| // b
+  \\    myBar();
+  \\ var x = if (someCondition()) |*c|
+  \\   myExpr()
+  \\  else |err| 
+  \\    myBar();
+  \\ while (someCondition()) // a
+  \\   myExpr();
+  \\ while (someCondition()) // a
+  \\   myExpr()
+  \\ else
+  \\   tryMe();
+  \\ while (someCondition()) : (x += 5) // a
+  \\   myExpr();
+  \\ while (someCondition()) : (x += 5) // a
+  \\   myExpr()
+  \\ else |x|
+  \\   tryMe();
+  \\ for (someCondition()) |f| // a
+  \\   myExpr();
+  \\ for (someCondition()) |f| // a
+  \\   myExpr()
+  \\ else
+  \\   tryFor();
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if (someCondition()) // a
+    \\    myExpr();
+    \\  if (someCondition()) // a
+    \\    myExpr()
+    \\  else // b
+    \\    myBar();
+    \\  if (someCondition()) |*c| // a
+    \\    myExpr()
+    \\  else // b
+    \\    myBar();
+    \\  if (someCondition()) // a
+    \\    myExpr()
+    \\  else |err| // b
+    \\    myBar();
+    \\  if (someCondition()) |*c| // a
+    \\    myExpr()
+    \\  else |err| // b
+    \\    myBar();
+    \\  var x = if (someCondition()) |*c| // a
+    \\    myExpr()
+    \\  else |err| // b
+    \\    myBar();
+    \\  var x = if (someCondition()) |*c| myExpr() else |err| myBar();
+    \\  while (someCondition()) // a
+    \\    myExpr();
+    \\  while (someCondition()) // a
+    \\    myExpr()
+    \\  else
+    \\    tryMe();
+    \\  while (someCondition()) : (x += 5) // a
+    \\    myExpr();
+    \\  while (someCondition()) : (x += 5) // a
+    \\    myExpr()
+    \\  else |x|
+    \\    tryMe();
+    \\  for (someCondition()) |f| // a
+    \\    myExpr();
+    \\  for (someCondition()) |f| // a
+    \\    myExpr()
+    \\  else
+    \\    tryFor();
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  if (someCondition()) // a
+    \\    myExpr();
+    \\  if (someCondition()) // a
+    \\    myExpr()
+    \\  else // b
+    \\    myBar();
+    \\  if (
+    \\    someCondition()
+    \\  ) |*c| // a
+    \\    myExpr()
+    \\  else // b
+    \\    myBar();
+    \\  if (someCondition()) // a
+    \\    myExpr()
+    \\  else |err| // b
+    \\    myBar();
+    \\  if (
+    \\    someCondition()
+    \\  ) |*c| // a
+    \\    myExpr()
+    \\  else |err| // b
+    \\    myBar();
+    \\  var x = if (
+    \\    someCondition()
+    \\  ) |*c| // a
+    \\    myExpr()
+    \\  else |err| // b
+    \\    myBar();
+    \\  var x = if (
+    \\    someCondition()
+    \\  ) |*c|
+    \\    myExpr()
+    \\  else |err|
+    \\    myBar();
+    \\  while (someCondition()) // a
+    \\    myExpr();
+    \\  while (someCondition()) // a
+    \\    myExpr()
+    \\  else
+    \\    tryMe();
+    \\  while (someCondition())
+    \\  : (x += 5) // a
+    \\    myExpr();
+    \\  while (someCondition())
+    \\  : (x += 5) // a
+    \\    myExpr()
+    \\  else |x|
+    \\    tryMe();
+    \\  for (
+    \\    someCondition()
+    \\  ) |f| // a
+    \\    myExpr();
+    \\  for (
+    \\    someCondition()
+    \\  ) |f| // a
+    \\    myExpr()
+    \\  else
+    \\    tryFor();
+    \\}
+  );
+}
+
+test "comments/if-for-while 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn testMe() void {
+  \\ // More torture tests
+  \\ if (someCondition()) // a
+  \\ |c| myExpr();
+  \\ if (someCondition()) // a
+  \\ |c| myExpr()
+  \\  else |t|
+  \\    myBar();
+  \\ if (someCondition())
+  \\ |c| // a
+  \\ myExpr()
+  \\  else |t|
+  \\    myBar();
+  \\ if (someCondition()) // a
+  \\ |c| myExpr()
+  \\  else // b
+  \\    myBar();
+  \\ if (someCondition())
+  \\ |c| myExpr()
+  \\  else // a
+  \\    myBar();
+  \\  if (cond()) // a
+  \\    voidExpr()
+  \\  else
+  \\  {
+  \\    var x = 5;
+  \\  }
+  \\ while (someCondition()) // a
+  \\ : (x += 5)
+  \\   myExpr();
+  \\ while (someCondition()) // a
+  \\ : (x += 5)
+  \\   myExpr()
+  \\ else |y|
+  \\   tryMe();
+  \\ while (someCondition()) // 1
+  \\ : (x += 5)
+  \\   myExpr()
+  \\ else // 2
+  \\   tryMe();
+  \\ while (someCondition())
+  \\ : (x += 5)
+  \\   myExpr()
+  \\ else // 1
+  \\   |x| tryMe();
+  \\  while (cond()) |x| // 1
+  \\    voidExpr()
+  \\  else
+  \\  {
+  \\    var x = 5;
+  \\  }
+  \\ for (someCondition()) //a
+  \\ |f|
+  \\   myExpr();
+  \\ for (someCondition()) // a
+  \\ |f|
+  \\   myExpr()
+  \\ else
+  \\   tryFor();
+  \\ for (someCondition())
+  \\ |f|
+  \\   myExpr()
+  \\ else // 1
+  \\   tryFor();
+  \\  for (cond()) |x| // 1
+  \\    voidExpr()
+  \\  else
+  \\  {
+  \\    var x = 5;
+  \\  }
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  // More torture tests
+    \\  if (someCondition()) // a
+    \\  |c|
+    \\    myExpr();
+    \\  if (someCondition()) // a
+    \\  |c|
+    \\    myExpr()
+    \\  else |t|
+    \\    myBar();
+    \\  if (someCondition()) |c| // a
+    \\    myExpr()
+    \\  else |t|
+    \\    myBar();
+    \\  if (someCondition()) // a
+    \\  |c|
+    \\    myExpr()
+    \\  else // b
+    \\    myBar();
+    \\  if (someCondition()) |c| myExpr() else // a
+    \\  myBar();
+    \\  if (cond()) // a
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\  while (someCondition()) // a
+    \\  : (x += 5)
+    \\    myExpr();
+    \\  while (someCondition()) // a
+    \\  : (x += 5)
+    \\    myExpr()
+    \\  else |y|
+    \\    tryMe();
+    \\  while (someCondition()) // 1
+    \\  : (x += 5)
+    \\    myExpr()
+    \\  else // 2
+    \\    tryMe();
+    \\  while (someCondition()) : (x += 5) myExpr() else // 1
+    \\  |x| tryMe();
+    \\  while (cond()) |x| // 1
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\  for (someCondition()) //a
+    \\  |f|
+    \\    myExpr();
+    \\  for (someCondition()) // a
+    \\  |f|
+    \\    myExpr()
+    \\  else
+    \\    tryFor();
+    \\  for (someCondition()) |f| myExpr() else // 1
+    \\  tryFor();
+    \\  for (cond()) |x| // 1
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn testMe() void {
+    \\  // More torture tests
+    \\  if (someCondition()) // a
+    \\  |c|
+    \\    myExpr();
+    \\  if (someCondition()) // a
+    \\  |c|
+    \\    myExpr()
+    \\  else |t|
+    \\    myBar();
+    \\  if (
+    \\    someCondition()
+    \\  ) |c| // a
+    \\    myExpr()
+    \\  else |t|
+    \\    myBar();
+    \\  if (someCondition()) // a
+    \\  |c|
+    \\    myExpr()
+    \\  else // b
+    \\    myBar();
+    \\  if (someCondition()) |c|
+    \\    myExpr()
+    \\  else // a
+    \\    myBar();
+    \\  if (cond()) // a
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\  while (someCondition()) // a
+    \\  : (x += 5)
+    \\    myExpr();
+    \\  while (someCondition()) // a
+    \\  : (x += 5)
+    \\    myExpr()
+    \\  else |y|
+    \\    tryMe();
+    \\  while (someCondition()) // 1
+    \\  : (x += 5)
+    \\    myExpr()
+    \\  else // 2
+    \\    tryMe();
+    \\  while (someCondition())
+    \\  : (x += 5)
+    \\    myExpr()
+    \\  else // 1
+    \\  |x|
+    \\    tryMe();
+    \\  while (cond()) |x| // 1
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\  for (someCondition()) //a
+    \\  |f|
+    \\    myExpr();
+    \\  for (someCondition()) // a
+    \\  |f|
+    \\    myExpr()
+    \\  else
+    \\    tryFor();
+    \\  for (someCondition()) |f|
+    \\    myExpr()
+    \\  else // 1
+    \\    tryFor();
+    \\  for (cond()) |x| // 1
+    \\    voidExpr()
+    \\  else {
+    \\    var x = 5;
+    \\  }
+    \\}
+  );
+}
+
+test "comments/if-for-while 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\ while (true) {}
+  \\ while (true) {} else {}
+  \\ if (true) {}
+  \\ if (true) {} else {}
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  while (true) {}
+    \\  while (true) {
+    \\  } else {
+    \\  }
+    \\  if (true) {
+    \\  }
+    \\  if (true) {
+    \\  } else {
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  while (true) {}
+    \\  while (true) {
+    \\  } else {
+    \\  }
+    \\  if (true) {
+    \\  }
+    \\  if (true) {
+    \\  } else {
+    \\  }
+    \\}
+  );
+}
+
+test "comments/if-while 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const final_qual: enum {
+  \\    @"volatile",
+  \\    @"const",
+  \\    @"addrspace",
+  \\    @"align",
+  \\    @"allowzero",
+  \\    none,
+  \\} = if (ptr_type.volatile_token != null)
+  \\    .@"volatile"
+  \\else if (ptr_type.const_token != null)
+  \\    .@"const"
+  \\else if (ptr_type.ast.addrspace_node != .none)
+  \\    .@"addrspace"
+  \\else if (ptr_type.ast.align_node != .none)
+  \\    .@"align"
+  \\else if (ptr_type.allowzero_token != null)
+  \\    .@"allowzero"
+  \\else
+  \\    .none;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const final_qual: enum {
+    \\  @"volatile",
+    \\  @"const",
+    \\  @"addrspace",
+    \\  @"align",
+    \\  @"allowzero",
+    \\  none,
+    \\} = if (ptr_type.volatile_token != null)
+    \\  .@"volatile"
+    \\else if (ptr_type.const_token != null)
+    \\  .@"const"
+    \\else if (ptr_type.ast.addrspace_node != .none)
+    \\  .@"addrspace"
+    \\else if (ptr_type.ast.align_node != .none)
+    \\  .@"align"
+    \\else if (ptr_type.allowzero_token != null)
+    \\  .@"allowzero"
+    \\else
+    \\  .none;
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const final_qual: enum {
+    \\  @"volatile",
+    \\  @"const",
+    \\  @"addrspace",
+    \\  @"align",
+    \\  @"allowzero",
+    \\  none,
+    \\} = if (
+    \\  ptr_type.volatile_token
+    \\    != null
+    \\)
+    \\  .@"volatile"
+    \\else if (
+    \\  ptr_type.const_token != null
+    \\)
+    \\  .@"const"
+    \\else if (
+    \\  ptr_type.ast.addrspace_node
+    \\    != .none
+    \\)
+    \\  .@"addrspace"
+    \\else if (
+    \\  ptr_type.ast.align_node
+    \\    != .none
+    \\)
+    \\  .@"align"
+    \\else if (
+    \\  ptr_type.allowzero_token
+    \\    != null
+    \\)
+    \\  .@"allowzero"
+    \\else
+    \\  .none;
+  );
+}
+
+test "comments/if-while 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\ while (cond) foo()
+  \\ else if (someO()) b else if (someB()) c else d;
+  \\
+  \\ if (cond) foo()
+  \\ else if (someO()) b else if (someB()) c else // a
+  \\ d;
+  \\
+  \\ while (cond) foo()
+  \\ else if (someO()) b else if (someB()) c else  |t|d;
+  \\
+  \\ if (cond) foo()
+  \\ else if (someO()) b else if (someB()) c else |t| // a
+  \\ d;
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  while (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else
+    \\    d;
+    \\
+    \\  if (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else // a
+    \\    d;
+    \\
+    \\  while (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else |t|
+    \\    d;
+    \\
+    \\  if (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else |t| // a
+    \\    d;
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  while (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else
+    \\    d;
+    \\
+    \\  if (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else // a
+    \\    d;
+    \\
+    \\  while (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else |t|
+    \\    d;
+    \\
+    \\  if (cond)
+    \\    foo()
+    \\  else if (someO())
+    \\    b
+    \\  else if (someB())
+    \\    c
+    \\  else |t| // a
+    \\    d;
+    \\}
+  );
+}
+
+test "comments/switch 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\label // 1
+  \\ : // 2 
+  \\ switch // 3
+  \\ (// 4 
+  \\ expr // 5
+  \\ ) // 6
+  \\ { // 7
+  \\ // lbrace opener
+  \\  a // 8
+  \\ => // 9
+  \\ a // 10
+  \\ , // 11
+  \\  b // 12
+  \\ , // 13
+  \\ c // 14
+  \\ => // 15
+  \\ c // 16
+  \\ , // 17
+  \\  inline // 18
+  \\ d // 19
+  \\ ... // 20
+  \\ e // 21
+  \\ => // 22
+  \\ e //23
+  \\ , // 24
+  \\  else // 25
+  \\ =>// 26
+  \\ f // 27
+  \\ // rbrace closer 
+  \\} // 28
+  \\ , // 29
+  \\
+  \\label // 1
+  \\ : // 2 
+  \\ switch // 3
+  \\ (// 4 
+  \\ expr // 5
+  \\ ) // 6
+  \\ { // 7
+  \\ } // 8
+  \\ ,
+  \\ switch // a
+  \\ (// b
+  \\ expr // c
+  \\ ) // d
+  \\ {
+  \\ }
+  \\ ,
+  \\
+  \\
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\label // 1
+    \\: // 2
+    \\switch // 3
+    \\( // 4
+    \\  expr // 5
+    \\) // 6
+    \\{ // 7
+    \\  // lbrace opener
+    \\  a // 8
+    \\  => // 9
+    \\  a // 10
+    \\  , // 11
+    \\  b // 12
+    \\  , // 13
+    \\  c // 14
+    \\  => // 15
+    \\  c // 16
+    \\  , // 17
+    \\  inline // 18
+    \\  d // 19
+    \\  ... // 20
+    \\  e // 21
+    \\  => // 22
+    \\  e //23
+    \\  , // 24
+    \\  else // 25
+    \\  => // 26
+    \\  f // 27
+    \\  // rbrace closer
+    \\} // 28
+    \\, // 29
+    \\
+    \\label // 1
+    \\: // 2
+    \\switch // 3
+    \\( // 4
+    \\  expr // 5
+    \\) // 6
+    \\{ // 7
+    \\} // 8
+    \\,
+    \\switch // a
+    \\( // b
+    \\  expr // c
+    \\) // d
+    \\{},
+    \\
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\label // 1
+    \\: // 2
+    \\switch // 3
+    \\( // 4
+    \\  expr // 5
+    \\) // 6
+    \\{ // 7
+    \\  // lbrace opener
+    \\  a // 8
+    \\  => // 9
+    \\  a // 10
+    \\  , // 11
+    \\  b // 12
+    \\  , // 13
+    \\  c // 14
+    \\  => // 15
+    \\  c // 16
+    \\  , // 17
+    \\  inline // 18
+    \\  d // 19
+    \\  ... // 20
+    \\  e // 21
+    \\  => // 22
+    \\  e //23
+    \\  , // 24
+    \\  else // 25
+    \\  => // 26
+    \\  f // 27
+    \\  // rbrace closer
+    \\} // 28
+    \\, // 29
+    \\
+    \\label // 1
+    \\: // 2
+    \\switch // 3
+    \\( // 4
+    \\  expr // 5
+    \\) // 6
+    \\{ // 7
+    \\} // 8
+    \\,
+    \\switch // a
+    \\( // b
+    \\  expr // c
+    \\) // d
+    \\{},
+    \\
+  );
+}
+
+test "comments/switch 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ switch (someExpr(jk)) {},
+  \\
+  \\ switch // a
+  \\ (someExpr(jk)) {}, // b
+  \\
+  \\ fn fun(expr: Type) switch // 0
+  \\ (TypeOf(expr)) { // a
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} { // b
+  \\   return 
+  \\label: switch (expr)  { // 1
+  \\  a => a, // 2
+  \\  b, c => c, // 3
+  \\  inline d...e => e, // 4
+  \\  else => f, //foo
+  \\}; // 5
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\switch (someExpr(jk)) {},
+    \\
+    \\switch // a
+    \\(someExpr(jk)) {}, // b
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch // 0
+    \\(TypeOf(expr)) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  return label: switch (expr) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\switch (someExpr(jk)) {},
+    \\
+    \\switch // a
+    \\(
+    \\  someExpr(jk)
+    \\) {}, // b
+    \\
+    \\fn fun(
+    \\  expr: Type,
+    \\) switch // 0
+    \\(
+    \\  TypeOf(expr)
+    \\) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  return label: switch (
+    \\    expr
+    \\  ) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+  );
+}
+
+test "comments/switch 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn fun(expr: Type) lbl// ok
+  \\: // first
+  \\ switch // 0
+  \\ (TypeOf(expr)) { // a
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} { // b
+  \\   return 
+  \\ switch (expr)  { // 1
+  \\  a => a, // 2
+  \\  b, c => c, // 3
+  \\  inline d...e => e, // 4
+  \\  else => f, //foo
+  \\}; // 5
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl // ok
+    \\: // first
+    \\switch // 0
+    \\(TypeOf(expr)) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  return switch (expr) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn fun(
+    \\  expr: Type,
+    \\) lbl // ok
+    \\: // first
+    \\switch // 0
+    \\(
+    \\  TypeOf(expr)
+    \\) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  return switch (expr) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+  );
+}
+
+test "comments/switch 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\tag: switch (expr2)  { // one
+  \\  // switching on an expr is good 1
+  \\  // switching on an expr is good 2
+  \\  // switching on an expr is good 3
+  \\  .a => |bar| {},
+  \\  inline .x => |*bar, foo| a = call(),
+  \\  .y => |bar, foo| myExpr(),
+  \\  .b, .c => |*foo| { // two
+  \\  var k = abc;
+  \\  if (k * someExpr(expr2) > 0xff) {
+  \\    print("yep!");
+  \\}
+  \\},
+  \\  .b, .c, .d, .e, .f, .g, .h => |*foo| { // three
+  \\ if (ty.ast.sentinel.unwrap()) |n| {
+  \\   sb.text("[")._();
+  \\   var elems = self.db.seqb();
+  \\   elems.softline().text("*:")._();
+  \\   elems.append(try self.t(n));
+  \\   sb.indent(elems.finish()).softline().text("]")._();
+  \\ } else {
+  \\   sb.text("[*]")._();
+  \\ }
+  \\ },
+  \\  .d ... .e => {}, // keep
+  \\.add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
+  \\.bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
+  \\.bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
+  \\.less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
+  \\.mul_sat, .sub, .sub_wrap, .sub_sat => {
+  \\  return self.tBinaryExpr(n, tag);
+  \\}, // yeah same
+  \\  else => f,
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\tag: switch (expr2) { // one
+    \\  // switching on an expr is good 1
+    \\  // switching on an expr is good 2
+    \\  // switching on an expr is good 3
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| { // two
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| { // three
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {}, // keep
+    \\  .add,
+    \\  .add_wrap,
+    \\  .add_sat,
+    \\  .array_cat,
+    \\  .array_mult,
+    \\  .bang_equal,
+    \\  .bit_and,
+    \\  .bit_or,
+    \\  .shl,
+    \\  .shl_sat,
+    \\  .shr,
+    \\  .bit_xor,
+    \\  .bool_and,
+    \\  .bool_or,
+    \\  .div,
+    \\  .equal_equal,
+    \\  .greater_or_equal,
+    \\  .greater_than,
+    \\  .less_or_equal,
+    \\  .less_than,
+    \\  .merge_error_sets,
+    \\  .mod,
+    \\  .mul,
+    \\  .mul_wrap,
+    \\  .mul_sat,
+    \\  .sub,
+    \\  .sub_wrap,
+    \\  .sub_sat => {
+    \\    return self.tBinaryExpr(n, tag);
+    \\  }, // yeah same
+    \\  else => f,
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\tag: switch (expr2) { // one
+    \\  // switching on an expr is good 1
+    \\  // switching on an expr is good 2
+    \\  // switching on an expr is good 3
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| { // two
+    \\    var k = abc;
+    \\    if (
+    \\      k * someExpr(expr2)
+    \\        > 0xff
+    \\    ) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b,
+    \\  .c,
+    \\  .d,
+    \\  .e,
+    \\  .f,
+    \\  .g,
+    \\  .h => |*foo| { // three
+    \\    if (
+    \\      ty.ast.sentinel.unwrap()
+    \\    ) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline()
+    \\        .text("*:")
+    \\        ._();
+    \\      elems.append(
+    \\        try self.t(n),
+    \\      );
+    \\      sb.indent(
+    \\        elems.finish(),
+    \\      )
+    \\        .softline()
+    \\        .text("]")
+    \\        ._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {}, // keep
+    \\  .add,
+    \\  .add_wrap,
+    \\  .add_sat,
+    \\  .array_cat,
+    \\  .array_mult,
+    \\  .bang_equal,
+    \\  .bit_and,
+    \\  .bit_or,
+    \\  .shl,
+    \\  .shl_sat,
+    \\  .shr,
+    \\  .bit_xor,
+    \\  .bool_and,
+    \\  .bool_or,
+    \\  .div,
+    \\  .equal_equal,
+    \\  .greater_or_equal,
+    \\  .greater_than,
+    \\  .less_or_equal,
+    \\  .less_than,
+    \\  .merge_error_sets,
+    \\  .mod,
+    \\  .mul,
+    \\  .mul_wrap,
+    \\  .mul_sat,
+    \\  .sub,
+    \\  .sub_wrap,
+    \\  .sub_sat => {
+    \\    return self.tBinaryExpr(
+    \\      n,
+    \\      tag,
+    \\    );
+    \\  }, // yeah same
+    \\  else => f,
+    \\}
+  );
+}
+
+test "comments/error-union" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn fun(expr: Type) Foo // 1
+  \\ ! // 2
+  \\ switch // 0
+  \\ (@TypeOf(expr)) { // a
+  \\ .a => TyFoo, .b => TyBar, else => TyBaz} { // b
+  \\   return 
+  \\label: switch (expr)  { // 1
+  \\  a => a, // 2
+  \\  b, c => c, // 3
+  \\  inline d...e => e, // 4
+  \\  else => f, //foo
+  \\}; // 5
+  \\}
+  \\
+  \\ fn fun() Bar // 1
+  \\ ! // 2
+  \\ expr(a, b, c) { // 3
+  \\ }
+  \\
+  \\ fn fun() Bar
+  \\ ! 
+  \\ expr(a, b, c) { // 3
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn fun(
+    \\  expr: Type,
+    \\) Foo // 1
+    \\! // 2
+    \\switch // 0
+    \\(@TypeOf(expr)) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  return label: switch (expr) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+    \\
+    \\fn fun() Bar // 1
+    \\! // 2
+    \\expr(a, b, c) { // 3
+    \\}
+    \\
+    \\fn fun() Bar!expr(a, b, c) { // 3
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn fun(
+    \\  expr: Type,
+    \\) Foo // 1
+    \\! // 2
+    \\switch // 0
+    \\(
+    \\  @TypeOf(expr)
+    \\) { // a
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} { // b
+    \\  return label: switch (
+    \\    expr
+    \\  ) { // 1
+    \\    a => a, // 2
+    \\    b, c => c, // 3
+    \\    inline d...e => e, // 4
+    \\    else => f, //foo
+    \\  }; // 5
+    \\}
+    \\
+    \\fn fun() Bar // 1
+    \\! // 2
+    \\expr(a, b, c) { // 3
+    \\}
+    \\
+    \\fn fun() Bar!expr(
+    \\  a,
+    \\  b,
+    \\  c,
+    \\) { // 3
+    \\}
+  );
+}
+
+test "comments/struct-init" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\   var a = Ty // 1
+  \\ { // 2
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay" // 6
+  \\ , // 7
+  \\ . // 8
+  \\ y // 9
+  \\ = // 10
+  \\ 0xff // 11
+  \\ } // 12
+  \\ ; // last
+  \\
+  \\   var a2 = Ty // 1
+  \\ { // 2
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay" // 6
+  \\ , // 7
+  \\ . // 8
+  \\ y // 9
+  \\ = // 10
+  \\ 0xff, // 11
+  \\ } // 12
+  \\ ; // last
+  \\
+  \\   var b = Ty // 1
+  \\ { // 2
+  \\ // very merry many comments - there
+  \\ // very merry many comments - here
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay" // 6
+  \\ } // 7
+  \\ ; // last
+  \\
+  \\   var c = Ty // 1
+  \\ { // 2
+  \\ // very merry many comments - there
+  \\ // very merry many comments - here
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay", // 6
+  \\ } // 7
+  \\ ; // last
+  \\
+  \\   var c = foo.bar(ab, cd())// 1
+  \\ { // 2
+  \\ // very merry many comments - there
+  \\ // very merry many comments - here
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay", // 6
+  \\ // e - very merry many comments - there
+  \\ // e - very merry many comments - here
+  \\ } // 7
+  \\ ; // last
+  \\
+  \\   var p = foo.bar(ab, cd()) {.x = "yay", .y = 0xff};
+  \\   var q = foo // ok
+  \\ .bar(ab, cd()) {.x = "yay", .y = 0xff};
+  \\
+  \\   var d = . // 1
+  \\ { // 2
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay" // 6
+  \\ , // 7
+  \\ . // 8
+  \\ y // 9
+  \\ = // 10
+  \\ 0xff // 11
+  \\ } // 12
+  \\ ; // last
+  \\
+  \\   var e = . // 1
+  \\ { // 2
+  \\ . // 3
+  \\ x // 4 
+  \\ = // 5
+  \\ "yay" // 6
+  \\ , // 7
+  \\ . // 8
+  \\ y // 9
+  \\ = // 10
+  \\ 0xff, // 11
+  \\ } // 12
+  \\ ; // last
+  \\
+  \\   const e = . // 1
+  \\ { // trail here 2
+  \\ .
+  \\ x
+  \\ =
+  \\ "yay"
+  \\ ,
+  \\ .
+  \\ y
+  \\ =
+  \\ 0xff,
+  \\ }
+  \\ ; // last
+  \\
+  \\   var k = Ty // 1
+  \\ { // 2
+  \\ } // 3
+  \\ ;
+  \\
+  \\   var g = . // 1
+  \\ { // 2
+  \\ } // 3
+  \\ ;
+  \\
+  \\   var g = . // 1
+  \\ {
+  \\ }
+  \\ ;
+  \\
+  \\ var g = . // 1
+  \\ { // 2
+  \\ }
+  \\ ;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var a = Ty // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\var a2 = Ty // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff, // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\var b = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\} // 7
+    \\; // last
+    \\
+    \\var c = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay", // 6
+    \\} // 7
+    \\; // last
+    \\
+    \\var c = foo.bar(ab, cd()) // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay", // 6
+    \\  // e - very merry many comments - there
+    \\  // e - very merry many comments - here
+    \\} // 7
+    \\; // last
+    \\
+    \\var p = foo.bar(ab, cd()){.x = "yay", .y = 0xff};
+    \\var q = foo // ok
+    \\.bar(ab, cd()){.x = "yay", .y = 0xff};
+    \\
+    \\var d = . // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\var e = . // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff, // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\const e = . // 1
+    \\{ // trail here 2
+    \\  .x = "yay",
+    \\  .y = 0xff,
+    \\}; // last
+    \\
+    \\var k = Ty // 1
+    \\{ // 2
+    \\} // 3
+    \\;
+    \\
+    \\var g = . // 1
+    \\{ // 2
+    \\} // 3
+    \\;
+    \\
+    \\var g = . // 1
+    \\{};
+    \\
+    \\var g = . // 1
+    \\{ // 2
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var a = Ty // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\var a2 = Ty // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff, // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\var b = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\} // 7
+    \\; // last
+    \\
+    \\var c = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay", // 6
+    \\} // 7
+    \\; // last
+    \\
+    \\var c = foo.bar(ab, cd()) // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay", // 6
+    \\  // e - very merry many comments - there
+    \\  // e - very merry many comments - here
+    \\} // 7
+    \\; // last
+    \\
+    \\var p = foo.bar(ab, cd()){
+    \\  .x = "yay",
+    \\  .y = 0xff,
+    \\};
+    \\var q = foo // ok
+    \\.bar(
+    \\  ab,
+    \\  cd(),
+    \\){
+    \\  .x = "yay",
+    \\  .y = 0xff,
+    \\};
+    \\
+    \\var d = . // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\var e = . // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  = // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\  = // 10
+    \\  0xff, // 11
+    \\} // 12
+    \\; // last
+    \\
+    \\const e = . // 1
+    \\{ // trail here 2
+    \\  .x = "yay",
+    \\  .y = 0xff,
+    \\}; // last
+    \\
+    \\var k = Ty // 1
+    \\{ // 2
+    \\} // 3
+    \\;
+    \\
+    \\var g = . // 1
+    \\{ // 2
+    \\} // 3
+    \\;
+    \\
+    \\var g = . // 1
+    \\{};
+    \\
+    \\var g = . // 1
+    \\{ // 2
+    \\};
+  );
+}
+
+test "comments/array-init" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\   var a = Ty // 1
+  \\ { // 2
+  \\ "yay" // 3
+  \\ , // 4
+  \\ 0xff // 5 
+  \\ } // 6
+  \\ ; // last
+  \\
+  \\   var a2 = Ty // 1
+  \\ { // 2
+  \\ . // 3
+  \\ x // 4 
+  \\ , // 5
+  \\ . // 6
+  \\ y // 7
+  \\ } // 8 
+  \\ ; // last
+  \\
+  \\   var b = Ty // 1
+  \\ { // 2
+  \\ // very merry many comments - there
+  \\ // very merry many comments - here
+  \\ "yay" // 3
+  \\ } // 4
+  \\ ; // last
+  \\
+  \\   var c = Ty // 1
+  \\ { // 2
+  \\ // very merry many comments - there
+  \\ // very merry many comments - here
+  \\ . // 3
+  \\ x, // 4 
+  \\ } // 5
+  \\ ; // last
+  \\
+  \\   var c2 = foo.bar(ab, cd())// 1
+  \\ { // 2
+  \\ // very merry many comments - there
+  \\ // very merry many comments - here
+  \\ "yay", // 3
+  \\ // e - very merry many comments - there
+  \\ // e - very merry many comments - here
+  \\ } // 4
+  \\ ; // last
+  \\
+  \\   var p = foo.bar(ab, cd()) {x("yay"), y(0xff)};
+  \\   var q = foo // ok
+  \\ .bar(ab, cd()) {.x("yay"), .y(0xff) // cool
+  \\ };
+  \\
+  \\   var d = . // 1
+  \\ { // 2
+  \\ joe // 3
+  \\ , // 4
+  \\ 123, // 5
+  \\ "yay" // 6
+  \\ , // 7
+  \\ . // 8
+  \\ y // 9
+  \\ } // 10
+  \\ ; // last
+  \\
+  \\   var e = . // 1
+  \\ { // 2
+  \\ "yay" // 3
+  \\ , // 4
+  \\ 0xff, // 5 
+  \\ } // 6
+  \\ ; // last
+  \\
+  \\   const e = . // 1
+  \\ { // trail here 2
+  \\ .
+  \\ x 
+  \\ ,
+  \\ .
+  \\ y,
+  \\ }
+  \\ ; // last
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var a = Ty // 1
+    \\{ // 2
+    \\  "yay" // 3
+    \\  , // 4
+    \\  0xff // 5
+    \\} // 6
+    \\; // last
+    \\
+    \\var a2 = Ty // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  , // 5
+    \\  . // 6
+    \\  y // 7
+    \\} // 8
+    \\; // last
+    \\
+    \\var b = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  "yay" // 3
+    \\} // 4
+    \\; // last
+    \\
+    \\var c = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x, // 4
+    \\} // 5
+    \\; // last
+    \\
+    \\var c2 = foo.bar(ab, cd()) // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  "yay", // 3
+    \\  // e - very merry many comments - there
+    \\  // e - very merry many comments - here
+    \\} // 4
+    \\; // last
+    \\
+    \\var p = foo.bar(ab, cd()){x("yay"), y(0xff)};
+    \\var q = foo // ok
+    \\.bar(ab, cd()){
+    \\  .x("yay"),
+    \\  .y(0xff) // cool
+    \\};
+    \\
+    \\var d = . // 1
+    \\{ // 2
+    \\  joe // 3
+    \\  , // 4
+    \\  123, // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\} // 10
+    \\; // last
+    \\
+    \\var e = . // 1
+    \\{ // 2
+    \\  "yay" // 3
+    \\  , // 4
+    \\  0xff, // 5
+    \\} // 6
+    \\; // last
+    \\
+    \\const e = . // 1
+    \\{ // trail here 2
+    \\  .x,
+    \\  .y,
+    \\}; // last
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var a = Ty // 1
+    \\{ // 2
+    \\  "yay" // 3
+    \\  , // 4
+    \\  0xff // 5
+    \\} // 6
+    \\; // last
+    \\
+    \\var a2 = Ty // 1
+    \\{ // 2
+    \\  . // 3
+    \\  x // 4
+    \\  , // 5
+    \\  . // 6
+    \\  y // 7
+    \\} // 8
+    \\; // last
+    \\
+    \\var b = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  "yay" // 3
+    \\} // 4
+    \\; // last
+    \\
+    \\var c = Ty // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  . // 3
+    \\  x, // 4
+    \\} // 5
+    \\; // last
+    \\
+    \\var c2 = foo.bar(
+    \\  ab,
+    \\  cd(),
+    \\) // 1
+    \\{ // 2
+    \\  // very merry many comments - there
+    \\  // very merry many comments - here
+    \\  "yay", // 3
+    \\  // e - very merry many comments - there
+    \\  // e - very merry many comments - here
+    \\} // 4
+    \\; // last
+    \\
+    \\var p = foo.bar(ab, cd()){
+    \\  x("yay"),
+    \\  y(0xff),
+    \\};
+    \\var q = foo // ok
+    \\.bar(
+    \\  ab,
+    \\  cd(),
+    \\){
+    \\  .x("yay"),
+    \\  .y(0xff) // cool
+    \\};
+    \\
+    \\var d = . // 1
+    \\{ // 2
+    \\  joe // 3
+    \\  , // 4
+    \\  123, // 5
+    \\  "yay" // 6
+    \\  , // 7
+    \\  . // 8
+    \\  y // 9
+    \\} // 10
+    \\; // last
+    \\
+    \\var e = . // 1
+    \\{ // 2
+    \\  "yay" // 3
+    \\  , // 4
+    \\  0xff, // 5
+    \\} // 6
+    \\; // last
+    \\
+    \\const e = . // 1
+    \\{ // trail here 2
+    \\  .x,
+    \\  .y,
+    \\}; // last
+  );
+}
+
+test "comments/break-return" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\ // this is true
+  \\ return // my ret
+  \\  expr();
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ // this is true
+  \\ return // my ret
+  \\  ;
+  \\ }
+  \\
+  \\
+  \\ fn foo() void {
+  \\ break // my ret
+  \\  expr();
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ break // my ret
+  \\  : // colon
+  \\  lbl // lbl
+  \\  expr();
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ break // my ret
+  \\  : // colon
+  \\  lbl // lbl
+  \\  ;
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ break // my ret
+  \\  ;
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ break expr(); // my ret
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ break : lbl expr();
+  \\ }
+  \\ 
+  \\ fn foo() void {
+  \\ return expr();
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  // this is true
+    \\  return // my ret
+    \\  expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  // this is true
+    \\  return // my ret
+    \\  ;
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  : // colon
+    \\  lbl // lbl
+    \\  expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  : // colon
+    \\  lbl // lbl
+    \\  ;
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  ;
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break expr(); // my ret
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break :lbl expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  return expr();
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  // this is true
+    \\  return // my ret
+    \\  expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  // this is true
+    \\  return // my ret
+    \\  ;
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  : // colon
+    \\  lbl // lbl
+    \\  expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  : // colon
+    \\  lbl // lbl
+    \\  ;
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break // my ret
+    \\  ;
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break expr(); // my ret
+    \\}
+    \\
+    \\fn foo() void {
+    \\  break :lbl expr();
+    \\}
+    \\
+    \\fn foo() void {
+    \\  return expr();
+    \\}
+  );
+}
+
+test "comments/assign-destructure" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\ // this is true
+  \\ const // 1
+  \\ tkn // 2
+  \\ , // 3
+  \\ const // 4
+  \\ node // 5
+  \\ = // 6
+  \\ self.tree.nodeData(n).opt_token_and_opt_node; // 7
+  \\
+  \\ var // 1
+  \\ a // 2
+  \\ , // 3
+  \\ const // 4
+  \\ b // 5
+  \\ , // 6
+  \\ _ // 7
+  \\ = // 8
+  \\ some.expr(that.is(cool, yeah)); // 9
+  \\
+  \\ _, // 1
+  \\ const b, // 2
+  \\ _ // 3
+  \\ = // 4
+  \\ some.expr(that.is(cool, yeah));
+  \\
+  \\ var a, // 1
+  \\ var b // 2 
+  \\ = some.expr(that.is(cool, yeah));
+  \\
+  \\ var a, var b, var c = // 1
+  \\ some.expr(that.is(cool, yeah));
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  // this is true
+    \\  const // 1
+    \\  tkn // 2
+    \\  , // 3
+    \\  const // 4
+    \\  node // 5
+    \\  = // 6
+    \\  self.tree.nodeData(n).opt_token_and_opt_node; // 7
+    \\
+    \\  var // 1
+    \\  a // 2
+    \\  , // 3
+    \\  const // 4
+    \\  b // 5
+    \\  , // 6
+    \\  _ // 7
+    \\  = // 8
+    \\  some.expr(that.is(cool, yeah)); // 9
+    \\
+    \\  _, // 1
+    \\  const b, // 2
+    \\  _ // 3
+    \\  = // 4
+    \\  some.expr(that.is(cool, yeah));
+    \\
+    \\  var a, // 1
+    \\  var b // 2
+    \\  = some.expr(that.is(cool, yeah));
+    \\
+    \\  var a, var b, var c = // 1
+    \\  some.expr(that.is(cool, yeah));
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  // this is true
+    \\  const // 1
+    \\  tkn // 2
+    \\  , // 3
+    \\  const // 4
+    \\  node // 5
+    \\  = // 6
+    \\  self
+    \\    .tree
+    \\    .nodeData(n)
+    \\    .opt_token_and_opt_node; // 7
+    \\
+    \\  var // 1
+    \\  a // 2
+    \\  , // 3
+    \\  const // 4
+    \\  b // 5
+    \\  , // 6
+    \\  _ // 7
+    \\  = // 8
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  ); // 9
+    \\
+    \\  _, // 1
+    \\  const b, // 2
+    \\  _ // 3
+    \\  = // 4
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\
+    \\  var a, // 1
+    \\  var b // 2
+    \\  = some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\
+    \\  var a, var b, var c = // 1
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\}
+  );
+}
+
+test "comments/assign-add" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\ // this is true
+  \\ const // 1
+  \\ tkn // 2
+  \\ = // 3
+  \\ self.tree.nodeData(n).opt_token_and_opt_node; // 4
+  \\
+  \\ var // 1
+  \\ a // 2
+  \\ = // 3
+  \\ some.expr(that.is(cool, yeah)); // 4
+  \\
+  \\ _ // 1
+  \\ = // 2
+  \\ some.expr(that.is(cool, yeah));
+  \\
+  \\ var b // 1
+  \\ = some.expr(that.is(cool, yeah));
+  \\
+  \\ var c = // 1
+  \\ some.expr(that.is(cool, yeah));
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ // this is true
+  \\ tkn // 2
+  \\ += // 3
+  \\ self.tree.nodeData(n).opt_token_and_opt_node; // 4
+  \\
+  \\ a // 2
+  \\ += // 3
+  \\ some.expr(that.is(cool, yeah)); // 4
+  \\
+  \\ _ // 1
+  \\ += // 2
+  \\ some.expr(that.is(cool, yeah));
+  \\
+  \\ b // 1
+  \\ += some.expr(that.is(cool, yeah));
+  \\
+  \\ c += // 1
+  \\ some.expr(that.is(cool, yeah));
+  \\ }
+  \\
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  // this is true
+    \\  const // 1
+    \\  tkn // 2
+    \\  = // 3
+    \\  self.tree.nodeData(n).opt_token_and_opt_node; // 4
+    \\
+    \\  var // 1
+    \\  a // 2
+    \\  = // 3
+    \\  some.expr(that.is(cool, yeah)); // 4
+    \\
+    \\  _ // 1
+    \\  = // 2
+    \\  some.expr(that.is(cool, yeah));
+    \\
+    \\  var b // 1
+    \\  = some.expr(that.is(cool, yeah));
+    \\
+    \\  var c = // 1
+    \\  some.expr(that.is(cool, yeah));
+    \\}
+    \\
+    \\fn foo() void {
+    \\  // this is true
+    \\  tkn // 2
+    \\  += // 3
+    \\  self.tree.nodeData(n).opt_token_and_opt_node; // 4
+    \\
+    \\  a // 2
+    \\  += // 3
+    \\  some.expr(that.is(cool, yeah)); // 4
+    \\
+    \\  _ // 1
+    \\  += // 2
+    \\  some.expr(that.is(cool, yeah));
+    \\
+    \\  b // 1
+    \\  += some.expr(that.is(cool, yeah));
+    \\
+    \\  c += // 1
+    \\  some.expr(that.is(cool, yeah));
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  // this is true
+    \\  const // 1
+    \\  tkn // 2
+    \\  = // 3
+    \\  self
+    \\    .tree
+    \\    .nodeData(n)
+    \\    .opt_token_and_opt_node; // 4
+    \\
+    \\  var // 1
+    \\  a // 2
+    \\  = // 3
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  ); // 4
+    \\
+    \\  _ // 1
+    \\  = // 2
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\
+    \\  var b // 1
+    \\  = some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\
+    \\  var c = // 1
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\}
+    \\
+    \\fn foo() void {
+    \\  // this is true
+    \\  tkn // 2
+    \\  += // 3
+    \\  self
+    \\    .tree
+    \\    .nodeData(n)
+    \\    .opt_token_and_opt_node; // 4
+    \\
+    \\  a // 2
+    \\  += // 3
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  ); // 4
+    \\
+    \\  _ // 1
+    \\  += // 2
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\
+    \\  b // 1
+    \\  += some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\
+    \\  c += // 1
+    \\  some.expr(
+    \\    that.is(cool, yeah),
+    \\  );
+    \\}
+  );
+}
+
+test "comments/field-access" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\  var x = self.tree.nodeData1.nodeData2.nodeData3.nodeData4.nodeData5.nodeData6.opt_token_and_opt_node.opts.c_opts;
+  \\  var x = self//1
+  \\ .//2
+  \\ tree// 3
+  \\ .//4
+  \\ nodeData1//5
+  \\ .//6
+  \\ nodeData2//7
+  \\ .//8
+  \\ nodeData3//9
+  \\ .//10
+  \\ nodeData4//11
+  \\ .//12
+  \\ nodeData5//13
+  \\ .//14
+  \\ nodeData6//15
+  \\ .//16
+  \\ opt_token_and_opt_node//17
+  \\ .//18
+  \\ opts//19
+  \\ .//20
+  \\ c_opts//21
+  \\;
+  \\var sb = self.db.xyz(
+  \\  a,
+  \\  b(),
+  \\);
+  \\  const // 4
+  \\  node // 5
+  \\  = // 6
+  \\  self.tree.nodeData(n).opt_token_and_opt_node; // 7
+  \\ }
+  \\
+  \\ fn foo() void {
+  \\ // this is true
+  \\ tkn // 2
+  \\ += // 3
+  \\ self.tree.nodeData(n) // a
+  \\ . // b
+  \\ opt_token_and_opt_node // c
+  \\ ; // d
+  \\
+  \\ self.tree.nodeData(n) // a
+  \\ . 
+  \\ opt_token_and_opt_node // b
+  \\ ; // c
+  \\
+  \\ self.tree.nodeData(n)
+  \\ .  // a
+  \\ opt_token_and_opt_node // b
+  \\ ; // c
+  \\
+  \\ self.tree.nodeData(n) // 0
+  \\ .  // a
+  \\ opt_token_and_opt_node // b
+  \\ . // c
+  \\ opts // d
+  \\ ;
+  \\
+  \\ self.tree.nodeData(n) // 0
+  \\ .
+  \\ opt_token_and_opt_node // a
+  \\ .
+  \\ opts() // b
+  \\ ;
+  \\
+  \\ self.tree.nodeData(n) // 0
+  \\ .
+  \\ opt_token_and_opt_node // a
+  \\ .
+  \\ opts // b
+  \\ .
+  \\ c_opts // c
+  \\ ;
+  \\
+  \\ }
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  var x = self
+    \\    .tree
+    \\    .nodeData1
+    \\    .nodeData2
+    \\    .nodeData3
+    \\    .nodeData4
+    \\    .nodeData5
+    \\    .nodeData6
+    \\    .opt_token_and_opt_node
+    \\    .opts
+    \\    .c_opts;
+    \\  var x = self //1
+    \\    . //2
+    \\    tree // 3
+    \\    . //4
+    \\    nodeData1 //5
+    \\    . //6
+    \\    nodeData2 //7
+    \\    . //8
+    \\    nodeData3 //9
+    \\    . //10
+    \\    nodeData4 //11
+    \\    . //12
+    \\    nodeData5 //13
+    \\    . //14
+    \\    nodeData6 //15
+    \\    . //16
+    \\    opt_token_and_opt_node //17
+    \\    . //18
+    \\    opts //19
+    \\    . //20
+    \\    c_opts //21
+    \\  ;
+    \\  var sb = self.db.xyz(a, b());
+    \\  const // 4
+    \\  node // 5
+    \\  = // 6
+    \\  self.tree.nodeData(n).opt_token_and_opt_node; // 7
+    \\}
+    \\
+    \\fn foo() void {
+    \\  // this is true
+    \\  tkn // 2
+    \\  += // 3
+    \\  self.tree.nodeData(n) // a
+    \\  . // b
+    \\  opt_token_and_opt_node // c
+    \\  ; // d
+    \\
+    \\  self.tree.nodeData(n) // a
+    \\  .opt_token_and_opt_node // b
+    \\  ; // c
+    \\
+    \\  self.tree.nodeData(n). // a
+    \\  opt_token_and_opt_node // b
+    \\  ; // c
+    \\
+    \\  self.tree.nodeData(n) // 0
+    \\  . // a
+    \\  opt_token_and_opt_node // b
+    \\  . // c
+    \\  opts // d
+    \\  ;
+    \\
+    \\  self.tree.nodeData(n) // 0
+    \\  .opt_token_and_opt_node // a
+    \\  .opts() // b
+    \\  ;
+    \\
+    \\  self.tree.nodeData(n) // 0
+    \\  .opt_token_and_opt_node // a
+    \\  .opts // b
+    \\  .c_opts // c
+    \\  ;
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  var x = self
+    \\    .tree
+    \\    .nodeData1
+    \\    .nodeData2
+    \\    .nodeData3
+    \\    .nodeData4
+    \\    .nodeData5
+    \\    .nodeData6
+    \\    .opt_token_and_opt_node
+    \\    .opts
+    \\    .c_opts;
+    \\  var x = self //1
+    \\    . //2
+    \\    tree // 3
+    \\    . //4
+    \\    nodeData1 //5
+    \\    . //6
+    \\    nodeData2 //7
+    \\    . //8
+    \\    nodeData3 //9
+    \\    . //10
+    \\    nodeData4 //11
+    \\    . //12
+    \\    nodeData5 //13
+    \\    . //14
+    \\    nodeData6 //15
+    \\    . //16
+    \\    opt_token_and_opt_node //17
+    \\    . //18
+    \\    opts //19
+    \\    . //20
+    \\    c_opts //21
+    \\  ;
+    \\  var sb = self.db.xyz(
+    \\    a,
+    \\    b(),
+    \\  );
+    \\  const // 4
+    \\  node // 5
+    \\  = // 6
+    \\  self
+    \\    .tree
+    \\    .nodeData(n)
+    \\    .opt_token_and_opt_node; // 7
+    \\}
+    \\
+    \\fn foo() void {
+    \\  // this is true
+    \\  tkn // 2
+    \\  += // 3
+    \\  self
+    \\    .tree
+    \\    .nodeData(n) // a
+    \\    . // b
+    \\    opt_token_and_opt_node // c
+    \\  ; // d
+    \\
+    \\  self
+    \\    .tree
+    \\    .nodeData(n) // a
+    \\    .opt_token_and_opt_node // b
+    \\  ; // c
+    \\
+    \\  self
+    \\    .tree
+    \\    .nodeData(n)
+    \\    . // a
+    \\    opt_token_and_opt_node // b
+    \\  ; // c
+    \\
+    \\  self
+    \\    .tree
+    \\    .nodeData(n) // 0
+    \\    . // a
+    \\    opt_token_and_opt_node // b
+    \\    . // c
+    \\    opts // d
+    \\  ;
+    \\
+    \\  self.tree.nodeData(n) // 0
+    \\    .opt_token_and_opt_node // a
+    \\    .opts() // b
+    \\  ;
+    \\
+    \\  self
+    \\    .tree
+    \\    .nodeData(n) // 0
+    \\    .opt_token_and_opt_node // a
+    \\    .opts // b
+    \\    .c_opts // c
+    \\  ;
+    \\}
+  );
+}
+
+test "comments/binexpr" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo(bar: T) void {
+  \\    var x: u3 = 5;
+  \\    const a, _ = expr;
+  \\   var j = a // 1
+  \\ * // 2
+  \\ b //3
+  \\;
+  \\   var j = a // 1
+  \\ * // 2
+  \\ b // 3
+  \\ + // 4
+  \\ 5 // 5
+  \\ ;
+  \\    var j = x // 1 
+  \\ * // 2
+  \\ x // 3
+  \\ - // 4
+  \\ (// 5
+  \\ // top lvl opener
+  \\ x // a
+  \\ + // b
+  \\ 5 // c
+  \\ // bottom lvl closer
+  \\ ) // 6
+  \\ ;
+  \\ foo(
+  \\ a + 
+  \\ 5 // c
+  \\ // bottom lvl closer
+  \\ ) // 6
+  \\ ;
+  \\  var j = x // 1 
+  \\ * x - // 2
+  \\ (x + 5) // 3
+  \\ ;
+  \\    var j = x * x - (x + 5) + k;
+  \\   var x = 1 * foo + bar - car * booh - dah / boxMM * foom4 + barm3 * foom3 + barm2 * foom2 + barm1 * foom1 + bar0 * foo0 + bar1 * foo1 + bar2 * foo2 + //stable?
+  \\ bar3 / boxN * foo;
+  \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + bar * foo + bar * foo + bar * foo + (bar  * foo + bar * // stable?
+  \\ foo + bar * foo + bar * foo + bar * foo + bar / boxB * foo);
+  \\  var x = 1 * foo + bar - car * booh - dah / boxB * foo + // stable?
+  \\ bar * foo + bar * foo + bar * foo + (bar * foo + bar * foo + bar * foo + bar / boxB * foo * foo + bar / boxB * foo * foo + bar / boxB * foo);
+  \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) // a
+  \\ * expr();
+  \\ var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc( // a
+  \\ 1, 2, 3) * expr() + 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3 // b
+  \\ ) * expr();
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo(bar: T) void {
+    \\  var x: u3 = 5;
+    \\  const a, _ = expr;
+    \\  var j = a // 1
+    \\    * // 2
+    \\    b //3
+    \\  ;
+    \\  var j = a // 1
+    \\    * // 2
+    \\    b // 3
+    \\    + // 4
+    \\    5 // 5
+    \\  ;
+    \\  var j = x // 1
+    \\    * // 2
+    \\    x // 3
+    \\    - // 4
+    \\    ( // 5
+    \\      // top lvl opener
+    \\      x // a
+    \\        + // b
+    \\        5 // c
+    \\        // bottom lvl closer
+    \\    ) // 6
+    \\  ;
+    \\  foo(
+    \\    a + 5 // c
+    \\      // bottom lvl closer
+    \\  ) // 6
+    \\  ;
+    \\  var j = x // 1
+    \\    * x - // 2
+    \\    (x + 5) // 3
+    \\  ;
+    \\  var j = x * x - (x + 5) + k;
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
+    \\    + barm3 * foom3
+    \\    + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + //stable?
+    \\    bar3 / boxN * foo;
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\        + bar * // stable?
+    \\          foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar / boxB * foo);
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + // stable?
+    \\    bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo);
+    \\  var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) // a
+    \\      * expr();
+    \\  var abc = 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc( // a
+    \\      1,
+    \\      2,
+    \\      3,
+    \\    ) * expr()
+    \\    + 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(
+    \\      1,
+    \\      2,
+    \\      3 // b
+    \\    ) * expr();
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo(bar: T) void {
+    \\  var x: u3 = 5;
+    \\  const a, _ = expr;
+    \\  var j = a // 1
+    \\    * // 2
+    \\    b //3
+    \\  ;
+    \\  var j = a // 1
+    \\    * // 2
+    \\    b // 3
+    \\    + // 4
+    \\    5 // 5
+    \\  ;
+    \\  var j = x // 1
+    \\    * // 2
+    \\    x // 3
+    \\    - // 4
+    \\    ( // 5
+    \\      // top lvl opener
+    \\      x // a
+    \\        + // b
+    \\        5 // c
+    \\        // bottom lvl closer
+    \\    ) // 6
+    \\  ;
+    \\  foo(
+    \\    a
+    \\      + 5 // c
+    \\      // bottom lvl closer
+    \\  ) // 6
+    \\  ;
+    \\  var j = x // 1
+    \\    * x
+    \\    - // 2
+    \\    (x + 5) // 3
+    \\  ;
+    \\  var j = x * x - (x + 5) + k;
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxMM * foom4
+    \\    + barm3 * foom3
+    \\    + barm2 * foom2
+    \\    + barm1 * foom1
+    \\    + bar0 * foo0
+    \\    + bar1 * foo1
+    \\    + bar2 * foo2
+    \\    + //stable?
+    \\    bar3 / boxN * foo;
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\        + bar * // stable?
+    \\          foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar * foo
+    \\        + bar / boxB * foo);
+    \\  var x = 1 * foo
+    \\    + bar
+    \\    - car * booh
+    \\    - dah / boxB * foo
+    \\    + // stable?
+    \\    bar * foo
+    \\    + bar * foo
+    \\    + bar * foo
+    \\    + (bar * foo
+    \\      + bar * foo
+    \\      + bar * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo * foo
+    \\      + bar / boxB * foo);
+    \\  var abc = 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(1, 2, 3) // a
+    \\      * expr();
+    \\  var abc = 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc( // a
+    \\      1,
+    \\      2,
+    \\      3,
+    \\    ) * expr()
+    \\    + 5 * 4
+    \\    + 3
+    \\    - abc
+    \\    + 4
+    \\    - 3
+    \\    + someFunc(
+    \\      1,
+    \\      2,
+    \\      3 // b
+    \\    ) * expr();
+    \\}
+  );
+}
+
+test "comments/try-catch" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc = try // my try
+  \\ someFunc(1, 2, 3); // stuff
+  \\ var abc = someTestFunc(try // again?
+  \\ someFunc(1, 2, 3));
+  \\ var abc = someTestFunc(try // 1
+  \\ someFunc(1, 2, 3), try // 2
+  \\ someFunc(1, 2, 3));
+  \\
+  \\ var abc = someFunc(1, 2, 3) catch // 1
+  \\ | // 2
+  \\ e // 3
+  \\ | // 4
+  \\ 5 // 5
+  \\ ;
+  \\ var abc = someFunc(1, 2, 3) catch // 1
+  \\ expr();
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var abc = try // my try
+    \\someFunc(1, 2, 3); // stuff
+    \\var abc = someTestFunc(
+    \\  try // again?
+    \\  someFunc(1, 2, 3),
+    \\);
+    \\var abc = someTestFunc(
+    \\  try // 1
+    \\  someFunc(1, 2, 3),
+    \\  try // 2
+    \\  someFunc(1, 2, 3),
+    \\);
+    \\
+    \\var abc = someFunc(1, 2, 3) catch // 1
+    \\| // 2
+    \\e // 3
+    \\| // 4
+    \\5 // 5
+    \\;
+    \\var abc = someFunc(1, 2, 3) catch // 1
+    \\expr();
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var abc = try // my try
+    \\someFunc(1, 2, 3); // stuff
+    \\var abc = someTestFunc(
+    \\  try // again?
+    \\  someFunc(1, 2, 3),
+    \\);
+    \\var abc = someTestFunc(
+    \\  try // 1
+    \\  someFunc(1, 2, 3),
+    \\  try // 2
+    \\  someFunc(1, 2, 3),
+    \\);
+    \\
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch // 1
+    \\  | // 2
+    \\  e // 3
+    \\  | // 4
+    \\  5 // 5
+    \\;
+    \\var abc = someFunc(1, 2, 3)
+    \\  catch // 1
+    \\  expr();
+  );
+}
+
+test "comments/orelse" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var abc = someFunc(1, 2, 3) orelse // 1
+  \\ return;
+  \\ var abc = someFunc(1, 2, 3) orelse // 1
+  \\ {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) orelse // 1
+  \\ blk: {
+  \\   someBlock();
+  \\   break :blk result("okay");
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) // 0
+  \\ catch // 1
+  \\ {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) // 0
+  \\ orelse // 1
+  \\ {
+  \\   someBlock();
+  \\ };
+  \\ var abc = someFunc(1, 2, 3) orelse // x
+  \\ blk: // y
+  \\ {
+  \\   someBlock();
+  \\   break :blk result("okay");
+  \\ };
+  \\var abc = 5 * 4
+  \\  + 3
+  \\  - abc
+  \\  + 4
+  \\  - 3
+  \\  + (someFunc(1, 2, 3)
+  \\    orelse // a
+  \\ expr());
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var abc = someFunc(1, 2, 3) orelse // 1
+    \\return;
+    \\var abc = someFunc(1, 2, 3) orelse // 1
+    \\{
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse // 1
+    \\  blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(1, 2, 3) // 0
+    \\catch // 1
+    \\{
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3) // 0
+    \\orelse // 1
+    \\{
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse // x
+    \\  blk: // y
+    \\  {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse // a
+    \\    expr());
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse // 1
+    \\  return;
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse // 1
+    \\  {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse // 1
+    \\  blk: {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) // 0
+    \\  catch // 1
+    \\  {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) // 0
+    \\  orelse // 1
+    \\  {
+    \\    someBlock();
+    \\  };
+    \\var abc = someFunc(1, 2, 3)
+    \\  orelse // x
+    \\  blk: // y
+    \\  {
+    \\    someBlock();
+    \\    break :blk result("okay");
+    \\  };
+    \\var abc = 5 * 4
+    \\  + 3
+    \\  - abc
+    \\  + 4
+    \\  - 3
+    \\  + (someFunc(1, 2, 3)
+    \\      orelse // a
+    \\      expr());
+  );
+}
+
+test "comments/addressop-optional" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var x = & // a
+  \\ foo(1, 2, 3);
+  \\
+  \\ var x = // abc
+  \\ & // def
+  \\ foo(1, 2, 3);
+  \\
+  \\ var x = ? // a
+  \\ foo(1, 2, 3);
+  \\
+  \\ var x = // abc
+  \\ ? // def
+  \\ foo(1, 2, 3);
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var x = & // a
+    \\foo(1, 2, 3);
+    \\
+    \\var x = // abc
+    \\& // def
+    \\foo(1, 2, 3);
+    \\
+    \\var x = ? // a
+    \\foo(1, 2, 3);
+    \\
+    \\var x = // abc
+    \\? // def
+    \\foo(1, 2, 3);
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var x = & // a
+    \\foo(1, 2, 3);
+    \\
+    \\var x = // abc
+    \\& // def
+    \\foo(1, 2, 3);
+    \\
+    \\var x = ? // a
+    \\foo(1, 2, 3);
+    \\
+    \\var x = // abc
+    \\? // def
+    \\foo(1, 2, 3);
+  );
+}
+
+test "comments/pointer-type 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var j: [// 1
+  \\ * // 2
+  \\ ] // 3
+  \\ align // 4
+  \\ ( // 5 - opener
+  \\ // toplevel
+  \\ foo(bar.oop(0x12))  // inner
+  \\ ) // 6 - closer
+  \\ rhs // 7
+  \\ = 0xff;
+  \\
+  \\ var j: * // 1
+  \\ align // 2
+  \\ ( // 3
+  \\ // headers
+  \\ foo(bar.oop(0x12)) // 4
+  \\ : // 5
+  \\ Foo() // 6
+  \\ : // 7
+  \\ Bar() // 8
+  \\ ) // 9
+  \\ rhs // 10 
+  \\ = 0xff;
+  \\
+  \\ var y: [ // a
+  \\ ] // b
+  \\ const rhs = 0xff;
+  \\
+  \\ var j: *align( // 1
+  \\ foo:Car:Bar
+  \\ // 2
+  \\ ) rhs = 0xff;
+  \\
+  \\ var j: *align(foo():Car():Bar()) // 1
+  \\ rhs // 2
+  \\ = 0xff;
+  \\
+  \\ var x: *align( // 1
+  \\ foo("ok") // 2
+  \\ ) // 3
+  \\ rhs = 0xff;
+  \\
+  \\ var a: ** // 1
+  \\ rhs = 0xff;
+  \\
+  \\ var abc: *** // 1
+  \\ align(foo():Car():Bar()) rhs = 0xff;
+  \\
+  \\ var xyz: ** // 1
+  \\ align // 2
+  \\ (foo():Car():Bar()) // 3
+  \\ rhs = 0xff;
+  \\
+  \\ var a: * // 0
+  \\ ** // 1
+  \\ rhs // 2
+  \\ = 0xff;
+  \\
+  \\ var y: [
+  \\ ]
+  \\ const // 3
+  \\ rhs // 4
+  \\ = 0xff;
+  \\
+  \\ var y: [ // 1
+  \\ ] // 2
+  \\ const // 3
+  \\ rhs // 4
+  \\ = 0xff;
+  \\
+  \\ var k: [ // 1
+  \\ * // 2
+  \\ : // 3
+  \\ lhs // 4
+  \\ ] // 5
+  \\ rhs // 6
+  \\ = 0xff;
+  \\
+  \\ var a: [ // 1
+  \\ : // 2
+  \\ lhs // 3
+  \\ ]rhs // 4
+  \\ = 0xff;
+  \\
+  \\ var j: [lhs:Foo(T, K) // 1
+  \\ ] rhs // 2
+  \\ = 0xff;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var j: [ // 1
+    \\  * // 2
+    \\] // 3
+    \\align // 4
+    \\( // 5 - opener
+    \\  // toplevel
+    \\  foo(bar.oop(0x12)) // inner
+    \\) // 6 - closer
+    \\  rhs // 7
+    \\= 0xff;
+    \\
+    \\var j: * // 1
+    \\align // 2
+    \\( // 3
+    \\  // headers
+    \\  foo(bar.oop(0x12)) // 4
+    \\    : // 5
+    \\    Foo() // 6
+    \\    : // 7
+    \\    Bar() // 8
+    \\) // 9
+    \\  rhs // 10
+    \\= 0xff;
+    \\
+    \\var y: [ // a
+    \\] // b
+    \\const rhs = 0xff;
+    \\
+    \\var j: *align( // 1
+    \\  foo:Car:Bar
+    \\  // 2
+    \\) rhs = 0xff;
+    \\
+    \\var j: *align(foo():Car():Bar()) // 1
+    \\rhs // 2
+    \\= 0xff;
+    \\
+    \\var x: *align( // 1
+    \\  foo("ok") // 2
+    \\) // 3
+    \\rhs = 0xff;
+    \\
+    \\var a: ** // 1
+    \\rhs = 0xff;
+    \\
+    \\var abc: *** // 1
+    \\align(foo():Car():Bar()) rhs = 0xff;
+    \\
+    \\var xyz: ** // 1
+    \\align // 2
+    \\(foo():Car():Bar()) // 3
+    \\rhs = 0xff;
+    \\
+    \\var a: * // 0
+    \\** // 1
+    \\rhs // 2
+    \\= 0xff;
+    \\
+    \\var y: []const // 3
+    \\rhs // 4
+    \\= 0xff;
+    \\
+    \\var y: [ // 1
+    \\] // 2
+    \\const // 3
+    \\rhs // 4
+    \\= 0xff;
+    \\
+    \\var k: [ // 1
+    \\  * // 2
+    \\  : // 3
+    \\  lhs // 4
+    \\] // 5
+    \\rhs // 6
+    \\= 0xff;
+    \\
+    \\var a: [ // 1
+    \\  : // 2
+    \\  lhs // 3
+    \\]rhs // 4
+    \\= 0xff;
+    \\
+    \\var j: [
+    \\  lhs:Foo(T, K) // 1
+    \\]rhs // 2
+    \\= 0xff;
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var j: [ // 1
+    \\  * // 2
+    \\] // 3
+    \\align // 4
+    \\( // 5 - opener
+    \\  // toplevel
+    \\  foo(bar.oop(0x12)) // inner
+    \\) // 6 - closer
+    \\  rhs // 7
+    \\= 0xff;
+    \\
+    \\var j: * // 1
+    \\align // 2
+    \\( // 3
+    \\  // headers
+    \\  foo(bar.oop(0x12)) // 4
+    \\    : // 5
+    \\    Foo() // 6
+    \\    : // 7
+    \\    Bar() // 8
+    \\) // 9
+    \\  rhs // 10
+    \\= 0xff;
+    \\
+    \\var y: [ // a
+    \\] // b
+    \\const rhs = 0xff;
+    \\
+    \\var j: *align( // 1
+    \\  foo
+    \\    :Car
+    \\    :Bar
+    \\    // 2
+    \\)
+    \\  rhs = 0xff;
+    \\
+    \\var j: *align(
+    \\  foo()
+    \\    :Car()
+    \\    :Bar()
+    \\) // 1
+    \\  rhs // 2
+    \\= 0xff;
+    \\
+    \\var x: *align( // 1
+    \\  foo("ok") // 2
+    \\) // 3
+    \\  rhs = 0xff;
+    \\
+    \\var a: ** // 1
+    \\rhs = 0xff;
+    \\
+    \\var abc: *** // 1
+    \\align(foo():Car():Bar())
+    \\  rhs = 0xff;
+    \\
+    \\var xyz: ** // 1
+    \\align // 2
+    \\(
+    \\  foo()
+    \\    :Car()
+    \\    :Bar()
+    \\) // 3
+    \\  rhs = 0xff;
+    \\
+    \\var a: * // 0
+    \\** // 1
+    \\rhs // 2
+    \\= 0xff;
+    \\
+    \\var y: []const // 3
+    \\rhs // 4
+    \\= 0xff;
+    \\
+    \\var y: [ // 1
+    \\] // 2
+    \\const // 3
+    \\rhs // 4
+    \\= 0xff;
+    \\
+    \\var k: [ // 1
+    \\  * // 2
+    \\  : // 3
+    \\  lhs // 4
+    \\] // 5
+    \\rhs // 6
+    \\= 0xff;
+    \\
+    \\var a: [ // 1
+    \\  : // 2
+    \\  lhs // 3
+    \\]rhs // 4
+    \\= 0xff;
+    \\
+    \\var j: [
+    \\  lhs:Foo(T, K) // 1
+    \\]rhs // 2
+    \\= 0xff;
+  );
+}
+
+test "comments/pointer-type 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var j: [lhs
+  \\ : // only
+  \\ Foo(T, K)] rhs = 0xff;
+  \\
+  \\var j: [lhs:Foo(T, K)]Foo( // cas
+  \\ Bar.xyz(abc)) = 0xff;
+  \\
+  \\var j: [ // 1
+  \\ *
+  \\ c 
+  \\ ]align( // 2
+  \\ foo(bar.oop(0x12))) rhs // 3
+  \\ = 0xff;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var j: [
+    \\  lhs: // only
+    \\  Foo(T, K)
+    \\]rhs = 0xff;
+    \\
+    \\var j: [lhs:Foo(T, K)]Foo( // cas
+    \\  Bar.xyz(abc),
+    \\) = 0xff;
+    \\
+    \\var j: [ // 1
+    \\  *c
+    \\]align( // 2
+    \\  foo(bar.oop(0x12))
+    \\) rhs // 3
+    \\= 0xff;
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var j: [
+    \\  lhs: // only
+    \\  Foo(T, K)
+    \\]rhs = 0xff;
+    \\
+    \\var j: [
+    \\  lhs:Foo(T, K)
+    \\]Foo( // cas
+    \\  Bar.xyz(abc),
+    \\) = 0xff;
+    \\
+    \\var j: [ // 1
+    \\  *c
+    \\]align( // 2
+    \\  foo(bar.oop(0x12))
+    \\)
+    \\  rhs // 3
+    \\= 0xff;
+  );
+}
+
+test "comments/pointer-type 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var x: * // 1
+  \\ allowzero // 2
+  \\ align( // 3
+  \\ foo("ok")) Rhs // 4
+  \\ align(64 // 5
+  \\ ) addrspace // 5b
+  \\ (// 6
+  \\ .generic) // 6b
+  \\ linksection( // 7
+  \\ ".my_custom_section" // 8
+  \\ ) // 9 
+  \\ = undefined;
+  \\
+  \\ var x: *allowzero // 1
+  \\ align(foo("ok")) // 2
+  \\ Rhs // 3
+  \\ = 0xff;
+  \\
+  \\ var x: * // 1
+  \\ allowzero // 2
+  \\ addrspace // 2b
+  \\ ( // 2c
+  \\ // hey
+  \\ Foo(Bar())
+  \\ // hah
+  \\ ) // 3
+  \\ align(foo("ok")) // 4
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var x1: * // 1
+  \\ allowzero // 2
+  \\ addrspace(Foo(Bar())) // 4
+  \\ align(foo("ok")) // 3
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var x2: ** // 1
+  \\ allowzero // 2
+  \\ addrspace(Foo(Bar())) // 4
+  \\ align(foo("ok")) // 3
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var x3: *** // 1
+  \\ allowzero // 2
+  \\ addrspace(Foo(Bar())) // 4
+  \\ align(foo("ok")) // 3
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var x4: **** // 1
+  \\ allowzero // 2
+  \\ addrspace(Foo(Bar())) // 4
+  \\ align(foo("ok")) // 3
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var xt: *allowzero addrspace(Foo(Bar())) align(foo("ok")) // 1
+  \\ const Rhs = 0xff;
+  \\ 
+  \\ var xt2: *allowzero align(foo("ok")) addrspace(Foo(Bar())) // 1
+  \\ const Rhs = 0xff;
+  \\ 
+  \\ var xt3: *allowzero align(foo("ok")) addrspace(Foo(Bar()))
+  \\ const Rhs = 0xff;
+  \\ 
+  \\ var xy: *allowzero // 1
+  \\ addrspace(Foo(Bar())) align(foo("ok")) volatile const // 2
+  \\ Rhs = 0xff;
+  \\
+  \\ var xv: * volatile // 0
+  \\ allowzero // 1
+  \\ addrspace(Foo(Bar())) align(foo("ok")) const // 2
+  \\ Rhs = 0xff;
+  \\
+  \\ var xv2: * // a
+  \\ volatile // 0
+  \\ allowzero // 1
+  \\ addrspace(Foo(Bar())) align(foo("ok")) const // 2
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var xv3: ** // a
+  \\ volatile // 0
+  \\ allowzero // 1
+  \\ addrspace(Foo(Bar())) align(foo("ok")) const // 2
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var xv4: ** // a
+  \\ volatile // 0
+  \\ allowzero
+  \\ addrspace(Foo(Bar())) align(foo("ok")) const // 2
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var xk: *allowzero // 1
+  \\ addrspace(Foo(Bar())) align(foo("ok")) volatile // 2
+  \\ const // 3
+  \\ Rhs = 0xff;
+  \\ 
+  \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) // 1
+  \\ volatile const // 2
+  \\ Foo(Bar.xyz(abc)) // 3
+  \\ = 0xff;
+  \\
+  \\ var x: *allowzero addrspace(Foo(Bar())) align(foo("ok")) // 0
+  \\ volatile // 1
+  \\ const // 2
+  \\ Foo(Bar.xyz(abc)) // 3
+  \\ = 0xff;
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var x: * // 1
+    \\allowzero // 2
+    \\align( // 3
+    \\  foo("ok")
+    \\) Rhs // 4
+    \\  align(
+    \\    64 // 5
+    \\  )
+    \\  addrspace // 5b
+    \\  ( // 6
+    \\    .generic
+    \\  ) // 6b
+    \\  linksection( // 7
+    \\    ".my_custom_section" // 8
+    \\  ) // 9
+    \\= undefined;
+    \\
+    \\var x: *allowzero // 1
+    \\align(foo("ok")) // 2
+    \\Rhs // 3
+    \\= 0xff;
+    \\
+    \\var x: * // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 4
+    \\  addrspace // 2b
+    \\  ( // 2c
+    \\    // hey
+    \\    Foo(Bar())
+    \\    // hah
+    \\  ) // 3
+    \\  Rhs = 0xff;
+    \\
+    \\var x1: * // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var x2: ** // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var x3: *** // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var x4: **** // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var xt: *allowzero align(foo("ok")) // 1
+    \\addrspace(Foo(Bar())) const Rhs = 0xff;
+    \\
+    \\var xt2: *allowzero align(foo("ok")) addrspace(Foo(Bar())) // 1
+    \\const Rhs = 0xff;
+    \\
+    \\var xt3: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const Rhs = 0xff;
+    \\
+    \\var xy: *allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile Rhs = 0xff;
+    \\
+    \\var xv: *allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xv2: * // a
+    \\allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xv3: ** // a
+    \\allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xv4: ** // a
+    \\allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xk: *allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 3
+    \\  volatile // 2
+    \\  Rhs = 0xff;
+    \\
+    \\var x: *allowzero
+    \\  align(foo("ok")) // 1
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile Foo(Bar.xyz(abc)) // 3
+    \\= 0xff;
+    \\
+    \\var x: *allowzero
+    \\  align(foo("ok")) // 0
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 1
+    \\  Foo(Bar.xyz(abc)) // 3
+    \\= 0xff;
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var x: * // 1
+    \\allowzero // 2
+    \\  align( // 3
+    \\    foo("ok")
+    \\  )
+    \\  Rhs // 4
+    \\  align(
+    \\    64 // 5
+    \\  )
+    \\  addrspace // 5b
+    \\  ( // 6
+    \\    .generic
+    \\  ) // 6b
+    \\  linksection( // 7
+    \\    ".my_custom_section" // 8
+    \\  ) // 9
+    \\= undefined;
+    \\
+    \\var x: *allowzero // 1
+    \\  align(foo("ok")) // 2
+    \\  Rhs // 3
+    \\= 0xff;
+    \\
+    \\var x: * // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 4
+    \\  addrspace // 2b
+    \\  ( // 2c
+    \\    // hey
+    \\    Foo(Bar())
+    \\    // hah
+    \\  ) // 3
+    \\  Rhs = 0xff;
+    \\
+    \\var x1: * // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var x2: ** // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var x3: *** // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var x4: **** // 1
+    \\allowzero // 2
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 4
+    \\  Rhs = 0xff;
+    \\
+    \\var xt: *allowzero
+    \\  align(foo("ok")) // 1
+    \\  addrspace(Foo(Bar()))
+    \\  const Rhs = 0xff;
+    \\
+    \\var xt2: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar())) // 1
+    \\  const Rhs = 0xff;
+    \\
+    \\var xt3: *allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const Rhs = 0xff;
+    \\
+    \\var xy: *allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile
+    \\  Rhs = 0xff;
+    \\
+    \\var xv: *allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xv2: * // a
+    \\allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xv3: ** // a
+    \\allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xv4: ** // a
+    \\allowzero
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 0
+    \\  Rhs = 0xff;
+    \\
+    \\var xk: *allowzero // 1
+    \\  align(foo("ok"))
+    \\  addrspace(Foo(Bar()))
+    \\  const // 3
+    \\  volatile // 2
+    \\  Rhs = 0xff;
+    \\
+    \\var x: *allowzero
+    \\  align(foo("ok")) // 1
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile
+    \\  Foo(Bar.xyz(abc)) // 3
+    \\= 0xff;
+    \\
+    \\var x: *allowzero
+    \\  align(foo("ok")) // 0
+    \\  addrspace(Foo(Bar()))
+    \\  const // 2
+    \\  volatile // 1
+    \\  Foo(Bar.xyz(abc)) // 3
+    \\= 0xff;
+  );
+}
+
+test "comments/pointer-type 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ var j: [
+  \\ * // 2
+  \\ ] // 3
+  \\ allowzero
+  \\ align // 4
+  \\ ( // 5 - opener
+  \\ // toplevel
+  \\ foo(bar.oop(0x12))  // inner
+  \\ ) // 6 - closer
+  \\ rhs // 7
+  \\ = 0xff;
+  \\
+  \\ fn foo() * // 1
+  \\ allowzero // 2
+  \\ align // 2b
+  \\ (foo("ok")) // 3
+  \\ Rhs {
+  \\   return 0;
+  \\}
+  \\ fn foo() *allowzero // 1
+  \\ addrspace(Foo(Bar())) // 2
+  \\ align(foo("ok")) // 3
+  \\ volatile // 4
+  \\ const // 5
+  \\ Foo(Bar.xyz(abc)) //6
+  \\ {
+  \\   return 0;
+  \\}
+  \\ fn foo(abc: *allowzero addrspace(Foo(Bar())) align(foo("ok")) // 1
+  \\ volatile const Foo(Bar.xyz(abc))) *allowzero align(foo("ok")) // 2
+  \\ Rhs {
+  \\   return 0;
+  \\}
+  \\ fn foo(abc: *allowzero addrspace // 1
+  \\ (Foo(Bar())) align(foo("ok")) volatile const Foo(Bar.xyz(abc))) *allowzero addrspace(Foo(Bar())) align(foo("ok") // 2
+  \\ ) volatile const Foo(Bar.xyz(abc)) {
+  \\   return 0;
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var j: [
+    \\  * // 2
+    \\] // 3
+    \\allowzero
+    \\  align // 4
+    \\  ( // 5 - opener
+    \\    // toplevel
+    \\    foo(bar.oop(0x12)) // inner
+    \\  ) // 6 - closer
+    \\  rhs // 7
+    \\= 0xff;
+    \\
+    \\fn foo() * // 1
+    \\allowzero // 2
+    \\align // 2b
+    \\(foo("ok")) // 3
+    \\Rhs {
+    \\  return 0;
+    \\}
+    \\fn foo() *allowzero // 1
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 2
+    \\  const // 5
+    \\  volatile // 4
+    \\  Foo(Bar.xyz(abc)) //6
+    \\{
+    \\  return 0;
+    \\}
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok")) // 1
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero align(foo("ok")) // 2
+    \\Rhs {
+    \\  return 0;
+    \\}
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace // 1
+    \\    (Foo(Bar()))
+    \\    const volatile Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(
+    \\    foo("ok") // 2
+    \\  )
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\var j: [
+    \\  * // 2
+    \\] // 3
+    \\allowzero
+    \\  align // 4
+    \\  ( // 5 - opener
+    \\    // toplevel
+    \\    foo(
+    \\      bar.oop(0x12),
+    \\    ) // inner
+    \\  ) // 6 - closer
+    \\  rhs // 7
+    \\= 0xff;
+    \\
+    \\fn foo() * // 1
+    \\allowzero // 2
+    \\  align // 2b
+    \\  (foo("ok")) // 3
+    \\  Rhs {
+    \\  return 0;
+    \\}
+    \\fn foo() *allowzero // 1
+    \\  align(foo("ok")) // 3
+    \\  addrspace(Foo(Bar())) // 2
+    \\  const // 5
+    \\  volatile // 4
+    \\  Foo(Bar.xyz(abc)) //6
+    \\{
+    \\  return 0;
+    \\}
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok")) // 1
+    \\    addrspace(Foo(Bar()))
+    \\    const volatile
+    \\    Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(foo("ok")) // 2
+    \\  Rhs {
+    \\  return 0;
+    \\}
+    \\fn foo(
+    \\  abc: *allowzero
+    \\    align(foo("ok"))
+    \\    addrspace // 1
+    \\    (Foo(Bar()))
+    \\    const volatile
+    \\    Foo(Bar.xyz(abc)),
+    \\) *allowzero
+    \\  align(
+    \\    foo("ok") // 2
+    \\  )
+    \\  addrspace(Foo(Bar()))
+    \\  const volatile
+    \\  Foo(Bar.xyz(abc)) {
+    \\  return 0;
+    \\}
+  );
+}
+
+test "comments/doc-comment 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ /// This is a doc comment 1
+  \\ // abc
+  \\ // xyz
+  \\ /// This is a doc comment 2
+  \\ fn foo() void {
+  \\   testOne();
+  \\ }
+  \\
+  \\ /// first T
+  \\ const T = struct {
+  \\ /// the mem member
+  \\  mem: u8,
+  \\
+  \\ /// the x member
+  \\  x: u8,
+  \\ /// the y member
+  \\  y: u8,
+  \\
+  \\ /// This function does nothing
+  \\ pub fn foo() void {}
+  \\
+  \\};
+  \\ 
+  \\ /// my stuff
+  \\ x: usize,
+  \\ 
+  \\ /// my stuff y
+  \\ y: usize,
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\/// This is a doc comment 1
+    \\// abc
+    \\// xyz
+    \\/// This is a doc comment 2
+    \\fn foo() void {
+    \\  testOne();
+    \\}
+    \\
+    \\/// first T
+    \\const T = struct {
+    \\  /// the mem member
+    \\  mem: u8,
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\};
+    \\
+    \\/// my stuff
+    \\x: usize,
+    \\
+    \\/// my stuff y
+    \\y: usize,
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\/// This is a doc comment 1
+    \\// abc
+    \\// xyz
+    \\/// This is a doc comment 2
+    \\fn foo() void {
+    \\  testOne();
+    \\}
+    \\
+    \\/// first T
+    \\const T = struct {
+    \\  /// the mem member
+    \\  mem: u8,
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\};
+    \\
+    \\/// my stuff
+    \\x: usize,
+    \\
+    \\/// my stuff y
+    \\y: usize,
+  );
+}
+
+test "comments/doc-comment 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ /// first T
+  \\ const T = struct {
+  \\ /// the mem member
+  \\  mem: u8, // abc
+  \\
+  \\
+  \\
+  \\ /// the x member
+  \\  x: u8,
+  \\ /// the y member
+  \\  y: u8,
+  \\
+  \\ /// This function does nothing
+  \\ pub fn foo() void {}
+  \\
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\/// first T
+    \\const T = struct {
+    \\  /// the mem member
+    \\  mem: u8, // abc
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\/// first T
+    \\const T = struct {
+    \\  /// the mem member
+    \\  mem: u8, // abc
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\};
+  );
+}
+
+test "comments/doc-comment 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ /// first T
+  \\ const T = struct {
+  \\ /// the mem member
+  \\  mem: u8, // abc
+  \\        xyz: usize,
+  \\
+  \\ /// the x member
+  \\  x: u8,
+  \\ /// the y member
+  \\  y: u8,
+  \\
+  \\ /// This function does nothing
+  \\ pub fn foo() void {}
+  \\
+  \\ fn foo() void {   testOne(); }
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\/// first T
+    \\const T = struct {
+    \\  /// the mem member
+    \\  mem: u8, // abc
+    \\  xyz: usize,
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\
+    \\  fn foo() void {
+    \\    testOne();
+    \\  }
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\/// first T
+    \\const T = struct {
+    \\  /// the mem member
+    \\  mem: u8, // abc
+    \\  xyz: usize,
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\
+    \\  fn foo() void {
+    \\    testOne();
+    \\  }
+    \\};
+  );
+}
+
+test "comments/doc-comment 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo(
+  \\ /// The first param, x
+  \\ x:u32,
+  \\ /// The second param, y
+  \\ y:usize,
+  \\ /// The third param, z 
+  \\ z: usize,
+  \\ /// The last param, varargs 
+  \\ ..., // abc
+  \\ ) void { if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();}
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo(
+    \\  /// The first param, x
+    \\  u32,
+    \\  /// The second param, y
+    \\  usize,
+    \\  /// The third param, z
+    \\  usize,
+    \\  /// The last param, varargs
+    \\  ..., // abc
+    \\) void {
+    \\  if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo(
+    \\  /// The first param, x
+    \\  u32,
+    \\  /// The second param, y
+    \\  usize,
+    \\  /// The third param, z
+    \\  usize,
+    \\  /// The last param, varargs
+    \\  ..., // abc
+    \\) void {
+    \\  if (last_tkn) |tkn|
+    \\    flat.decllineIf(
+    \\      self.tknHasTC(tkn),
+    \\    )
+    \\      ._();
+    \\}
+  );
+}
+
+test "comments/mint-off-on 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ // mint fmt: off
+  \\ // xyz
+  \\ /// This is a doc comment 2
+  \\ fn foo() void {   testOne(); }
+  \\
+  \\ /// first T
+  \\ const T = struct {
+  \\ /// the mem member
+  \\  mem: u8, // abc
+  \\        xyz: usize,
+  \\
+  \\ /// the x member
+  \\  x: u8,
+  \\ /// the y member
+  \\  y: u8,
+  \\
+  \\ /// This function does nothing
+  \\ pub fn foo() void {}
+  \\
+  \\ fn foo() void {   testOne(); }
+  \\};
+  \\
+  \\ /// my stuff
+  \\ x: usize,
+  \\
+  \\ /// my stuff y
+  \\ y: usize,
+  \\
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\// mint fmt: off
+    \\ // xyz
+    \\ /// This is a doc comment 2
+    \\ fn foo() void {   testOne(); }
+    \\
+    \\ /// first T
+    \\ const T = struct {
+    \\ /// the mem member
+    \\  mem: u8, // abc
+    \\        xyz: usize,
+    \\
+    \\ /// the x member
+    \\  x: u8,
+    \\ /// the y member
+    \\  y: u8,
+    \\
+    \\ /// This function does nothing
+    \\ pub fn foo() void {}
+    \\
+    \\ fn foo() void {   testOne(); }
+    \\};
+    \\
+    \\ /// my stuff
+    \\ x: usize,
+    \\
+    \\ /// my stuff y
+    \\ y: usize,
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\// mint fmt: off
+    \\ // xyz
+    \\ /// This is a doc comment 2
+    \\ fn foo() void {   testOne(); }
+    \\
+    \\ /// first T
+    \\ const T = struct {
+    \\ /// the mem member
+    \\  mem: u8, // abc
+    \\        xyz: usize,
+    \\
+    \\ /// the x member
+    \\  x: u8,
+    \\ /// the y member
+    \\  y: u8,
+    \\
+    \\ /// This function does nothing
+    \\ pub fn foo() void {}
+    \\
+    \\ fn foo() void {   testOne(); }
+    \\};
+    \\
+    \\ /// my stuff
+    \\ x: usize,
+    \\
+    \\ /// my stuff y
+    \\ y: usize,
+  );
+}
+
+test "comments/mint-off-on 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ // mint fmt: off
+  \\ // xyz
+  \\ /// This is a doc comment 2
+  \\ fn foo() void {   testOne(); }
+  \\
+  \\ /// first T
+  \\ const T = struct {
+  \\ /// the mem member
+  \\  mem: u8, // abc
+  \\ // mint fmt: on
+  \\        xyz: usize,
+  \\
+  \\ /// the x member
+  \\  x: u8,
+  \\ /// the y member
+  \\  y: u8,
+  \\
+  \\ /// This function does nothing
+  \\ pub fn foo() void {}
+  \\
+  \\ fn foo() void {   testOne(); }
+  \\};
+  \\
+  \\ /// my stuff
+  \\ x: usize,
+  \\
+  \\ /// my stuff y
+  \\ y: usize,
+  \\
+  ;
+  const al = arena.allocator();
+  // default width: 80
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\// mint fmt: off
+    \\ // xyz
+    \\ /// This is a doc comment 2
+    \\ fn foo() void {   testOne(); }
+    \\
+    \\ /// first T
+    \\ const T = struct {
+    \\ /// the mem member
+    \\  mem: u8, // abc
+    \\ // mint fmt: on
+    \\  xyz: usize,
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\
+    \\  fn foo() void {
+    \\    testOne();
+    \\  }
+    \\};
+    \\
+    \\/// my stuff
+    \\x: usize,
+    \\
+    \\/// my stuff y
+    \\y: usize,
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\// mint fmt: off
+    \\ // xyz
+    \\ /// This is a doc comment 2
+    \\ fn foo() void {   testOne(); }
+    \\
+    \\ /// first T
+    \\ const T = struct {
+    \\ /// the mem member
+    \\  mem: u8, // abc
+    \\ // mint fmt: on
+    \\  xyz: usize,
+    \\
+    \\  /// the x member
+    \\  x: u8,
+    \\  /// the y member
+    \\  y: u8,
+    \\
+    \\  /// This function does nothing
+    \\  pub fn foo() void {}
+    \\
+    \\  fn foo() void {
+    \\    testOne();
+    \\  }
+    \\};
+    \\
+    \\/// my stuff
+    \\x: usize,
+    \\
+    \\/// my stuff y
+    \\y: usize,
   );
 }
