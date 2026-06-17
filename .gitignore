@@ -2,7 +2,7 @@ zig-*
 .zig-*
 .zed
 .vscode
-.zinc
+.mint
 *.txt
-.DS_Store
+*.DS_Store
 .stfolder
