@@ -226,6 +226,14 @@ pub const SeqBuilder = struct {
     return self;
   }
 
+  pub fn indentOne(self: *@This(), doc: *Doc) *@This() {
+    var docs = util.allocSlice(*Doc, 1, self.db.al);
+    docs[0] = doc;
+    const i = Doc.new(.{.indent = Seq{.docs = docs}}, self.al);
+    util.listAppend(i, &self.docs, self.al);
+    return self;
+  }
+
   pub fn indent(self: *@This(), docs: []*Doc) *@This() {
     const i = Doc.new(.{.indent = Seq{.docs = docs}}, self.al);
     util.listAppend(i, &self.docs, self.al);
@@ -271,17 +279,17 @@ pub const SeqBuilder = struct {
     return self.docs.items;
   }
 
-  pub fn reset(self: *@This()) void {
-    self.done = false;
-    self.docs = .empty;
-  }
-
   pub fn finishSeq(self: *@This()) *Doc {
     if (self.done) @panic("Builder already consumed");
     defer {
       self.done = true;
     }
     return Doc.new(.{.seq = Seq{.docs = self.docs.items}}, self.al);
+  }
+  
+  pub fn reset(self: *@This()) void {
+    self.done = false;
+    self.docs = .empty;
   }
 };
 
@@ -307,7 +315,10 @@ pub inline fn getCurrentGroupID() u32 {
 
 pub const DocBuilder = struct {
   al: Allocator,
+  /// stack allocated builders
   builders: [BUILDERS_LEN]SeqBuilder = undefined,
+  /// builders stored on the heap
+  heap_builders: std.ArrayList(*SeqBuilder) = .empty,
   len: usize = 0,
   // FIXME: need to handle this in a better/more efficient way 
   /// skip all write operations on a SeqBuilder
@@ -320,15 +331,27 @@ pub const DocBuilder = struct {
   }
 
   pub inline fn seqb(self: *@This()) *SeqBuilder {
-    if (self.len >= BUILDERS_LEN) @panic("Too many builders, max exceeded");
+    if (self.len >= BUILDERS_LEN) {
+      // reuse a stack builder object if available
+      for (0..BUILDERS_LEN) |i| {
+        if (self.builders[i].done) {
+          self.builders[i].reset();
+          return &self.builders[i];
+        }
+      }
+      // reuse a heap builder object if available
+      for (self.heap_builders.items) |bd| {
+        if (bd.done) {
+          bd.reset();
+          return bd;
+        }
+      }
+      // allocate a builder object on the heap if we must
+      const sb = util.box(SeqBuilder.init(self.al, self), self.al);
+      util.listAppend(sb, &self.heap_builders, self.al);
+      return sb;
+    }
     self.builders[self.len] = SeqBuilder.init(self.al, self);
-    self.len += 1;
-    return &self.builders[self.len - 1];
-  }
-
-  pub fn copySeqb(self: *@This(), sb: *SeqBuilder) *SeqBuilder {
-    if (self.len >= BUILDERS_LEN) @panic("Too many builders, max exceeded");
-    self.builders[self.len] = sb.copy();
     self.len += 1;
     return &self.builders[self.len - 1];
   }
@@ -388,8 +411,18 @@ pub const DocBuilder = struct {
     );
   }
 
+  pub inline fn resetBuilders(self: *@This()) void {
+    self.len = 0;
+    self.heap_builders.clearRetainingCapacity();
+  }
+
   pub fn verify(self: *@This()) void {
     for (self.builders[0..self.len]) |bd| {
+      if (!bd.done) {
+        @panic("found unfinished builder!");
+      }
+    }
+    for (self.heap_builders.items) |bd| {
       if (!bd.done) {
         @panic("found unfinished builder!");
       }

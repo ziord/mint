@@ -18,7 +18,7 @@ fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
 fn format(doc: *fmt.Doc, cfg: fmt.FmtConfig, al: Allocator) ![]const u8 {
   var f = fmt.Format.init(std.testing.io, al, cfg);
   f.fmt(doc);
-  return f.getFmtString();
+  return f.getFmtString(true);
 }
 
 test "vardecl 1" {
@@ -28,7 +28,7 @@ test "vardecl 1" {
   \\var x = foo(abc, bar, baz);
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -63,7 +63,7 @@ test "vardecl 2" {
   \\ const f: []Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -163,7 +163,7 @@ test "vardecl 3" {
   \\ const g: [:Bar] const Foo = box(abc, bar, baz);
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -290,7 +290,7 @@ test "vardecl 4" {
   \\var buffer align(64) linksection(".my_custom_section") = text(self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs));
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -302,18 +302,13 @@ test "vardecl 4" {
     \\  align(64)
     \\  addrspace(.generic)
     \\  linksection(".my_custom_section") = text(
-    \\  self.token_token_token_token_token_token_token_token_token_token(
-    \\    rhs,
-    \\    abc,
-    \\    lhs,
-    \\  ),
+    \\  self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\const buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
     \\  linksection(".my_custom_section") = text(
-    \\  self.token_token.token2_token()
-    \\    .token_token_token_token_token_token(rhs, abc, lhs),
+    \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
     \\var buffer
     \\  align(64)
@@ -322,8 +317,7 @@ test "vardecl 4" {
     \\var buffer
     \\  align(64)
     \\  linksection(".my_custom_section") = text(
-    \\  self.token_token.token2_token()
-    \\    .token_token_token_token_token_token(rhs, abc, lhs),
+    \\  self.token_token.token2_token().token_token_token_token_token_token(rhs, abc, lhs),
     \\);
   );
   // using width: 100
@@ -451,9 +445,8 @@ test "vardecl 5" {
   \\var a: b align(c) = d;
   ;
   const al = arena.allocator();
-  // default width: 80
   const doc = try translate(src, al);
-  var res = try format(doc, .{}, al);
+  var res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
@@ -562,7 +555,6 @@ test "vardecl 6" {
   \\ threadlocal const x = expr;
   ;
   const al = arena.allocator();
-  // default width: 80
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 80}, al);
   try check(res,
@@ -578,7 +570,7 @@ test "vardecl.chains 1" {
   \\ var ky = self.group(self.seqb().text("Group(").indent(self.seqb().softline().text(id).text(",").normline().appends(_d).finish()).softline().text(")").finish());
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -645,7 +637,7 @@ test "vardecl.chains 2" {
   \\ var ky = self.group(self.seqb() .text("Group(") .indent(self.seqb().softline() .text(id) .text(",") .normline() .appends(_d).finish() ) .softline().text(")").finish());
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -731,7 +723,7 @@ test "vardecl.chains 3" {
   \\         );
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -847,7 +839,7 @@ test "vardecl.chains 4" {
   \\          )._();
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -917,7 +909,7 @@ test "vardecl.chains 5" {
   \\ var ky = selfgroup(selfseqb(),text("Group("),indent(  selfseqb(),  softline(),  text(id),  text(","), normline(), appends(_d, finish()), selfseqb(), text("IfSplit(", selfseqb()), indent( selfseqb(),   softline(),   text(id), text(","), normline(), appends(_ds), text(","), normline(), appends(_df), finish()), ),softline(),text(")"),finish());
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -1038,9 +1030,8 @@ test "vardecl.chains 6" {
   \\ var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, xlong_arg2));
   ;
   const al = arena.allocator();
-  // default width: 80
   const doc = try translate(src, al);
-  var res = try format(doc, .{}, al);
+  var res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, long_arg2));
@@ -1091,7 +1082,7 @@ test "vardecl.chains 7" {
   \\ var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -1152,7 +1143,7 @@ test "vardecl.chains 8" {
     \\  )
     \\  ._();
   );
-  // default width: 80
+  // default width: 85
   res = try format(doc, .{}, al);
   try check(res,
     \\var sb = self.db.seqb()
@@ -1262,7 +1253,6 @@ test "vardecl.chains 9" {
     \\  )
     \\  ._();
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var sb = self.db.xyz()
@@ -1374,7 +1364,6 @@ test "vardecl.chains 10" {
     \\  )
     \\  ._();
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var sb = self.db.xyz()
@@ -1447,7 +1436,6 @@ test "vardecl.chains 11" {
   \\ const y = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
   ;
   const al = arena.allocator();
-  // default width: 80
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 80}, al);
   try check(res,
@@ -1484,7 +1472,6 @@ test "fundecl 1" {
     \\  x = 5;
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo(
@@ -1559,7 +1546,6 @@ test "fundecl 2" {
     \\  ...,
     \\) A(T) {}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo2(
@@ -1603,7 +1589,6 @@ test "fundecl 3" {
   try check(res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
@@ -1640,7 +1625,6 @@ test "fundecl 4" {
     \\  k: anytype,
     \\) A(T) {}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub fn foo4(
@@ -1695,7 +1679,6 @@ test "fundecl 5" {
     \\  k: anytype,
     \\) A(T) {}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\inline fn foo5(
@@ -1766,7 +1749,6 @@ test "fundecl 6" {
     \\  k: anytype,
     \\) A(T) {}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\export fn foo7(
@@ -1835,7 +1817,6 @@ test "fundecl 7" {
     \\  k: anytype,
     \\) A(T);
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\extern fn foo9(
@@ -1902,7 +1883,6 @@ test "fundecl 8" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub fn fantasticFooBar(
@@ -1971,7 +1951,6 @@ test "fundecl 9" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub fn fantasticFooBar(
@@ -2039,7 +2018,6 @@ test "fundecl 10" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub fn fantasticFooBar()
@@ -2090,7 +2068,6 @@ test "fundecl 11" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub fn fan()
@@ -2139,7 +2116,6 @@ test "fundecl 12" {
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
@@ -2204,7 +2180,6 @@ test "fundecl 13" {
     \\  comptime const x, const y = expr;
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo(bar: T) void {
@@ -2303,7 +2278,6 @@ test "fundecl 16" {
     \\  return voidExpr();
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn ship() b: {
@@ -2418,7 +2392,6 @@ test "fundecl 17" {
     \\    try self.tCallArgs(id, params, lb_has_trailing, top_comments, can_add_trailing_comma);
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo(
@@ -2710,7 +2683,6 @@ test "expr 1" {
     \\            + bar / boxB * foo);
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo(bar: T) void {
@@ -2974,7 +2946,6 @@ test "expr 2" {
     \\        + bar / boxB * foo * foo
     \\        + bar / boxB * foo);
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var x: u3 = 5;
@@ -3199,7 +3170,6 @@ test "expr 3" {
     \\        / boxB
     \\        * foo);
   );
-  // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
   try check(res,
     \\var x: u3 = 5;
@@ -3455,7 +3425,6 @@ test "expr 4" {
     \\            / boxB
     \\            * foo);
   );
-  // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
   try check(res,
     \\var x: u3 = 5;
@@ -3689,7 +3658,6 @@ test "expr 5" {
     \\    - 3
     \\    + someFunc(1, 2, 3) * expr();
   );
-  // default width: 80, indent: 4
   res = try format(doc, .{.width = 80, .indent = 4}, al);
   try check(res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
@@ -3840,7 +3808,6 @@ test "containerdecl 1" {
     \\const Ty = extern struct { x2: []const u8, y2: u32 };
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = struct { x: []const u8, y: u32 };
@@ -3956,7 +3923,6 @@ test "containerdecl 2" {
     \\  }
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = struct {
@@ -4119,7 +4085,6 @@ test "containerdecl 3" {
     \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub const FmtConfig = struct {
@@ -4202,7 +4167,6 @@ test "containerdecl 4" {
     \\  }
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum) {
@@ -4307,7 +4271,6 @@ test "containerdecl 5" {
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
@@ -4370,7 +4333,6 @@ test "containerdecl 6" {
     \\  }
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
@@ -4461,7 +4423,6 @@ test "containerdecl 7" {
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) {
@@ -4550,7 +4511,6 @@ test "containerdecl 8" {
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = opaque { x: []const u8, y: u32 };
@@ -4630,7 +4590,6 @@ test "containerdecl 9" {
     \\  const fox = enum { a, b, c };
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4735,7 +4694,6 @@ test "containerdecl 10" {
     \\  const fox3 = union(big) { a, b, c };
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4845,7 +4803,6 @@ test "containerdecl 11" {
     \\  }
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum) {
@@ -4941,7 +4898,6 @@ test "containerdecl 12" {
     \\  pub fn x() void {}
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const Ty = union(enum) {
@@ -5049,7 +5005,6 @@ test "containerdecl 13" {
     \\const Ty = union(enum(Foo(a, b, c))) {};
     \\var x = 5;
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\y: []u8,
@@ -5165,7 +5120,6 @@ test "containerdecl 14" {
     \\pub const Ty = 0xff;
     \\var x = 5;
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\y: []u8,
@@ -5237,7 +5191,6 @@ test "containerdecl 15" {
     \\const fox2 = enum { a, b, c };
     \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\pub const FmtConfig = struct {
@@ -5330,7 +5283,6 @@ test "ptr types 1" {
     \\var a: [:lhs]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
@@ -5430,7 +5382,6 @@ test "ptr types 2" {
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
@@ -5488,7 +5439,6 @@ test "ptr types 3" {
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Rhs = 0xff;
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) = 0xff;
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var x: *allowzero align(foo("ok")) Rhs
@@ -5614,7 +5564,6 @@ test "ptr types 4" {
     \\  return 0;
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
@@ -5750,7 +5699,6 @@ test "try/catch 1" {
     \\var abc = someFunc(1, 2, 3) catch |e| 5;
     \\var abc = someFunc(1, 2, 3) catch expr();
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var abc = try someFunc(1, 2, 3);
@@ -5834,18 +5782,16 @@ test "try/catch 2" {
     \\  break :blk result("okay");
     \\};
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch |e| blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(1, 2, 3) catch |e| blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = someFunc(1, 2, 3) catch {
     \\  someBlock();
     \\};
@@ -5861,43 +5807,53 @@ test "try/catch 2" {
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch |e| blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(1, 2, 3) catch |e| blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = someFunc(1, 2, 3) catch {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(1, 2, 3) catch blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
   try check(res,
     \\var abc = someFunc(1, 2, 3)
     \\  catch return;
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch |e| {
-    \\    someBlock();
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch |e| blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch {
-    \\    someBlock();
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  catch blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch |e| {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch |e| blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
   );
 }
 
@@ -5950,7 +5906,6 @@ test "orelse 1" {
     \\};
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\var abc = someFunc(1, 2, 3) orelse return;
@@ -5977,19 +5932,17 @@ test "orelse 1" {
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = 5 * 4
     \\  + 3
     \\  - abc
@@ -6002,24 +5955,36 @@ test "orelse 1" {
   try check(res,
     \\var abc = someFunc(1, 2, 3)
     \\  orelse return;
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse {
-    \\    someBlock();
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse {
-    \\    someBlock();
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse {
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse blk: {
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = 5 * 4
     \\  + 3
     \\  - abc
@@ -6057,7 +6022,6 @@ test "if/else 1" {
     \\  var z = if (a) b else d;
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testing() void {
@@ -6159,7 +6123,6 @@ test "if/else 2" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testing() void {
@@ -6288,7 +6251,6 @@ test "if/else 3" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testing() void {
@@ -6443,7 +6405,6 @@ test "if/else 4" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testing() void {
@@ -6663,7 +6624,6 @@ test "if/else 5" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testing() void {
@@ -6760,7 +6720,6 @@ test "if/else 6" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -6881,7 +6840,6 @@ test "if/else 7" {
     \\  if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -6939,7 +6897,7 @@ test "if/else 8" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -6979,7 +6937,7 @@ test "if/else 9" {
   \\ fn foo() void { if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -7022,7 +6980,6 @@ test "switch 1" {
     \\},
     \\switch (someExpr(jk)) {}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\label: switch (expr) {
@@ -7141,7 +7098,6 @@ test "switch 2" {
   \\  }
   \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn fun(
@@ -7393,7 +7349,6 @@ test "switch 3" {
     \\  else => f,
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\tag: switch (expr2) {
@@ -7592,6 +7547,315 @@ test "switch 3" {
   );
 }
 
+test "switch 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\tag: switch (expr2)  { // one
+  \\  // switching on an expr is good 1
+  \\  // switching on an expr is good 2
+  \\  // switching on an expr is good 3
+  \\  .a => |bar| {},
+  \\  inline .x => |*bar, foo| a = call(),
+  \\  .y => |bar, foo| myExpr(),
+  \\  .b, .c => |*foo| { // two
+  \\  var k = abc;
+  \\  if (k * someExpr(expr2) > 0xff) {
+  \\    print("yep!");
+  \\}
+  \\},
+  \\  .b, .c, .d, .e, .f, .g, .h => |*foo| { // three
+  \\ if (ty.ast.sentinel.unwrap()) |n| {
+  \\   sb.text("[")._();
+  \\   var elems = self.db.seqb();
+  \\   elems.softline().text("*:")._();
+  \\   elems.append(try self.t(n));
+  \\   sb.indent(elems.finish()).softline().text("]")._();
+  \\ } else {
+  \\   sb.text("[*]")._();
+  \\ }
+  \\ },
+  \\  .d ... .e => {}, // keep
+  \\inline .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
+  \\.bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
+  \\.bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
+  \\.less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
+  \\.mul_sat, .sub, .sub_wrap, .sub_sat => {
+  \\  return self.tBinaryExpr(n, tag);
+  \\}, // yeah same
+  \\  inline else => f,
+  \\}
+  ;
+  const al = arena.allocator();
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 100}, al);
+  try check(res,
+    \\tag: switch (expr2) { // one
+    \\  // switching on an expr is good 1
+    \\  // switching on an expr is good 2
+    \\  // switching on an expr is good 3
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| { // two
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| { // three
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {}, // keep
+    \\  inline .add,
+    \\    .add_wrap,
+    \\    .add_sat,
+    \\    .array_cat,
+    \\    .array_mult,
+    \\    .bang_equal,
+    \\    .bit_and,
+    \\    .bit_or,
+    \\    .shl,
+    \\    .shl_sat,
+    \\    .shr,
+    \\    .bit_xor,
+    \\    .bool_and,
+    \\    .bool_or,
+    \\    .div,
+    \\    .equal_equal,
+    \\    .greater_or_equal,
+    \\    .greater_than,
+    \\    .less_or_equal,
+    \\    .less_than,
+    \\    .merge_error_sets,
+    \\    .mod,
+    \\    .mul,
+    \\    .mul_wrap,
+    \\    .mul_sat,
+    \\    .sub,
+    \\    .sub_wrap,
+    \\    .sub_sat => {
+    \\      return self.tBinaryExpr(n, tag);
+    \\    }, // yeah same
+    \\  inline else => f,
+    \\}
+  );
+  res = try format(doc, .{.width = 80}, al);
+  try check(res,
+    \\tag: switch (expr2) { // one
+    \\  // switching on an expr is good 1
+    \\  // switching on an expr is good 2
+    \\  // switching on an expr is good 3
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| { // two
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| { // three
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {}, // keep
+    \\  inline .add,
+    \\    .add_wrap,
+    \\    .add_sat,
+    \\    .array_cat,
+    \\    .array_mult,
+    \\    .bang_equal,
+    \\    .bit_and,
+    \\    .bit_or,
+    \\    .shl,
+    \\    .shl_sat,
+    \\    .shr,
+    \\    .bit_xor,
+    \\    .bool_and,
+    \\    .bool_or,
+    \\    .div,
+    \\    .equal_equal,
+    \\    .greater_or_equal,
+    \\    .greater_than,
+    \\    .less_or_equal,
+    \\    .less_than,
+    \\    .merge_error_sets,
+    \\    .mod,
+    \\    .mul,
+    \\    .mul_wrap,
+    \\    .mul_sat,
+    \\    .sub,
+    \\    .sub_wrap,
+    \\    .sub_sat => {
+    \\      return self.tBinaryExpr(n, tag);
+    \\    }, // yeah same
+    \\  inline else => f,
+    \\}
+  );
+  // using width: 60
+  res = try format(doc, .{.width = 60}, al);
+  try check(res,
+    \\tag: switch (expr2) { // one
+    \\  // switching on an expr is good 1
+    \\  // switching on an expr is good 2
+    \\  // switching on an expr is good 3
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| { // two
+    \\    var k = abc;
+    \\    if (k * someExpr(expr2) > 0xff) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b, .c, .d, .e, .f, .g, .h => |*foo| { // three
+    \\    if (ty.ast.sentinel.unwrap()) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline().text("*:")._();
+    \\      elems.append(try self.t(n));
+    \\      sb.indent(elems.finish()).softline().text("]")._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {}, // keep
+    \\  inline .add,
+    \\    .add_wrap,
+    \\    .add_sat,
+    \\    .array_cat,
+    \\    .array_mult,
+    \\    .bang_equal,
+    \\    .bit_and,
+    \\    .bit_or,
+    \\    .shl,
+    \\    .shl_sat,
+    \\    .shr,
+    \\    .bit_xor,
+    \\    .bool_and,
+    \\    .bool_or,
+    \\    .div,
+    \\    .equal_equal,
+    \\    .greater_or_equal,
+    \\    .greater_than,
+    \\    .less_or_equal,
+    \\    .less_than,
+    \\    .merge_error_sets,
+    \\    .mod,
+    \\    .mul,
+    \\    .mul_wrap,
+    \\    .mul_sat,
+    \\    .sub,
+    \\    .sub_wrap,
+    \\    .sub_sat => {
+    \\      return self.tBinaryExpr(n, tag);
+    \\    }, // yeah same
+    \\  inline else => f,
+    \\}
+  );
+  // using width: 30 
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\tag: switch (expr2) { // one
+    \\  // switching on an expr is good 1
+    \\  // switching on an expr is good 2
+    \\  // switching on an expr is good 3
+    \\  .a => |bar| {},
+    \\  inline .x => |*bar, foo| a = call(),
+    \\  .y => |bar, foo| myExpr(),
+    \\  .b, .c => |*foo| { // two
+    \\    var k = abc;
+    \\    if (
+    \\      k * someExpr(expr2)
+    \\        > 0xff
+    \\    ) {
+    \\      print("yep!");
+    \\    }
+    \\  },
+    \\  .b,
+    \\  .c,
+    \\  .d,
+    \\  .e,
+    \\  .f,
+    \\  .g,
+    \\  .h => |*foo| { // three
+    \\    if (
+    \\      ty.ast.sentinel.unwrap()
+    \\    ) |n| {
+    \\      sb.text("[")._();
+    \\      var elems = self.db.seqb();
+    \\      elems.softline()
+    \\        .text("*:")
+    \\        ._();
+    \\      elems.append(
+    \\        try self.t(n),
+    \\      );
+    \\      sb.indent(
+    \\        elems.finish(),
+    \\      )
+    \\        .softline()
+    \\        .text("]")
+    \\        ._();
+    \\    } else {
+    \\      sb.text("[*]")._();
+    \\    }
+    \\  },
+    \\  .d....e => {}, // keep
+    \\  inline .add,
+    \\    .add_wrap,
+    \\    .add_sat,
+    \\    .array_cat,
+    \\    .array_mult,
+    \\    .bang_equal,
+    \\    .bit_and,
+    \\    .bit_or,
+    \\    .shl,
+    \\    .shl_sat,
+    \\    .shr,
+    \\    .bit_xor,
+    \\    .bool_and,
+    \\    .bool_or,
+    \\    .div,
+    \\    .equal_equal,
+    \\    .greater_or_equal,
+    \\    .greater_than,
+    \\    .less_or_equal,
+    \\    .less_than,
+    \\    .merge_error_sets,
+    \\    .mod,
+    \\    .mul,
+    \\    .mul_wrap,
+    \\    .mul_sat,
+    \\    .sub,
+    \\    .sub_wrap,
+    \\    .sub_sat => {
+    \\      return self.tBinaryExpr(
+    \\        n,
+    \\        tag,
+    \\      );
+    \\    }, // yeah same
+    \\  inline else => f,
+    \\}
+  );
+}
+
 test "for 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -7621,7 +7885,6 @@ test "for 1" {
     \\  for (expr) |pl| something();
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -7708,7 +7971,6 @@ test "for 2" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -7820,7 +8082,6 @@ test "for 3" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -7924,7 +8185,6 @@ test "for 4" {
     \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -7975,7 +8235,6 @@ test "for 5" {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -8027,7 +8286,6 @@ test "for 6" {
     \\  };
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -8136,7 +8394,6 @@ test "while 1" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -8273,7 +8530,6 @@ test "while 2" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -8382,7 +8638,6 @@ test "while 3" {
     \\  }
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\fn testMe() void {
@@ -8502,7 +8757,6 @@ test "while 4" {
     \\  };
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res, 
     \\fn testMe() void {
@@ -8589,7 +8843,6 @@ test "zig 0.16.0" {
     \\  else => unreachable,
     \\}
   );
-  // default width: 80
   res = try format(doc, .{.width = 80}, al);
   try check(res,
     \\const U = packed union(u2) { a: i2, b: u2 };
@@ -8662,7 +8915,7 @@ test "comments/vardecl 1" {
   \\  ) = undefined;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -8764,7 +9017,7 @@ test "comments/vardecl 2" {
   \\ foo(abc, bar, baz); // init
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -8878,7 +9131,7 @@ test "comments/call 1" {
   \\), 
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -8993,7 +9246,7 @@ test "comments/call 2" {
   \\
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9131,7 +9384,7 @@ test "comments/call 3" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9234,7 +9487,7 @@ test "comments/chains 1" {
   \\var sb = self_db_xyz(a, b(),);
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9325,7 +9578,7 @@ test "comments/chains 2" {
   \\ ; // end
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9498,7 +9751,7 @@ test "comments/chains 3" {
   \\  ._();
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9648,7 +9901,7 @@ test "comments/fundecl 1" {
   \\} // end aha!
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9801,7 +10054,7 @@ test "comments/fundecl 2" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -9900,7 +10153,7 @@ test "comments/fundecl 3" {
   \\} // end aha!
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10024,7 +10277,7 @@ test "comments/fundecl 4" {
   \\ A(T); 
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10140,7 +10393,7 @@ test "comments/block 1" {
   \\; // semi
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10180,10 +10433,13 @@ test "comments/block 1" {
     \\}; // closing
     \\
     \\// the top level in the middle
-    \\var abc2 = someFunc(1, 2, 3)
-    \\  catch {
-    \\    someBlock();
-    \\  };
+    \\var abc2 = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch {
+    \\  someBlock();
+    \\};
     \\
     \\var abc3 = blk // label
     \\: // colon
@@ -10238,7 +10494,7 @@ test "comments/containerdecl 1" {
   \\ ; // semi
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10355,7 +10611,7 @@ test "comments/containerdecl 2" {
   \\ ; // semi
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10457,7 +10713,7 @@ test "comments/containerdecl 3" {
   \\ ;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10568,7 +10824,7 @@ test "comments/containerdecl 4" {
   \\};
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10745,7 +11001,7 @@ test "comments/containerdecl 5" {
   \\};
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10866,7 +11122,7 @@ test "comments/containerdecl 6" {
   \\};
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -10922,7 +11178,7 @@ test "comments/containerdecl 7" {
   \\};
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -11055,7 +11311,7 @@ test "comments/if/else 1" {
   \\
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -11358,7 +11614,7 @@ test "comments/if/else 2" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -11595,7 +11851,7 @@ test "comments/if/else 3" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -11732,7 +11988,7 @@ test "comments/if/else 4" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -11846,7 +12102,7 @@ test "comments/if/else 5" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -12018,7 +12274,7 @@ test "comments/for 1" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -12298,7 +12554,7 @@ test "comments/for 2" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -12546,7 +12802,7 @@ test "comments/for 3" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -12670,7 +12926,7 @@ test "comments/for 4" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -12837,7 +13093,7 @@ test "comments/while 1" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13012,7 +13268,7 @@ test "comments/while 2" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13130,7 +13386,7 @@ test "comments/while 3" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13305,7 +13561,7 @@ test "comments/while 4" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13399,7 +13655,7 @@ test "comments/block-label" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13526,7 +13782,7 @@ test "comments/if-for-while 1" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13717,7 +13973,7 @@ test "comments/if-for-while 2" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13874,7 +14130,7 @@ test "comments/if-for-while 3" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -13932,7 +14188,7 @@ test "comments/if-while 1" {
   \\    .none;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14016,7 +14272,7 @@ test "comments/if-while 2" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14157,7 +14413,7 @@ test "comments/switch 1" {
   \\
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14181,10 +14437,10 @@ test "comments/switch 1" {
     \\  , // 17
     \\  inline // 18
     \\  d // 19
-    \\  ... // 20
-    \\  e // 21
-    \\  => // 22
-    \\  e //23
+    \\    ... // 20
+    \\    e // 21
+    \\    => // 22
+    \\    e //23
     \\  , // 24
     \\  else // 25
     \\  => // 26
@@ -14232,10 +14488,10 @@ test "comments/switch 1" {
     \\  , // 17
     \\  inline // 18
     \\  d // 19
-    \\  ... // 20
-    \\  e // 21
-    \\  => // 22
-    \\  e //23
+    \\    ... // 20
+    \\    e // 21
+    \\    => // 22
+    \\    e //23
     \\  , // 24
     \\  else // 25
     \\  => // 26
@@ -14284,7 +14540,7 @@ test "comments/switch 2" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14360,7 +14616,7 @@ test "comments/switch 3" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14447,7 +14703,7 @@ test "comments/switch 4" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14595,6 +14851,106 @@ test "comments/switch 4" {
   );
 }
 
+test "comments/switch 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ switch (expr(jla)) // 0
+  \\ {
+  \\  inline // 1
+  \\ foo, bar => a,
+  \\ arg, foo, bar // 1b
+  \\ => a,
+  \\  inline // 2
+  \\ foo, bar => b,
+  \\  inline // 3
+  \\ else // 4
+  \\ => c,
+  \\ },
+  \\
+  \\ // control
+  \\ switch (expr(jla)) {
+  \\  cool, foo, bar, dah => 12,
+  \\  inline cool, foo, bar, dah => 12,
+  \\  inline foo, bar => 12,
+  \\  inline foo, bar => 13,
+  \\  inline else => 13,
+  \\ },
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\switch (expr(jla)) // 0
+    \\{
+    \\  inline // 1
+    \\  foo, bar => a,
+    \\  arg, foo, bar // 1b
+    \\  => a,
+    \\  inline // 2
+    \\  foo, bar => b,
+    \\  inline // 3
+    \\  else // 4
+    \\  => c,
+    \\},
+    \\
+    \\// control
+    \\switch (expr(jla)) {
+    \\  cool, foo, bar, dah => 12,
+    \\  inline cool, foo, bar, dah => 12,
+    \\  inline foo, bar => 12,
+    \\  inline foo, bar => 13,
+    \\  inline else => 13,
+    \\},
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\switch (
+    \\  expr(
+    \\    jla,
+    \\  )
+    \\) // 0
+    \\{
+    \\  inline // 1
+    \\  foo,
+    \\    bar => a,
+    \\  arg,
+    \\  foo,
+    \\  bar // 1b
+    \\  => a,
+    \\  inline // 2
+    \\  foo,
+    \\    bar => b,
+    \\  inline // 3
+    \\  else // 4
+    \\  => c,
+    \\},
+    \\
+    \\// control
+    \\switch (
+    \\  expr(
+    \\    jla,
+    \\  )
+    \\) {
+    \\  cool,
+    \\  foo,
+    \\  bar,
+    \\  dah => 12,
+    \\  inline cool,
+    \\    foo,
+    \\    bar,
+    \\    dah => 12,
+    \\  inline foo,
+    \\    bar => 12,
+    \\  inline foo,
+    \\    bar => 13,
+    \\  inline else => 13,
+    \\},
+  );
+}
+
 test "comments/error-union" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -14624,7 +14980,7 @@ test "comments/error-union" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -14827,7 +15183,7 @@ test "comments/struct-init" {
   \\ ;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -15166,7 +15522,7 @@ test "comments/array-init" {
   \\ ; // last
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -15394,7 +15750,7 @@ test "comments/break-return" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -15538,7 +15894,7 @@ test "comments/assign-destructure" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -15676,7 +16032,7 @@ test "comments/assign-add" {
   \\
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -15878,7 +16234,7 @@ test "comments/field-access" {
   \\ }
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -16112,7 +16468,7 @@ test "comments/binexpr" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -16348,7 +16704,7 @@ test "comments/try-catch" {
   \\ expr();
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -16366,13 +16722,13 @@ test "comments/try-catch" {
     \\);
     \\
     \\var abc = someFunc(1, 2, 3) catch // 1
-    \\| // 2
-    \\e // 3
-    \\| // 4
-    \\5 // 5
+    \\  | // 2
+    \\  e // 3
+    \\  | // 4
+    \\  5 // 5
     \\;
     \\var abc = someFunc(1, 2, 3) catch // 1
-    \\expr();
+    \\  expr();
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
@@ -16444,41 +16800,39 @@ test "comments/orelse" {
   \\ expr());
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
     \\var abc = someFunc(1, 2, 3) orelse // 1
-    \\return;
+    \\  return;
     \\var abc = someFunc(1, 2, 3) orelse // 1
-    \\{
+    \\  {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse // 1
+    \\var abc = someFunc(1, 2, 3) orelse // 1
     \\  blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = someFunc(1, 2, 3) // 0
-    \\catch // 1
-    \\{
+    \\  catch // 1
+    \\  {
     \\  someBlock();
     \\};
     \\var abc = someFunc(1, 2, 3) // 0
-    \\orelse // 1
-    \\{
+    \\  orelse // 1
+    \\  {
     \\  someBlock();
     \\};
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse // x
+    \\var abc = someFunc(1, 2, 3) orelse // x
     \\  blk: // y
     \\  {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse // a
-    \\    expr());
+    \\      expr());
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
@@ -16486,17 +16840,23 @@ test "comments/orelse" {
     \\var abc = someFunc(1, 2, 3)
     \\  orelse // 1
     \\  return;
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse // 1
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse // 1
     \\  {
-    \\    someBlock();
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse // 1
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse // 1
     \\  blk: {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = someFunc(
     \\  1,
     \\  2,
@@ -16504,8 +16864,8 @@ test "comments/orelse" {
     \\) // 0
     \\  catch // 1
     \\  {
-    \\    someBlock();
-    \\  };
+    \\  someBlock();
+    \\};
     \\var abc = someFunc(
     \\  1,
     \\  2,
@@ -16513,15 +16873,18 @@ test "comments/orelse" {
     \\) // 0
     \\  orelse // 1
     \\  {
-    \\    someBlock();
-    \\  };
-    \\var abc = someFunc(1, 2, 3)
-    \\  orelse // x
+    \\  someBlock();
+    \\};
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse // x
     \\  blk: // y
     \\  {
-    \\    someBlock();
-    \\    break :blk result("okay");
-    \\  };
+    \\  someBlock();
+    \\  break :blk result("okay");
+    \\};
     \\var abc = 5 * 4
     \\  + 3
     \\  - abc
@@ -16552,7 +16915,7 @@ test "comments/addressop-optional" {
   \\ foo(1, 2, 3);
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -16682,7 +17045,7 @@ test "comments/pointer-type 1" {
   \\ = 0xff;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -16896,7 +17259,7 @@ test "comments/pointer-type 2" {
   \\ = 0xff;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17050,7 +17413,7 @@ test "comments/pointer-type 3" {
   \\ = 0xff;
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17361,7 +17724,7 @@ test "comments/pointer-type 4" {
   \\}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17514,7 +17877,7 @@ test "comments/doc-comment 1" {
   \\ y: usize,
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17601,7 +17964,7 @@ test "comments/doc-comment 2" {
   \\};
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17660,7 +18023,7 @@ test "comments/doc-comment 3" {
   \\};
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17723,7 +18086,7 @@ test "comments/doc-comment 4" {
   \\ ) void { if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();}
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17796,7 +18159,7 @@ test "comments/mint-off-on 1" {
   \\
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17896,7 +18259,7 @@ test "comments/mint-off-on 2" {
   \\
   ;
   const al = arena.allocator();
-  // default width: 80
+  // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
   try check(res,
@@ -17964,5 +18327,1014 @@ test "comments/mint-off-on 2" {
     \\
     \\/// my stuff y
     \\y: usize,
+  );
+}
+
+test "slice" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ foo() // 1
+  \\ [ // 2
+  \\  // 3
+  \\ bar() // 4
+  \\ .. // 5
+  \\ dah() // 6
+  \\ : // 7
+  \\ pixie // 8
+  \\ ] // 9
+  \\ ,
+  \\
+  \\ foo() // 1
+  \\ [ // 2
+  \\  // 3
+  \\ bar() // 4
+  \\ .. // 5
+  \\ dah() // 6
+  \\ ] // 7 
+  \\ ,
+  \\
+  \\ foo() // 1
+  \\ [ // 2
+  \\  // 3
+  \\ bar() // 4
+  \\ .. // 5
+  \\ ] // 6
+  \\ ,
+  \\
+  \\ foo() // 1
+  \\ [ // 2
+  \\  // 3
+  \\ bar() // 4
+  \\ .. // 5
+  \\ : // 6
+  \\ dah() // 7
+  \\ ] // 8
+  \\ ,
+  \\
+  \\ foo() // 1
+  \\ [ // 2
+  \\  // 3
+  \\ fox().bar() // 4
+  \\ .. // 5
+  \\ : // 6
+  \\ dah() // 7
+  \\ ], // 8
+  \\
+  \\ // control
+  \\ foo()[bar()..dah():pixie],
+  \\ foo()[bar()..dah()],
+  \\ foo()[bar()..],
+  \\ var j = foo()[bar()..:bar()];
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\  dah() // 6
+    \\  : // 7
+    \\  pixie // 8
+    \\] // 9
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\  dah() // 6
+    \\] // 7
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\] // 6
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\  : // 6
+    \\  dah() // 7
+    \\] // 8
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  fox().bar() // 4
+    \\  .. // 5
+    \\  : // 6
+    \\  dah() // 7
+    \\], // 8
+    \\
+    \\// control
+    \\foo()[bar()..dah():pixie],
+    \\foo()[bar()..dah()],
+    \\foo()[bar()..],
+    \\var j = foo()[bar()..:bar()];
+  );
+  // using width: 10
+  res = try format(doc, .{.width = 10}, al);
+  try check(res,
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\  dah() // 6
+    \\  : // 7
+    \\  pixie // 8
+    \\] // 9
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\  dah() // 6
+    \\] // 7
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\] // 6
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  bar() // 4
+    \\  .. // 5
+    \\  : // 6
+    \\  dah() // 7
+    \\] // 8
+    \\,
+    \\
+    \\foo() // 1
+    \\[ // 2
+    \\  // 3
+    \\  fox()
+    \\    .bar() // 4
+    \\  .. // 5
+    \\  : // 6
+    \\  dah() // 7
+    \\], // 8
+    \\
+    \\// control
+    \\foo()[
+    \\  bar()..dah()
+    \\  :pixie
+    \\],
+    \\foo()[
+    \\  bar()..dah()
+    \\],
+    \\foo()[
+    \\  bar()..
+    \\],
+    \\var j = foo()[
+    \\  bar()..
+    \\  :bar()
+    \\];
+  );
+}
+
+test "catch-orelse 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const p = paths  orelse blk: {
+  \\    const size = try std.Io.Dir.cwd().realPath(io, &buf);
+  \\    break :blk &.{buf[0..size]};
+  \\  };
+  \\const p = paths  orelse blkMe();
+  \\var abc = someFunc(1, 2, 3) orelse blk: {
+  \\  someBlock1();
+  \\  break :blk result("okay");
+  \\};
+  \\
+  \\var abc = someFunc(1, 2, 3) catch |b| blk: {
+  \\  someBlock1();
+  \\  break :blk result("okay");
+  \\};
+  \\
+  \\var abc = someFunc(1, 2, 3) orelse {
+  \\  someBlock1();
+  \\  someBlock2();
+  \\  someBlock3();
+  \\  someBlock4();
+  \\  break :blk result("okay");
+  \\};
+  \\
+  \\var abc = someFunc(1, 2, 3) catch |x| {
+  \\  someBlock1();
+  \\  someBlock2();
+  \\  someBlock3();
+  \\  someBlock4();
+  \\  break :blk result("okay");
+  \\ };
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\const p = paths orelse blk: {
+    \\  const size = try std.Io.Dir.cwd().realPath(io, &buf);
+    \\  break :blk &.{buf[0..size]};
+    \\};
+    \\const p = paths orelse blkMe();
+    \\var abc = someFunc(1, 2, 3) orelse blk: {
+    \\  someBlock1();
+    \\  break :blk result("okay");
+    \\};
+    \\
+    \\var abc = someFunc(1, 2, 3) catch |b| blk: {
+    \\  someBlock1();
+    \\  break :blk result("okay");
+    \\};
+    \\
+    \\var abc = someFunc(1, 2, 3) orelse {
+    \\  someBlock1();
+    \\  someBlock2();
+    \\  someBlock3();
+    \\  someBlock4();
+    \\  break :blk result("okay");
+    \\};
+    \\
+    \\var abc = someFunc(1, 2, 3) catch |x| {
+    \\  someBlock1();
+    \\  someBlock2();
+    \\  someBlock3();
+    \\  someBlock4();
+    \\  break :blk result("okay");
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\const p = paths orelse blk: {
+    \\  const size = try std.Io.Dir.cwd()
+    \\    .realPath(io, &buf);
+    \\  break :blk &.{buf[0..size]};
+    \\};
+    \\const p = paths
+    \\  orelse blkMe();
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse blk: {
+    \\  someBlock1();
+    \\  break :blk result("okay");
+    \\};
+    \\
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch |b| blk: {
+    \\  someBlock1();
+    \\  break :blk result("okay");
+    \\};
+    \\
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) orelse {
+    \\  someBlock1();
+    \\  someBlock2();
+    \\  someBlock3();
+    \\  someBlock4();
+    \\  break :blk result("okay");
+    \\};
+    \\
+    \\var abc = someFunc(
+    \\  1,
+    \\  2,
+    \\  3,
+    \\) catch |x| {
+    \\  someBlock1();
+    \\  someBlock2();
+    \\  someBlock3();
+    \\  someBlock4();
+    \\  break :blk result("okay");
+    \\};
+  );
+}
+
+test "catch-orelse 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\writer.flush() catch {};
+  \\writer.flush() orelse {};
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  writer.flush() catch {};
+    \\  writer.flush() orelse {};
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  writer.flush() catch {};
+    \\  writer.flush() orelse {};
+    \\}
+  );
+}
+
+test "array-access" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\_ = buf // 1
+  \\ [ // 2
+  \\ // toplevel stuff 1
+  \\ // toplevel stuff 2
+  \\ size(a, b, c, d) // 3
+  \\ ] // 4
+  \\,
+  \\
+  \\buf // 1
+  \\ [
+  \\ // top
+  \\ size
+  \\ // bottom 
+  \\ ] // 2
+  \\ = 0,
+  \\
+  \\buf
+  \\ [
+  \\ size // 1
+  \\ ]
+  \\ = 0,
+  \\
+  \\buf
+  \\ [
+  \\ // oxff
+  \\ size
+  \\ ]
+  \\ = 0,
+  \\
+  \\_ = buf[size(a, b, c, d)],
+  \\buf[size] = 0,
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\_ = buf // 1
+    \\[ // 2
+    \\  // toplevel stuff 1
+    \\  // toplevel stuff 2
+    \\  size(a, b, c, d) // 3
+    \\] // 4
+    \\,
+    \\
+    \\buf // 1
+    \\[
+    \\  // top
+    \\  size
+    \\  // bottom
+    \\] // 2
+    \\= 0,
+    \\
+    \\buf[
+    \\  size // 1
+    \\] = 0,
+    \\
+    \\buf[
+    \\  // oxff
+    \\  size
+    \\] = 0,
+    \\
+    \\_ = buf[size(a, b, c, d)],
+    \\buf[size] = 0,
+  );
+  // using width: 20
+  res = try format(doc, .{.width = 20}, al);
+  try check(res,
+    \\_ = buf // 1
+    \\[ // 2
+    \\  // toplevel stuff 1
+    \\  // toplevel stuff 2
+    \\  size(
+    \\    a,
+    \\    b,
+    \\    c,
+    \\    d,
+    \\  ) // 3
+    \\] // 4
+    \\,
+    \\
+    \\buf // 1
+    \\[
+    \\  // top
+    \\  size
+    \\  // bottom
+    \\] // 2
+    \\= 0,
+    \\
+    \\buf[
+    \\  size // 1
+    \\] = 0,
+    \\
+    \\buf[
+    \\  // oxff
+    \\  size
+    \\] = 0,
+    \\
+    \\_ = buf[
+    \\  size(a, b, c, d)
+    \\],
+    \\buf[size] = 0,
+  );
+}
+
+test "error-value" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\var x = error // 1
+  \\ . // 2
+  \\ FooIsInvalid // 3
+  \\ ;
+  \\var x = error.FooIsInvalid;
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\var x = error // 1
+    \\. // 2
+    \\FooIsInvalid // 3
+    \\;
+    \\var x = error.FooIsInvalid;
+  );
+  // using width: 20
+  res = try format(doc, .{.width = 20}, al);
+  try check(res,
+    \\var x = error // 1
+    \\  . // 2
+    \\  FooIsInvalid // 3
+    \\;
+    \\var x = error
+    \\  .FooIsInvalid;
+  );
+}
+
+test "multiline-string" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn MyFoo() void {
+  \\ var x = // my foo
+  \\ \\ j
+  \\ ;
+  \\ y +
+  \\ \\ j
+  \\ ;
+  \\ y +
+  \\ \\ j
+  \\ \\ b
+  \\ \\ c // yes
+  \\ ;
+  \\ _ = x ++ // my foo
+  \\ \\ j
+  \\ ;
+  \\ const t =
+  \\ // good?
+  \\ \\ this is a multi // 1
+  \\ \\ line string // 2
+  \\ ;
+  \\ const s =
+  \\ \\ this is a multi
+  \\ \\ line string
+  \\ ;
+  \\ const s = \\ this is a multi
+  \\ \\ line string
+  \\ ;
+  \\ 
+  \\  var tbd = foo.bar(abc, def, 123,
+  \\ \\ a wall of text
+  \\ \\ is a fun wall
+  \\ \\ but not a narwhal
+  \\);
+  \\ 
+  \\  var tbd2 = foo.bar(abc, def, 123,
+  \\ \\ a wall of text
+  \\ \\ is a fun wall
+  \\ \\ but not a narwhal
+  \\  ,
+  \\  bar()
+  \\);
+  \\ 
+  \\  var tbd3 = foo.bar(abc, def, 123,
+  \\ \\ a wall of text
+  \\ \\ is a fun wall
+  \\ \\ but not a narwhal
+  \\  ,
+  \\);
+  \\
+  \\  var tbd4 = foo.bar(abc, def, 123,
+  \\ \\ a wall of text
+  \\ \\ is a fun wall
+  \\ \\ but not a narwhal
+  \\  , // xy
+  \\);
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn MyFoo() void {
+    \\  var x = // my foo
+    \\  \\ j
+    \\  ;
+    \\  y +
+    \\    \\ j
+    \\  ;
+    \\  y +
+    \\    \\ j
+    \\    \\ b
+    \\    \\ c // yes
+    \\  ;
+    \\  _ = x ++ // my foo
+    \\    \\ j
+    \\  ;
+    \\  const t =
+    \\  // good?
+    \\  \\ this is a multi // 1
+    \\  \\ line string // 2
+    \\  ;
+    \\  const s =
+    \\  \\ this is a multi
+    \\  \\ line string
+    \\  ;
+    \\  const s =
+    \\  \\ this is a multi
+    \\  \\ line string
+    \\  ;
+    \\
+    \\  var tbd = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\  );
+    \\
+    \\  var tbd2 = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\    ,
+    \\    bar(),
+    \\  );
+    \\
+    \\  var tbd3 = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\    ,
+    \\  );
+    \\
+    \\  var tbd4 = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\    , // xy
+    \\  );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\fn MyFoo() void {
+    \\  var x = // my foo
+    \\  \\ j
+    \\  ;
+    \\  y +
+    \\    \\ j
+    \\  ;
+    \\  y +
+    \\    \\ j
+    \\    \\ b
+    \\    \\ c // yes
+    \\  ;
+    \\  _ = x ++ // my foo
+    \\    \\ j
+    \\  ;
+    \\  const t =
+    \\  // good?
+    \\  \\ this is a multi // 1
+    \\  \\ line string // 2
+    \\  ;
+    \\  const s =
+    \\  \\ this is a multi
+    \\  \\ line string
+    \\  ;
+    \\  const s =
+    \\  \\ this is a multi
+    \\  \\ line string
+    \\  ;
+    \\
+    \\  var tbd = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\  );
+    \\
+    \\  var tbd2 = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\    ,
+    \\    bar(),
+    \\  );
+    \\
+    \\  var tbd3 = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\    ,
+    \\  );
+    \\
+    \\  var tbd4 = foo.bar(
+    \\    abc,
+    \\    def,
+    \\    123,
+    \\    \\ a wall of text
+    \\    \\ is a fun wall
+    \\    \\ but not a narwhal
+    \\    , // xy
+    \\  );
+    \\}
+  );
+}
+
+test "misc" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\lhs <<|= // x
+  \\ rhs;
+  \\ continue // 0
+  \\ : // 1
+  \\ lbl // 2 
+  \\ expr();
+  \\ var t = ! // 1
+  \\ foo;
+  \\ var y = ~ // 0
+  \\ foo;
+  \\ var z = -% // 1
+  \\ foo;
+  \\ var a = expr().*;
+  \\ var a = expr // 1
+  \\ .* // 2
+  \\ ;
+  \\ var j = foo // 0
+  \\ . // 1
+  \\ ? // 2
+  \\ .bar.?.cat;
+  \\ var j = foo.?.bar.?.cat;
+  \\ var j = foo().?.bar.?.cat;
+  \\ defer // 1
+  \\ foo().?.bar.?.cat;
+  \\ errdefer // 2
+  \\ foo().?.bar.?.cat;
+  \\ defer foo().?.bar.?.cat;
+  \\ errdefer foo().?.bar.?.cat;
+  \\ defer {foo().?.bar.?.cat;}
+  \\ errdefer foo().?.bar.?.cat;
+  \\ errdefer // 1
+  \\ | // 2
+  \\ // xyz ok
+  \\ f // 3
+  \\ | // 4
+  \\ foo().cat;
+  \\ comptime var x = 5;
+  \\ comptime  {
+  \\var x = 5;
+  \\ }
+  \\ comptime  // 1
+  \\ {
+  \\var x = 5;
+  \\ }
+  \\  suspend // 1
+  \\ foo();
+  \\  resume // 1
+  \\ foo();
+  \\  anyframe // 1
+  \\ -> // 2
+  \\ foo(1, 2, 4);
+  \\}
+  \\ const E = error { // a
+  \\ /// just some stuff
+  \\ a, b, 
+  \\ /// another?
+  \\c,
+  \\
+  \\ } // last
+  \\;
+  \\ const E = error {a, b, c};
+  \\
+  \\ test // 1
+  \\ "foo" // 2 
+  \\ { // 3
+  \\  var x = check(abc);
+  \\} // 4
+  \\
+  \\ test // 1
+  \\ MyFoo // 2
+  \\ {
+  \\  var x = check(abc);
+  \\} // 3
+  \\
+  \\ test "foo" {
+  \\  var x = check(abc);
+  \\}
+  \\
+  \\ test MyFoo {
+  \\  suspend foo();
+  \\  resume foo();
+  \\  var x = check(abc);
+  \\  anyframe -> foo(1, 2, 4);
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  lhs <<|= // x
+    \\  rhs;
+    \\  continue // 0
+    \\  : // 1
+    \\  lbl // 2
+    \\  expr();
+    \\  var t = ! // 1
+    \\  foo;
+    \\  var y = ~ // 0
+    \\  foo;
+    \\  var z = -% // 1
+    \\  foo;
+    \\  var a = expr().*;
+    \\  var a = expr // 1
+    \\  .* // 2
+    \\  ;
+    \\  var j = foo // 0
+    \\  . // 1
+    \\  ? // 2
+    \\  .bar.?.cat;
+    \\  var j = foo.?.bar.?.cat;
+    \\  var j = foo().?.bar.?.cat;
+    \\  defer // 1
+    \\  foo().?.bar.?.cat;
+    \\  errdefer // 2
+    \\  foo().?.bar.?.cat;
+    \\  defer foo().?.bar.?.cat;
+    \\  errdefer foo().?.bar.?.cat;
+    \\  defer {
+    \\    foo().?.bar.?.cat;
+    \\  }
+    \\  errdefer foo().?.bar.?.cat;
+    \\  errdefer // 1
+    \\  | // 2
+    \\  // xyz ok
+    \\  f // 3
+    \\  | // 4
+    \\  foo().cat;
+    \\  comptime var x = 5;
+    \\  comptime {
+    \\    var x = 5;
+    \\  }
+    \\  comptime // 1
+    \\  {
+    \\    var x = 5;
+    \\  }
+    \\  suspend // 1
+    \\  foo();
+    \\  resume // 1
+    \\  foo();
+    \\  anyframe // 1
+    \\  -> // 2
+    \\  foo(1, 2, 4);
+    \\}
+    \\const E = error { // a
+    \\  /// just some stuff
+    \\  a,
+    \\  b,
+    \\  /// another?
+    \\  c,
+    \\} // last
+    \\;
+    \\const E = error { a, b, c };
+    \\
+    \\test // 1
+    \\"foo" // 2
+    \\{ // 3
+    \\  var x = check(abc);
+    \\} // 4
+    \\
+    \\test // 1
+    \\MyFoo // 2
+    \\{
+    \\  var x = check(abc);
+    \\} // 3
+    \\
+    \\test "foo" {
+    \\  var x = check(abc);
+    \\}
+    \\
+    \\test MyFoo {
+    \\  suspend foo();
+    \\  resume foo();
+    \\  var x = check(abc);
+    \\  anyframe->foo(1, 2, 4);
+    \\}
+  );
+  // using width: 20
+  res = try format(doc, .{.width = 20}, al);
+  try check(res,
+    \\fn foo() void {
+    \\  lhs <<|= // x
+    \\  rhs;
+    \\  continue // 0
+    \\  : // 1
+    \\  lbl // 2
+    \\  expr();
+    \\  var t = ! // 1
+    \\  foo;
+    \\  var y = ~ // 0
+    \\  foo;
+    \\  var z = -% // 1
+    \\  foo;
+    \\  var a = expr().*;
+    \\  var a = expr // 1
+    \\  .* // 2
+    \\  ;
+    \\  var j = foo // 0
+    \\    . // 1
+    \\    ? // 2
+    \\    .bar
+    \\    .?
+    \\    .cat;
+    \\  var j = foo
+    \\    .?
+    \\    .bar
+    \\    .?
+    \\    .cat;
+    \\  var j = foo()
+    \\    .?
+    \\    .bar
+    \\    .?
+    \\    .cat;
+    \\  defer // 1
+    \\  foo().?.bar.?.cat;
+    \\  errdefer // 2
+    \\  foo().?.bar.?.cat;
+    \\  defer foo()
+    \\    .?
+    \\    .bar
+    \\    .?
+    \\    .cat;
+    \\  errdefer foo()
+    \\    .?
+    \\    .bar
+    \\    .?
+    \\    .cat;
+    \\  defer {
+    \\    foo()
+    \\      .?
+    \\      .bar
+    \\      .?
+    \\      .cat;
+    \\  }
+    \\  errdefer foo()
+    \\    .?
+    \\    .bar
+    \\    .?
+    \\    .cat;
+    \\  errdefer // 1
+    \\  | // 2
+    \\  // xyz ok
+    \\  f // 3
+    \\  | // 4
+    \\  foo().cat;
+    \\  comptime var x = 5;
+    \\  comptime {
+    \\    var x = 5;
+    \\  }
+    \\  comptime // 1
+    \\  {
+    \\    var x = 5;
+    \\  }
+    \\  suspend // 1
+    \\  foo();
+    \\  resume // 1
+    \\  foo();
+    \\  anyframe // 1
+    \\  -> // 2
+    \\  foo(1, 2, 4);
+    \\}
+    \\const E = error { // a
+    \\  /// just some stuff
+    \\  a,
+    \\  b,
+    \\  /// another?
+    \\  c,
+    \\} // last
+    \\;
+    \\const E = error {
+    \\  a,
+    \\  b,
+    \\  c,
+    \\};
+    \\
+    \\test // 1
+    \\"foo" // 2
+    \\{ // 3
+    \\  var x = check(
+    \\    abc,
+    \\  );
+    \\} // 4
+    \\
+    \\test // 1
+    \\MyFoo // 2
+    \\{
+    \\  var x = check(
+    \\    abc,
+    \\  );
+    \\} // 3
+    \\
+    \\test "foo" {
+    \\  var x = check(
+    \\    abc,
+    \\  );
+    \\}
+    \\
+    \\test MyFoo {
+    \\  suspend foo();
+    \\  resume foo();
+    \\  var x = check(
+    \\    abc,
+    \\  );
+    \\  anyframe->foo(
+    \\    1,
+    \\    2,
+    \\    4,
+    \\  );
+    \\}
   );
 }

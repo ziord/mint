@@ -14,6 +14,7 @@ pub const Format = struct {
   al: Allocator,
   mem_writer: std.Io.Writer.Allocating,
   out_writer: std.Io.File.Writer,
+  file_writer: std.Io.File.Writer,
   writer: *std.Io.Writer = undefined,
 
   var WriteBuf: [8192]u8 = undefined;
@@ -44,13 +45,16 @@ pub const Format = struct {
       .al = al,
       .cfg = cfg,
       .mem_writer = std.Io.Writer.Allocating.init(al),
-      .out_writer = std.Io.File.Writer.init(std.Io.File.stdout(), io, &WriteBuf),
+      .out_writer = std.Io.File.stdout().writer(io, &WriteBuf),
+      .file_writer = undefined,
     };
   }
 
   fn setWriter(self: *Self) void {
-    switch (self.cfg.writer) {
-      .file => util.todo("file writer"),
+    switch (self.cfg.write_mode) {
+      .file => {
+        self.writer = &self.file_writer.interface;
+      },
       .out => {
         self.writer = &self.out_writer.interface;
       }, 
@@ -64,7 +68,7 @@ pub const Format = struct {
     util.listAppend(sm, s, self.al);
   }
 
-  inline fn copyStack(self: *Self, s: *Stack) Stack {
+  inline fn cloneStack(self: *Self, s: *Stack) Stack {
     var s2 = util.listInit(StackData, s.items.len + 1, self.al);
     s2.appendSliceAssumeCapacity(s.items);
     return s2;
@@ -110,7 +114,7 @@ pub const Format = struct {
               if (sm.mode == .split or stack.items.len == 0) {
                 return true;
               }
-              width = @intCast(self.cfg.width);
+              width = @intCast(self.cfg.width - @as(u32, @intCast(sm.indent)));
             },
             .decl, .soft => {
               // soft/decl is "" in flat mode (len = 0)
@@ -146,12 +150,12 @@ pub const Format = struct {
   }
 
   fn print(self: *Self, t: []const u8) void {
-    _ = self.writer.write(t) catch unreachable;
+    _ = self.writer.writeAll(t) catch unreachable;
   }
 
   fn printn(self: *Self, t: []const u8, n: usize) void {
     for (0..n) |_| {
-      _ = self.writer.write(t) catch unreachable;
+      _ = self.writer.writeAll(t) catch unreachable;
     }
   }
 
@@ -165,6 +169,11 @@ pub const Format = struct {
       };
     }
     return true;
+  }
+
+  /// NOTE: this needs to be called before calling .fmt() when `write_mode` is a `.file`
+  pub fn setFileWriter(self: *Self, writer: std.Io.File.Writer) void {
+    self.file_writer = writer;
   }
 
   pub fn fmt(self: *Self, d: *Doc) void {
@@ -229,11 +238,11 @@ pub const Format = struct {
           if (sm.mode == .flat) {
             self.pushDocsToStack(_d.docs, &stack, sm.indent, sm.mode);
           } else {
-            var new = self.copyStack(&stack);
-            self.copyDocsToStack(_d.docs, &new, sm.indent, .flat);
+            var clone = self.cloneStack(&stack);
+            self.copyDocsToStack(_d.docs, &clone, sm.indent, .flat);
             if (self.fits(
                 @as(i32, @intCast(self.cfg.width)) - @as(i32, @intCast(column)),
-                &new
+                &clone
               ))
             {
               self.pushDocsToStack(_d.docs, &stack, sm.indent, .flat);
@@ -258,12 +267,11 @@ pub const Format = struct {
     }
   }
 
-  pub fn getFmtString(self: *Self) [] const u8 {
-    switch (self.cfg.writer) {
+  pub fn getFmtString(self: *Self, is_test: bool) [] const u8 {
+    switch (self.cfg.write_mode) {
       .mem => {
         var str = self.mem_writer.toArrayList().items;
-        // FIXME: hack to remove trailing line
-        if (str.len >= 2 and str[str.len - 1] == '\n') {
+        if (is_test and str.len >= 2 and str[str.len - 1] == '\n') {
           return str[0..str.len - 1];
         }
         return str;
