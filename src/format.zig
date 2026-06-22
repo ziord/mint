@@ -20,19 +20,16 @@ pub const Format = struct {
   var WriteBuf: [8192]u8 = undefined;
 
   const Self = @This();
-  
+
   const IDSet = std.AutoHashMapUnmanaged(u32, void);
 
-  const FitMode = enum(u8) {
-    flat,
-    split,
-  };
-  
-  const StackData = struct{
+  const FitMode = enum(u8) { flat, split };
+
+  const StackData = struct {
     indent: u8,
     mode: FitMode,
     doc: *Doc,
-  
+
     pub inline fn init(indent: u8, mode: FitMode, d: *Doc) @This() {
       return .{.indent = indent, .mode = mode, .doc = d};
     }
@@ -57,7 +54,7 @@ pub const Format = struct {
       },
       .out => {
         self.writer = &self.out_writer.interface;
-      }, 
+      },
       .mem => {
         self.writer = &self.mem_writer.writer;
       },
@@ -75,25 +72,28 @@ pub const Format = struct {
   }
 
   fn pushDocsToStack(
-    self: *Self, docs: []*Doc, stack: *Stack,
-    indent: u8, mode: FitMode,
+    self: *Self,
+    docs: []*Doc,
+    stack: *Stack,
+    indent: u8,
+    mode: FitMode,
   ) void {
     for (0..docs.len) |i| {
-      self.stackPush(
-        stack,
-        StackData.init(indent, mode, docs[docs.len - i - 1]),
-      );
+      self.stackPush(stack, StackData.init(indent, mode, docs[docs.len - i - 1]));
     }
   }
 
   fn copyDocsToStack(
-    self: *Self, docs: []*Doc, stack: *Stack,
-    indent: u8, mode: FitMode,
+    self: *Self,
+    docs: []*Doc,
+    stack: *Stack,
+    indent: u8,
+    mode: FitMode,
   ) void {
-    stack.ensureTotalCapacity(self.al, stack.items.len+docs.len) catch unreachable;
+    stack.ensureTotalCapacity(self.al, stack.items.len + docs.len) catch unreachable;
     for (0..docs.len) |i| {
       stack.appendAssumeCapacity(
-        StackData.init(indent, mode, docs[docs.len - i - 1])
+        StackData.init(indent, mode, docs[docs.len - i - 1]),
       );
     }
   }
@@ -135,7 +135,7 @@ pub const Format = struct {
           self.pushDocsToStack(d.docs, stack, sm.indent, sm.mode);
         },
         .indent => |*d| {
-          self.pushDocsToStack(d.docs, stack, sm.indent+self.cfg.indent, sm.mode);
+          self.pushDocsToStack(d.docs, stack, sm.indent + self.cfg.indent, sm.mode);
         },
         .group => |*d| {
           self.pushDocsToStack(d.docs, stack, sm.indent, sm.mode);
@@ -143,7 +143,7 @@ pub const Format = struct {
         .ifsplit => |*d| {
           const _d = if (sm.mode == .split) d.split else d.flat;
           self.stackPush(stack, StackData.init(sm.indent, sm.mode, _d));
-        }
+        },
       }
     }
     return false;
@@ -232,7 +232,12 @@ pub const Format = struct {
           self.pushDocsToStack(_d.docs, &stack, sm.indent, sm.mode);
         },
         .indent => |*_d| {
-          self.pushDocsToStack(_d.docs, &stack, sm.indent+self.cfg.indent, sm.mode);
+          self.pushDocsToStack(
+            _d.docs,
+            &stack,
+            sm.indent + self.cfg.indent,
+            sm.mode,
+          );
         },
         .group => |*_d| {
           if (sm.mode == .flat) {
@@ -240,11 +245,12 @@ pub const Format = struct {
           } else {
             var clone = self.cloneStack(&stack);
             self.copyDocsToStack(_d.docs, &clone, sm.indent, .flat);
-            if (self.fits(
+            if (
+              self.fits(
                 @as(i32, @intCast(self.cfg.width)) - @as(i32, @intCast(column)),
-                &clone
-              ))
-            {
+                &clone,
+              )
+            ) {
               self.pushDocsToStack(_d.docs, &stack, sm.indent, .flat);
             } else {
               self.pushDocsToStack(_d.docs, &stack, sm.indent, .split);
@@ -253,21 +259,22 @@ pub const Format = struct {
           }
         },
         .ifsplit => |*_d| {
-          const mode: FitMode = (
-            if (self.split_groups.get(_d.group) != null) .split
-            else sm.mode
-          );
+          const mode: FitMode = (if (self.split_groups.get(_d.group) != null)
+            .split
+          else
+            sm.mode);
           const _sm = StackData.init(
-            sm.indent, mode,
+            sm.indent,
+            mode,
             if (mode == .flat) _d.flat else _d.split,
           );
           self.stackPush(&stack, _sm);
-        }
+        },
       }
     }
   }
 
-  pub fn getFmtString(self: *Self, is_test: bool) [] const u8 {
+  pub fn getFmtString(self: *Self, is_test: bool) []const u8 {
     switch (self.cfg.write_mode) {
       .mem => {
         var str = self.mem_writer.toArrayList().items;

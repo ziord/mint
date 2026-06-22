@@ -21,10 +21,15 @@ pub const Cli = struct {
   projects: std.StringArrayHashMapUnmanaged(Project) = .empty,
 
   var WriteBuf: [2048]u8 = undefined;
-  
+
   const CfgFilename = "mint.zon";
 
-  pub fn init(parent_al: Allocator, io: std.Io, paths: ?[]const []const u8, mode: Mode) !Cli {
+  pub fn init(
+    parent_al: Allocator,
+    io: std.Io,
+    paths: ?[]const []const u8,
+    mode: Mode,
+  ) !Cli {
     var self = Cli{.al = parent_al, .io = io, .mode = mode};
     if (mode == .help or mode == .init) return self;
     const p = paths orelse &.{@as([]const u8, ".")};
@@ -35,10 +40,12 @@ pub const Cli = struct {
   fn findFilePaths(self: *Cli, paths: []const []const u8) !void {
     m: for (paths) |path| {
       var files: std.ArrayList(Path) = .empty;
-      _ = std.Io.Dir.cwd().openFile(self.io, path, .{.allow_directory = false}) catch |e| {
+      _ = std.Io.Dir.cwd()
+        .openFile(self.io, path, .{.allow_directory = false}) catch |e| {
         switch (e) {
           error.IsDir => {
-            var dir = try std.Io.Dir.cwd().openDir(self.io, path, .{.iterate = true});
+            var dir = try std.Io.Dir.cwd()
+              .openDir(self.io, path, .{.iterate = true});
             var walker = try dir.walk(self.al);
             l: while (try walker.next(self.io)) |entry| {
               switch (entry.kind) {
@@ -90,13 +97,16 @@ pub const Cli = struct {
     }
     return false;
   }
-  
+
   fn discoverConfigs(self: *Cli) !void {
     for (self.projects.values()) |*proj| {
       if (proj.config == null) {
         var cfg: ?Path = null;
         for (proj.files) |*f| {
-          if (f.ty == .zon and std.mem.eql(u8, std.fs.path.basename(f.path), CfgFilename)) {
+          if (
+            f.ty == .zon
+              and std.mem.eql(u8, std.fs.path.basename(f.path), CfgFilename)
+          ) {
             if (cfg == null) {
               f.is_config = true;
               cfg = f.*;
@@ -115,7 +125,7 @@ pub const Cli = struct {
       }
     }
   }
-  
+
   fn formatWatch(self: *Cli, g: *Glue) !void {
     // TODO: should update to use hashes instead of timestamps
     var simple_hash = std.StringHashMapUnmanaged(std.Io.Timestamp){};
@@ -148,7 +158,11 @@ pub const Cli = struct {
             } else {
               mtime_a = try util.getStatMTime(self.io, p.path);
               g.formatWatch(p, proj, self.al) catch continue;
-              try simple_hash.put(self.al, p.path, try util.getStatMTime(self.io, p.path));
+              try simple_hash.put(
+                self.al,
+                p.path,
+                try util.getStatMTime(self.io, p.path),
+              );
               log.debug("{s} (new)", .{p.path});
             }
           }
@@ -208,7 +222,7 @@ pub const ArgParse = struct {
     std.debug.print("{s}\n", .{info});
     return Cli.init(al, io, null, .help);
   }
-  
+
   pub fn parseArgs(al: Allocator, io: std.Io, args: []const [:0]const u8) !Cli {
     if (args.len == 0) {
       std.debug.print("{s}\n", .{info});
@@ -227,7 +241,8 @@ pub const ArgParse = struct {
         return Cli.init(al, io, null, .init);
       } else {
         if (std.mem.eql(u8, "help", m_cmd)) {
-          if (args.len > 1) std.debug.print("Invalid argument(s) passed to 'help'.\n", .{});
+          if (args.len > 1)
+            std.debug.print("Invalid argument(s) passed to 'help'.\n", .{});
         } else {
           std.debug.print("Invalid argument.\n", .{});
         }

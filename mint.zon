@@ -1,0 +1,1 @@
+.{.width = 85, .indent = 2, .ignore = .{".mint", ".stfolder", ".vscode", ".zed"}}

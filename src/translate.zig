@@ -31,21 +31,15 @@ pub const Translate = struct {
   _comments: u32 = 0,
 
   const Self = @This();
-  const TokenCache = struct {tkn: Ast.TokenIndex, has_trailing_comment: bool};
+  const TokenCache = struct { tkn: Ast.TokenIndex, has_trailing_comment: bool };
 
   pub fn init(al: Allocator, io: std.Io) !Self {
-    return .{
-      .al = al,
-      .tree = undefined,
-      .io = io,
-      .db = DocBuilder.init(al),
-    };
+    return .{.al = al, .tree = undefined, .io = io, .db = DocBuilder.init(al)};
   }
 
   inline fn isVarDecl(tag: Node.Tag) bool {
     return switch (tag) {
-      .simple_var_decl, .global_var_decl,
-      .local_var_decl, .aligned_var_decl => true,
+      .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => true,
       else => false,
     };
   }
@@ -73,7 +67,11 @@ pub const Translate = struct {
     return self.tree.tokenTag(tkn) == .l_brace;
   }
 
-  fn hasTerminator(self: *Self, n: Node.Index, terms: []const std.zig.Token.Tag) ?Ast.TokenIndex {
+  fn hasTerminator(
+    self: *Self,
+    n: Node.Index,
+    terms: []const std.zig.Token.Tag,
+  ) ?Ast.TokenIndex {
     const tkn = self.tree.lastToken(n) + 1;
     const tag = self.tree.tokenTag(tkn);
     for (terms) |term| {
@@ -109,18 +107,27 @@ pub const Translate = struct {
       // lowest is assign
       .bool_or => 1,
       .bool_and => 2,
-      .bang_equal, .equal_equal, .less_or_equal,
-      .less_than, .greater_or_equal, .greater_than => 3,
+      .bang_equal,
+      .equal_equal,
+      .less_or_equal,
+      .less_than,
+      .greater_or_equal,
+      .greater_than => 3,
       .bit_or, .bit_xor, .bit_and, .@"orelse", .@"catch" => 4,
       .shl_sat, .shl, .shr => 5,
       .add, .add_wrap, .add_sat, .array_cat, .sub, .sub_wrap, .sub_sat => 6,
       .div, .mul, .mul_sat, .mul_wrap, .mod, .array_mult, .merge_error_sets => 7,
-      .negation, .negation_wrap, .address_of, .bit_not, .bool_not, .optional_type => 8,
+      .negation,
+      .negation_wrap,
+      .address_of,
+      .bit_not,
+      .bool_not,
+      .optional_type => 8,
       else => 0,
     };
   }
 
-  inline fn _token(self: *Self, i: Ast.TokenIndex) [] const u8 {
+  inline fn _token(self: *Self, i: Ast.TokenIndex) []const u8 {
     return self.tree.tokenSlice(i);
   }
 
@@ -147,7 +154,11 @@ pub const Translate = struct {
   }
 
   /// check if we can format a container's members inline
-  fn canFormatMembersInline(self: *Self, lbrace: Ast.TokenIndex, rbrace: Ast.TokenIndex) bool {
+  fn canFormatMembersInline(
+    self: *Self,
+    lbrace: Ast.TokenIndex,
+    rbrace: Ast.TokenIndex,
+  ) bool {
     const start = self.tree.tokenStart(lbrace);
     const end = self.tree.tokenStart(rbrace);
     if (std.mem.find(u8, self.tree.source[start..end], "//") != null) {
@@ -156,10 +167,14 @@ pub const Translate = struct {
     var tkn = lbrace;
     while (tkn != rbrace) : (tkn += 1) {
       switch (self.tree.tokenTag(tkn)) {
-        .keyword_fn, .keyword_pub,
-        .keyword_inline, .keyword_noinline,
-        .keyword_union, .keyword_struct,
-        .keyword_extern, .keyword_test,
+        .keyword_fn,
+        .keyword_pub,
+        .keyword_inline,
+        .keyword_noinline,
+        .keyword_union,
+        .keyword_struct,
+        .keyword_extern,
+        .keyword_test,
         .multiline_string_literal_line => return false,
         else => {},
       }
@@ -175,7 +190,11 @@ pub const Translate = struct {
   /// check whether this token has a trailing comment
   fn tknHasTC(self: *Self, tkn: Ast.TokenIndex) bool {
     const tag = self.tree.tokenTag(tkn);
-    if (tag == .multiline_string_literal_line or (tag != .eof and self.tree.tokenTag(tkn + 1) == .multiline_string_literal_line)) {
+    if (
+      tag == .multiline_string_literal_line
+        or (tag != .eof
+          and self.tree.tokenTag(tkn + 1) == .multiline_string_literal_line)
+    ) {
       return true;
     }
     if (tkn != 0 and self.tkn_cache.tkn == tkn) {
@@ -183,7 +202,7 @@ pub const Translate = struct {
     }
     const start = self.tree.tokenStart(tkn) + self._token(tkn).len;
     const end = self.tree.tokenStart(tkn + 1);
-    return std.mem.find(u8, self.tree.source[start .. end], "//") != null;
+    return std.mem.find(u8, self.tree.source[start..end], "//") != null;
   }
 
   /// check whether this token has no trailing comment
@@ -193,7 +212,8 @@ pub const Translate = struct {
 
   inline fn isKwdTkn(self: *Self, tkn: Ast.TokenIndex, skip_comptime: bool) bool {
     var tag = self.tree.tokenTag(tkn);
-    if (skip_comptime and tag == .keyword_comptime) tag = self.tree.tokenTag(tkn + 1);
+    if (skip_comptime and tag == .keyword_comptime)
+      tag = self.tree.tokenTag(tkn + 1);
     return std.mem.startsWith(u8, @tagName(tag), "keyword");
   }
 
@@ -218,7 +238,7 @@ pub const Translate = struct {
     assert(self.tree.tokenTag(rbrack) == .r_paren);
     return rbrack;
   }
-  
+
   /// simple abstraction over call chains
   const Chain = union(enum) {
     ident: Ast.TokenIndex,
@@ -230,7 +250,7 @@ pub const Translate = struct {
         chain: *Chain,
         node: Node.Index,
       },
-      params: []const Node.Index
+      params: []const Node.Index,
     },
     expr: Node.Index,
     const TokenIndexList = std.ArrayList(Ast.TokenIndex);
@@ -242,7 +262,7 @@ pub const Translate = struct {
         .call => |call| {
           if (call.params.len > 0) {
             return ts.tree.firstToken(call.params[0]) - 1;
-          } 
+          }
           switch (call.expr) {
             .tkn => |tkn| return tkn + 1,
             .tkns => |tkns| return tkns[tkns.len - 1] + 1,
@@ -292,7 +312,10 @@ pub const Translate = struct {
 
   const ChainList = std.ArrayList(Chain);
 
-  fn getCallOneInfo(self: *Self, _n: Node.Index) struct{Node.Index, []Node.Index} {
+  fn getCallOneInfo(
+    self: *Self,
+    _n: Node.Index,
+  ) struct { Node.Index, []Node.Index } {
     const fn_expr, const arg = self.tree.nodeData(_n).node_and_opt_node;
     var args = NodeIndexList.empty;
     if (arg.unwrap()) |p| {
@@ -309,23 +332,26 @@ pub const Translate = struct {
       .call_one, .call_one_comma => {
         const fn_expr, const params = self.getCallOneInfo(_n);
         return Ast.full.Call{
-          .ast = .{
-            .fn_expr = fn_expr,
-            .params = params,
-            .lparen = undefined,
-          },
+          .ast = .{.fn_expr = fn_expr, .params = params, .lparen = undefined},
         };
       },
       else => unreachable,
     }
   }
 
-  fn chainExprtoChainCall(self: *Self, expr: Chain, call: Ast.full.Call, list: *ChainList) void {
+  fn chainExprtoChainCall(
+    self: *Self,
+    expr: Chain,
+    call: Ast.full.Call,
+    list: *ChainList,
+  ) void {
     switch (expr) {
       .idents => |lhs| {
-        const c = Chain{.call = .{.expr = .{.tkns = lhs}, .params = call.ast.params}};
+        const c = Chain{
+          .call = .{.expr = .{.tkns = lhs}, .params = call.ast.params},
+        };
         util.listAppend(c, list, self.al);
-      }, 
+      },
       .ident => |idx| {
         const c = Chain{.call = .{.expr = .{.tkn = idx}, .params = call.ast.params}};
         util.listAppend(c, list, self.al);
@@ -334,7 +360,7 @@ pub const Translate = struct {
         const e = util.box(expr, self.al);
         const c = Chain{.call = .{.expr = .{.chain = e}, .params = call.ast.params}};
         util.listAppend(c, list, self.al);
-      }
+      },
     }
   }
 
@@ -397,7 +423,7 @@ pub const Translate = struct {
           else => {
             const ident = Chain{.ident = _rhs};
             util.listAppend(ident, list, self.al);
-          }
+          },
         }
       },
       else => {
@@ -541,11 +567,7 @@ pub const Translate = struct {
         rest.append(doc);
       }
       split.indent(rest.finish())._();
-      const db = self.db.seqb().ifsplit(
-        id,
-        split.finishSeq(),
-        flat.finishSeq(),
-      );
+      const db = self.db.seqb().ifsplit(id, split.finishSeq(), flat.finishSeq());
       return self.db.groupi(id, db.finish());
     }
     return null;
@@ -584,29 +606,50 @@ pub const Translate = struct {
       rest.append(doc);
     }
     split.indent(rest.finish())._();
-    const db = self.db.seqb().ifsplit(
-      id,
-      split.finishSeq(),
-      flat.finishSeq(),
-    );
+    const db = self.db.seqb().ifsplit(id, split.finishSeq(), flat.finishSeq());
     return self.db.groupi(id, db.finish());
   }
 
-  const Binary = struct {
-    op: ?Node.Index,
-    node: Node.Index,
-  };
+  const Binary = struct { op: ?Node.Index, node: Node.Index };
 
   const BinaryList = std.ArrayList(Binary);
 
-  fn _collectBinaryExprStep(self: *Self, n: Node.Index, prev_op: Node.Tag, list: *BinaryList) bool {
+  fn _collectBinaryExprStep(
+    self: *Self,
+    n: Node.Index,
+    prev_op: Node.Tag,
+    list: *BinaryList,
+  ) bool {
     const curr_op = self.tree.nodeTag(n);
     switch (curr_op) {
-      .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
-      .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
-      .bool_or, .div, .equal_equal, .greater_or_equal, .greater_than,
-      .less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
-      .mul_sat, .sub, .sub_wrap, .sub_sat => {
+      .add,
+      .add_wrap,
+      .add_sat,
+      .array_cat,
+      .array_mult,
+      .bang_equal,
+      .bit_and,
+      .bit_or,
+      .shl,
+      .shl_sat,
+      .shr,
+      .bit_xor,
+      .bool_and,
+      .bool_or,
+      .div,
+      .equal_equal,
+      .greater_or_equal,
+      .greater_than,
+      .less_or_equal,
+      .less_than,
+      .merge_error_sets,
+      .mod,
+      .mul,
+      .mul_wrap,
+      .mul_sat,
+      .sub,
+      .sub_wrap,
+      .sub_sat => {
         if (tagPrec(prev_op) == tagPrec(curr_op)) {
           const lhs, const rhs = self.tree.nodeData(n).node_and_node;
           const a = self._collectBinaryExprStep(lhs, curr_op, list);
@@ -622,14 +665,14 @@ pub const Translate = struct {
       else => {
         util.listAppend(Binary{.op = null, .node = n}, list, self.al);
         return true;
-      }
+      },
     }
     return false;
   }
 
   fn tBinaryExpr(self: *Self, n: Node.Index, tag: Node.Tag) *Doc {
     var list: BinaryList = .empty;
-    const all_same_precs = self._collectBinaryExprStep(n, tag,  &list);
+    const all_same_precs = self._collectBinaryExprStep(n, tag, &list);
     const nodes = list.items;
     const first = nodes[0];
     assert(first.op == null);
@@ -705,8 +748,12 @@ pub const Translate = struct {
       // NOTE: we specialize the formatting for `rhs` when it's a block
       const lbrace = self.tree.nodeMainToken(rhs);
       const rbrace = self.tree.lastToken(rhs);
-      if (self.tree.tokenTag(lbrace - 1) == .colon and self.tree.tokenTag(lbrace - 2) == .identifier) {
-        tmp.appends(self.ttknWithTL(lbrace - 2)).append(self.ttknWithSTL(lbrace - 1));
+      if (
+        self.tree.tokenTag(lbrace - 1) == .colon
+          and self.tree.tokenTag(lbrace - 2) == .identifier
+      ) {
+        tmp.appends(self.ttknWithTL(lbrace - 2))
+          .append(self.ttknWithSTL(lbrace - 1));
         tmp.spaceIf(self.tknHasNoTC(lbrace - 1))._();
       }
       var buf: [2]Node.Index = undefined;
@@ -722,7 +769,13 @@ pub const Translate = struct {
         else => unreachable,
       };
       const has_stmts = stmts.len > 0;
-      const b = self.tBlock(lbrace, rbrace, tmp, stmts, .{.ignore_rbrace = has_stmts, .group = false});
+      const b = self.tBlock(
+        lbrace,
+        rbrace,
+        tmp,
+        stmts,
+        .{.ignore_rbrace = has_stmts, .group = false},
+      );
       if (has_stmts) {
         sb.indent(b.seq.docs).hardline().append(self.tRbrace(rbrace, true));
       } else {
@@ -746,25 +799,34 @@ pub const Translate = struct {
     assert(self.tree.tokenTag(lbrack) == .l_paren);
     assert(self.tree.tokenTag(rbrack) == .r_paren);
     const lb = self._ttkn(lbrack, .{.add_only_trailing_comment = true});
-    const top_comments = self.getNextLineComments(lbrack, params.len != 0 or attr_doc != null);
+    const top_comments = self.getNextLineComments(
+      lbrack,
+      params.len != 0 or attr_doc != null,
+    );
     const lb_has_trailing = self.tknHasTC(lbrack);
     sb.append(lb);
-    const result =
-      if (attr_doc) |doc| blk: {
-        var tmp = self.db.seqb();
-        if (top_comments) |c_doc| {
-          tmp.declline().append(c_doc);
-        } else if (lb_has_trailing) {
-          tmp.declline()._();
-        } else {
-          tmp.softline()._();
-        }
-        tmp.append(doc);
-        const has_comment = top_comments != null or lb_has_trailing;
-        break :blk CallResult{.sb = tmp, .has_comment = has_comment, .softline = true};
+    const result = if (attr_doc) |doc| blk: {
+      var tmp = self.db.seqb();
+      if (top_comments) |c_doc| {
+        tmp.declline().append(c_doc);
+      } else if (lb_has_trailing) {
+        tmp.declline()._();
+      } else {
+        tmp.softline()._();
       }
-      else if (fn_tkn) |ftkn| self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
-      else self.tCallArgs(id, params, lb_has_trailing, top_comments, can_add_trailing_comma);
+      tmp.append(doc);
+      const has_comment = top_comments != null or lb_has_trailing;
+      break :blk CallResult{.sb = tmp, .has_comment = has_comment, .softline = true};
+    } else if (fn_tkn) |ftkn|
+      self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
+    else
+      self.tCallArgs(
+        id,
+        params,
+        lb_has_trailing,
+        top_comments,
+        can_add_trailing_comma,
+      );
     var sb_args = result.sb;
     const should_softline = result.softline;
     const args_has_comment = result.has_comment;
@@ -798,7 +860,7 @@ pub const Translate = struct {
     return self.db.groupi(id, sb.finish());
   }
 
-  const CallResult = struct{sb: *SeqBuilder, has_comment: bool, softline: bool};
+  const CallResult = struct { sb: *SeqBuilder, has_comment: bool, softline: bool };
 
   fn tCallArgs(
     self: *Self,
@@ -849,7 +911,7 @@ pub const Translate = struct {
           arg_has_comment = true;
         } else if (can_add_trailing_comma) {
           sb_args.ifsplit(id, self.db.text(","), self.db.empty())._();
-        } 
+        }
       } else if (can_add_trailing_comma) {
         if (!arg_has_comment) {
           // add trailing comma for complex args or if we break
@@ -868,7 +930,11 @@ pub const Translate = struct {
         sb_args.docs.items[pos] = self.db.empty();
       }
     }
-    return .{.sb = sb_args, .has_comment = arg_has_comment, .softline = should_softline};
+    return .{
+      .sb = sb_args,
+      .has_comment = arg_has_comment,
+      .softline = should_softline,
+    };
   }
 
   // NOTE: Keep this in sync with tCallArgs()
@@ -888,7 +954,7 @@ pub const Translate = struct {
     const comments = self._comments;
     var softline_pos: ?usize = null;
     // NOTE: params like `...` and `anytype` are not stored in params, however,
-    //   we'd have encountered `anytype` or `...` before hitting a comma (,) 
+    //   we'd have encountered `anytype` or `...` before hitting a comma (,)
     var prm_has_comment = top_comments != null or params.len > 0 and lb_has_trailing;
     if (top_comments) |doc| {
       sb_prms.declline().append(doc);
@@ -920,11 +986,11 @@ pub const Translate = struct {
         .identifier => {
           const prev = self.tree.tokenTag(tkn - 1);
           if (
-            prev == .l_paren or
-            prev == .comma or
-            prev == .doc_comment or
-            prev == .keyword_comptime or
-            prev == .keyword_noalias
+            prev == .l_paren
+              or prev == .comma
+              or prev == .doc_comment
+              or prev == .keyword_comptime
+              or prev == .keyword_noalias
           ) {
             tmp.append(self.ttknWithSTL(tkn));
           } else if (i < params.len) {
@@ -980,7 +1046,7 @@ pub const Translate = struct {
             tkn = self.tree.lastToken(p);
             i += 1;
           }
-        }
+        },
       }
     }
     self._in_call_args -= 1;
@@ -1000,7 +1066,11 @@ pub const Translate = struct {
         sb_prms.docs.items[pos] = self.db.empty();
       }
     }
-    return .{.sb = sb_prms, .has_comment = prm_has_comment, .softline = should_softline};
+    return .{
+      .sb = sb_prms,
+      .has_comment = prm_has_comment,
+      .softline = should_softline,
+    };
   }
 
   fn tVarDeclProto(self: *Self, vd: Ast.full.VarDecl) *SeqBuilder {
@@ -1076,7 +1146,10 @@ pub const Translate = struct {
     var curr = if (fn_tkn > 0) fn_tkn - 1 else fn_tkn;
     loop: while (true) : (curr -= 1) {
       switch (self.tree.tokenTag(curr)) {
-        .keyword_inline, .keyword_export, .keyword_pub, .keyword_noinline,
+        .keyword_inline,
+        .keyword_export,
+        .keyword_pub,
+        .keyword_noinline,
         .keyword_extern => {
           sb.spaceIf(self.tknHasNoTC(curr))._();
           sb.append(self.ttknWithSTL(curr));
@@ -1084,7 +1157,7 @@ pub const Translate = struct {
         else => {
           std.mem.reverse(*Doc, sb.docs.items);
           break :loop;
-        }
+        },
       }
       if (curr == 0) {
         std.mem.reverse(*Doc, sb.docs.items);
@@ -1145,7 +1218,12 @@ pub const Translate = struct {
     return self.db.groupi(id, sb.finish());
   }
 
-  fn tBlockMembers(self: *Self, sb: *SeqBuilder, members: []const Node.Index, add_last_line: bool) void {
+  fn tBlockMembers(
+    self: *Self,
+    sb: *SeqBuilder,
+    members: []const Node.Index,
+    add_last_line: bool,
+  ) void {
     for (members, 1..) |_n, i| {
       self._tDocComment(sb, self.tree.firstToken(_n));
       sb.append(self.t(_n));
@@ -1170,12 +1248,18 @@ pub const Translate = struct {
     }
   }
 
-  fn tRbrace(self: *Self, rbrace: Ast.TokenIndex, add_rbrace_trailing_line: bool) *Doc {
+  fn tRbrace(
+    self: *Self,
+    rbrace: Ast.TokenIndex,
+    add_rbrace_trailing_line: bool,
+  ) *Doc {
     // when `}` has a comment, we add a trailing line to the comment, only if
     // the next token is a keyword (i.e. the start of a new decl).
     if (add_rbrace_trailing_line) {
       const next_tag = self.tree.tokenTag(rbrace + 1);
-      const next_is_kwd = next_tag != .keyword_else and (next_tag == .eof or std.mem.startsWith(u8, @tagName(next_tag), "keyword"));
+      const next_is_kwd = next_tag != .keyword_else
+        and (next_tag == .eof
+          or std.mem.startsWith(u8, @tagName(next_tag), "keyword"));
       if (next_is_kwd) {
         return self.ttknWithTL(rbrace);
       }
@@ -1192,9 +1276,9 @@ pub const Translate = struct {
     add_top_separator_line: bool = true,
     /// add trailing line after '}'
     add_rbrace_trailing_line: bool = true,
-    /// only translate the lbrace '{' and its associated comments 
+    /// only translate the lbrace '{' and its associated comments
     lbrace_only: bool = false,
-    /// translate the block but do not add '}' and its associated comments 
+    /// translate the block but do not add '}' and its associated comments
     ignore_rbrace: bool = false,
   };
 
@@ -1210,7 +1294,10 @@ pub const Translate = struct {
   ) *Doc {
     assert(self.tree.tokenTag(lbrace) == .l_brace);
     assert(self.tree.tokenTag(rbrace) == .r_brace);
-    const lb = self._ttkn(lbrace, .{.add_only_trailing_comment = true, .add_trailing_line_for_comment = false});
+    const lb = self._ttkn(
+      lbrace,
+      .{.add_only_trailing_comment = true, .add_trailing_line_for_comment = false},
+    );
     sb.append(lb);
     const top_comments = self.getNextLineComments(lbrace, stmts.len != 0);
     var tmp = self.db.seqb();
@@ -1225,7 +1312,13 @@ pub const Translate = struct {
     }
     self.tBlockMembers(tmp, stmts, false);
     const rb = self.tRbrace(rbrace, cfg.add_rbrace_trailing_line);
-    if (!cfg.ignore_rbrace and cfg.combine_braces_if_empty and self.decouple_empty_block_braces == 0 and tmp.isEmpty() and self.tknHasNoTC(lbrace)) {
+    if (
+      !cfg.ignore_rbrace
+        and cfg.combine_braces_if_empty
+        and self.decouple_empty_block_braces == 0
+        and tmp.isEmpty()
+        and self.tknHasNoTC(lbrace)
+    ) {
       _ = tmp.finish();
       return sb.appends(rb).finishSeq();
     }
@@ -1237,7 +1330,12 @@ pub const Translate = struct {
     return if (cfg.group) self.db.group(sb.finish()) else sb.finishSeq();
   }
 
-  fn tContainerDeclInline(self: *Self, id: u32, sb: *SeqBuilder, members: []const Node.Index) void {
+  fn tContainerDeclInline(
+    self: *Self,
+    id: u32,
+    sb: *SeqBuilder,
+    members: []const Node.Index,
+  ) void {
     for (members, 0..) |n, i| {
       if (i > 0) {
         sb.text(",").normline()._();
@@ -1266,7 +1364,7 @@ pub const Translate = struct {
         .keyword_packed, .keyword_extern => {
           sb.appends(self.ttknWithSTL(layout)).spaceIf(self.tknHasNoTC(layout))._();
         },
-        else => {}
+        else => {},
       }
     }
     sb.append(self.ttkn(container));
@@ -1300,7 +1398,7 @@ pub const Translate = struct {
     while (self.tree.tokenTag(lbrace) != .l_brace) lbrace += 1;
     var rbrace: Ast.TokenIndex = undefined;
     if (members.len != 0) {
-      rbrace = self.tree.lastToken(members[members.len - 1]); 
+      rbrace = self.tree.lastToken(members[members.len - 1]);
       while (self.tree.tokenTag(rbrace) != .r_brace) rbrace += 1;
     } else {
       rbrace = lbrace + 1;
@@ -1325,7 +1423,9 @@ pub const Translate = struct {
       _ = tmp.finish(); // flush unneeded normline
       sb.decllineIf(self.tknHasTC(lbrace)).append(self.ttkn(rbrace));
       return self.db.groupi(id, sb.finish());
-    } else if (comments == self._comments and self.canFormatMembersInline(lbrace, rbrace)) {
+    } else if (
+      comments == self._comments and self.canFormatMembersInline(lbrace, rbrace)
+    ) {
       self.tContainerDeclInline(id, tmp, members);
       sb.indent(tmp.finish()).normline().append(self.ttkn(rbrace));
       return self.db.groupi(id, sb.finish());
@@ -1349,8 +1449,17 @@ pub const Translate = struct {
         if (tt == .comma) {
           tmp.decllineIf(self.tknHasTC(tkn - 1))._();
           if (i != members.len) {
-            tmp.append(self._ttkn(tkn, .{.add_trailing_line_for_comment = true, .add_only_lines_if_no_comment = true}));
-            if (self.tknHasNoTC(tkn)) tmp.ifsplit(id, self.db.empty(), self.db.space())._();
+            tmp.append(
+              self._ttkn(
+                tkn,
+                .{
+                  .add_trailing_line_for_comment = true,
+                  .add_only_lines_if_no_comment = true,
+                },
+              ),
+            );
+            if (self.tknHasNoTC(tkn))
+              tmp.ifsplit(id, self.db.empty(), self.db.space())._();
           } else {
             tmp.append(self.ttkn(tkn));
           }
@@ -1368,14 +1477,22 @@ pub const Translate = struct {
       }
     }
     const tag = self.tree.tokenTag(term_tkn);
-    const add_trailing_comma = tag != .comma and tag != .semicolon and tag != .r_brace and self.tknHasNoTC(term_tkn);
+    const add_trailing_comma = tag != .comma
+      and tag != .semicolon
+      and tag != .r_brace
+      and self.tknHasNoTC(term_tkn);
     if (add_trailing_comma) tmp.text(",")._();
     self.updateLinesToDecllines2(tmp);
     sb.indent(tmp.finish()).declline().append(self.ttkn(rbrace));
     return self.db.groupi(id, sb.finish());
   }
 
-  fn tErrorSetDeclInline(self: *Self, id: u32, sb: *SeqBuilder, members: []const Ast.TokenIndex) void {
+  fn tErrorSetDeclInline(
+    self: *Self,
+    id: u32,
+    sb: *SeqBuilder,
+    members: []const Ast.TokenIndex,
+  ) void {
     for (members, 0..) |n, i| {
       if (i > 0) {
         sb.text(",").normline()._();
@@ -1415,7 +1532,9 @@ pub const Translate = struct {
       _ = tmp.finish(); // flush unneeded normline
       sb.decllineIf(self.tknHasTC(lbrace)).append(self.ttkn(rbrace));
       return self.db.groupi(id, sb.finish());
-    } else if (comments == self._comments and self.canFormatMembersInline(lbrace, rbrace)) {
+    } else if (
+      comments == self._comments and self.canFormatMembersInline(lbrace, rbrace)
+    ) {
       self.tErrorSetDeclInline(id, tmp, members);
       sb.indent(tmp.finish()).normline().append(self.ttkn(rbrace));
       return self.db.groupi(id, sb.finish());
@@ -1428,8 +1547,17 @@ pub const Translate = struct {
       if (tt == .comma) {
         tmp.decllineIf(self.tknHasTC(tkn - 1))._();
         if (i != members.len) {
-          tmp.append(self._ttkn(tkn, .{.add_trailing_line_for_comment = true, .add_only_lines_if_no_comment = true}));
-          if (self.tknHasNoTC(tkn)) tmp.ifsplit(id, self.db.empty(), self.db.space())._();
+          tmp.append(
+            self._ttkn(
+              tkn,
+              .{
+                .add_trailing_line_for_comment = true,
+                .add_only_lines_if_no_comment = true,
+              },
+            ),
+          );
+          if (self.tknHasNoTC(tkn))
+            tmp.ifsplit(id, self.db.empty(), self.db.space())._();
         } else {
           tmp.append(self.ttkn(tkn));
         }
@@ -1446,20 +1574,25 @@ pub const Translate = struct {
       }
     }
     const tag = self.tree.tokenTag(term_tkn);
-    const add_trailing_comma = tag != .comma and tag != .semicolon and tag != .r_brace and self.tknHasNoTC(term_tkn);
+    const add_trailing_comma = tag != .comma
+      and tag != .semicolon
+      and tag != .r_brace
+      and self.tknHasNoTC(term_tkn);
     if (add_trailing_comma) tmp.text(",")._();
     self.updateLinesToDecllines2(tmp);
     sb.indent(tmp.finish()).declline().append(self.ttkn(rbrace));
     return self.db.groupi(id, sb.finish());
   }
 
-  fn tOpenContainerDecl(
-    self: *Self,
-    members: []const Node.Index,
-  ) *Doc {
+  fn tOpenContainerDecl(self: *Self, members: []const Node.Index) *Doc {
     // `struct {}`, `union {}`, `opaque {}`, `enum {}`.
     var sb = self.db.seqb();
-    self._tcomment(sb, 0, self.tree.tokenStart(0), .{.add_trailing_line_for_comment = true});
+    self._tcomment(
+      sb,
+      0,
+      self.tree.tokenStart(0),
+      .{.add_trailing_line_for_comment = true},
+    );
     self.tBlockMembers(sb, members, true);
     // if we're still in no-fmt mode, write the source from where it was last disabled
     if (self.fmt_disabled_pos) |pos| {
@@ -1485,7 +1618,9 @@ pub const Translate = struct {
         const tkn = self.tree.firstToken(_n) - 1;
         assert(self.tree.tokenTag(tkn) == .colon);
         sb.decllineIf(self.tknHasTC(tkn - 1))._();
-        sb.appends(self.ttknWithSTL(tkn)).spaceIf(self.tknHasNoTC(tkn)).append(self.t(_n));
+        sb.appends(self.ttknWithSTL(tkn))
+          .spaceIf(self.tknHasNoTC(tkn))
+          .append(self.t(_n));
       }
     } else if (cf.ast.type_expr.unwrap()) |_n| {
       sb.append(self.t(_n));
@@ -1543,14 +1678,16 @@ pub const Translate = struct {
     if (wl.ast.cont_expr.unwrap()) |cnt| {
       tmp = self.db.seqb();
       const lbrack_ = self.tree.firstToken(cnt) - 1;
-      const rbrack_ = self.tree.lastToken(cnt) + 1; 
+      const rbrack_ = self.tree.lastToken(cnt) + 1;
       tmp.append(self.ttknWithSTL(lbrack_ - 1)); // ':'
       tmp.spaceIf(self.tknHasNoTC(lbrack_ - 1))._();
       self.tCall(tmp, id, lbrack_, rbrack_, &.{cnt}, null, null, false);
       const cont_d = tmp.finish();
       var split = flat_b.copy();
       if (self.tknHasNoTC(lbrack_ - 2)) { // before ':'
-        flat_b.append(self.db.group(self.db.seqb().space().extends(cont_d).finish()));
+        flat_b.append(
+          self.db.group(self.db.seqb().space().extends(cont_d).finish()),
+        );
         split.softline().group(cont_d)._();
       } else {
         flat_b.declline().group(cont_d)._();
@@ -1566,13 +1703,19 @@ pub const Translate = struct {
     var then_is_block = false;
     if (wl.ast.else_expr.unwrap()) |els| {
       const is_empty_block = self.isEmptyBlock(wl.ast.then_expr);
-      if (is_empty_block) { self.decouple_empty_block_braces += 1; }
-      defer if (is_empty_block) { self.decouple_empty_block_braces -= 1; };
+      if (is_empty_block) {
+        self.decouple_empty_block_braces += 1;
+      }
+      defer if (is_empty_block) {
+        self.decouple_empty_block_braces -= 1;
+      };
       const then_expr = self.t(wl.ast.then_expr);
       const m_tkn = self.tree.nodeMainToken(wl.ast.then_expr);
       const last_has_tc = self.tknHasTC(last_tkn);
-      const before_if_tkn_is_else_tkn = self.tree.tokenTag(wl.ast.while_token - 1) == .keyword_else;
-      const after_else_tkn_is_if_tkn = self.tree.tokenTag(wl.else_token + 1) == .keyword_if;
+      const before_if_tkn_is_else_tkn = self.tree.tokenTag(wl.ast.while_token - 1)
+        == .keyword_else;
+      const after_else_tkn_is_if_tkn = self.tree.tokenTag(wl.else_token + 1)
+        == .keyword_if;
       // we break irrespective of comments when we're in an else-if expression
       const in_elif_expr = before_if_tkn_is_else_tkn or after_else_tkn_is_if_tkn;
       if (self.isBlock(m_tkn)) {
@@ -1604,8 +1747,12 @@ pub const Translate = struct {
       const else_tkn = last_tkn + 1;
       assert(else_tkn == wl.else_token);
       const is_empty_block2 = self.isEmptyBlock(els);
-      if (is_empty_block2) { self.decouple_empty_block_braces += 1; }
-      defer if (is_empty_block2) { self.decouple_empty_block_braces -= 1; };
+      if (is_empty_block2) {
+        self.decouple_empty_block_braces += 1;
+      }
+      defer if (is_empty_block2) {
+        self.decouple_empty_block_braces -= 1;
+      };
       const else_expr = self.t(els);
       const tkn = self.tree.nodeMainToken(els);
       if (then_is_block or self.isBlock(tkn) or in_elif_expr) {
@@ -1628,7 +1775,8 @@ pub const Translate = struct {
           }
           sb.append(else_expr);
         } else {
-          const in_elif_expr_end = before_if_tkn_is_else_tkn and !after_else_tkn_is_if_tkn;
+          const in_elif_expr_end = before_if_tkn_is_else_tkn
+            and !after_else_tkn_is_if_tkn;
           var els_sb = self.db.seqb();
           els_sb.declline().append(else_doc);
           if (in_elif_expr_end) {
@@ -1643,7 +1791,7 @@ pub const Translate = struct {
             els_sb.append(self.ttkn(last_tkn));
             if (!in_elif_expr_end) {
               els_sb.spaceOrDeclline(self.tknHasNoTC(last_tkn));
-            } 
+            }
           }
           if (in_elif_expr_end) {
             els_sb.indent(self.db.seqb().declline().appends(else_expr).finish())._();
@@ -1705,10 +1853,14 @@ pub const Translate = struct {
         sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
       }
     } else {
-      const is_if = self.tree.tokenTag(wl.ast.while_token) == .keyword_if; 
+      const is_if = self.tree.tokenTag(wl.ast.while_token) == .keyword_if;
       const is_empty_block = is_if and self.isEmptyBlock(wl.ast.then_expr);
-      if (is_empty_block) { self.decouple_empty_block_braces += 1; }
-      defer if (is_empty_block) { self.decouple_empty_block_braces -= 1; };
+      if (is_empty_block) {
+        self.decouple_empty_block_braces += 1;
+      }
+      defer if (is_empty_block) {
+        self.decouple_empty_block_braces -= 1;
+      };
       const tkn = self.tree.nodeMainToken(wl.ast.then_expr);
       const then_expr = self.t(wl.ast.then_expr);
       if (self.isBlock(tkn)) {
@@ -1719,7 +1871,9 @@ pub const Translate = struct {
         var flat = self.db.seqb();
         var split = self.db.seqb();
         var flat_doc: *Doc = undefined;
-        if (wl_top_has_tc or self.tknHasTC(self.tree.firstToken(wl.ast.then_expr) - 1)) {
+        if (
+          wl_top_has_tc or self.tknHasTC(self.tree.firstToken(wl.ast.then_expr) - 1)
+        ) {
           flat.declline().append(then_expr);
           split.declline().append(then_expr);
           flat_doc = self.db.indent(flat.finish());
@@ -1747,7 +1901,7 @@ pub const Translate = struct {
     tmp.append(self.ttknWithSTL(fl.ast.for_token));
     tmp.spaceIf(self.tknHasNoTC(fl.ast.for_token))._();
     const lbrack = fl.ast.for_token + 1;
-    const rbrack = self.tree.lastToken(fl.ast.inputs[fl.ast.inputs.len - 1]) + 1; 
+    const rbrack = self.tree.lastToken(fl.ast.inputs[fl.ast.inputs.len - 1]) + 1;
     const id = d.genGroupID();
     self.tCall(tmp, id, lbrack, rbrack, fl.ast.inputs, null, null, false);
     sb.group(tmp.finish())._();
@@ -1775,8 +1929,12 @@ pub const Translate = struct {
     var then_is_block = false;
     if (fl.ast.else_expr.unwrap()) |els| {
       const is_empty_block = self.isEmptyBlock(fl.ast.then_expr);
-      if (is_empty_block) { self.decouple_empty_block_braces += 1; }
-      defer if (is_empty_block) { self.decouple_empty_block_braces -= 1; };
+      if (is_empty_block) {
+        self.decouple_empty_block_braces += 1;
+      }
+      defer if (is_empty_block) {
+        self.decouple_empty_block_braces -= 1;
+      };
       const then_expr = self.t(fl.ast.then_expr);
       const m_tkn = self.tree.nodeMainToken(fl.ast.then_expr);
       const last_has_tc = self.tknHasTC(last_tkn);
@@ -1804,8 +1962,12 @@ pub const Translate = struct {
       const else_tkn = last_tkn + 1;
       assert(self.tree.tokenTag(else_tkn) == .keyword_else);
       const is_empty_block2 = self.isEmptyBlock(els);
-      if (is_empty_block2) { self.decouple_empty_block_braces += 1; }
-      defer if (is_empty_block2) { self.decouple_empty_block_braces -= 1; };
+      if (is_empty_block2) {
+        self.decouple_empty_block_braces += 1;
+      }
+      defer if (is_empty_block2) {
+        self.decouple_empty_block_braces -= 1;
+      };
       const else_expr = self.t(els);
       const tkn = self.tree.nodeMainToken(els);
       if (then_is_block or self.isBlock(tkn)) {
@@ -1856,7 +2018,10 @@ pub const Translate = struct {
         var flat = self.db.seqb();
         var split = self.db.seqb();
         var flat_doc: *Doc = undefined;
-        if (!fl_top_has_tc and self.tknHasNoTC(self.tree.firstToken(fl.ast.then_expr) - 1)) {
+        if (
+          !fl_top_has_tc
+            and self.tknHasNoTC(self.tree.firstToken(fl.ast.then_expr) - 1)
+        ) {
           flat.space().append(then_expr);
           split.softline().append(then_expr);
           flat_doc = flat.finishSeq();
@@ -1986,7 +2151,7 @@ pub const Translate = struct {
   const NodeOrToken = union(enum) {
     node: Node.Index,
     token: Ast.TokenIndex,
-    tokens: struct{Ast.TokenIndex, Ast.TokenIndex},
+    tokens: struct { Ast.TokenIndex, Ast.TokenIndex },
   };
 
   fn tArrayType(
@@ -1995,7 +2160,7 @@ pub const Translate = struct {
     elem: ?NodeOrToken,
     sentinel: ?Node.Index,
     elem_type: ?NodeOrToken,
-  ) struct{*Doc, Ast.TokenIndex} {
+  ) struct { *Doc, Ast.TokenIndex } {
     assert(self.tree.tokenTag(lbrack) == .l_bracket);
     const comments = self._comments;
     const lb = self._ttkn(lbrack, .{.add_only_trailing_comment = true});
@@ -2026,7 +2191,7 @@ pub const Translate = struct {
         .tokens => |tkns| {
           elems.append(self.ttknWithSTL(tkns.@"0"));
           elems.append(self.ttkn(tkns.@"1"));
-        }
+        },
       }
     }
     if (sentinel) |s| {
@@ -2070,7 +2235,12 @@ pub const Translate = struct {
     var last_tkn: Ast.TokenIndex = tkn;
     switch (ty.size) {
       .c => {
-        const doc, const _tkn = self.tArrayType(tkn, .{.tokens = .{tkn + 1, tkn + 2}}, null, null);
+        const doc, const _tkn = self.tArrayType(
+          tkn,
+          .{.tokens = .{tkn + 1, tkn + 2}},
+          null,
+          null,
+        );
         sb.append(doc);
         last_tkn = _tkn;
       },
@@ -2081,7 +2251,10 @@ pub const Translate = struct {
         // in such a relationship. If so, skip rendering anything for
         // this pointer type and rely on the child to render our asterisk
         // as well when it renders the ** token.
-        if (self.tree.tokenTag(tkn) == .asterisk_asterisk and tkn == self.tree.nodeMainToken(ty.ast.child_type)) {
+        if (
+          self.tree.tokenTag(tkn) == .asterisk_asterisk
+            and tkn == self.tree.nodeMainToken(ty.ast.child_type)
+        ) {
           _ = sb.finish();
           return self.t(ty.ast.child_type);
         }
@@ -2089,22 +2262,32 @@ pub const Translate = struct {
         last_tkn = tkn;
       },
       .many => {
-        const doc, const _tkn = self.tArrayType(tkn, .{.token = tkn + 1}, ty.ast.sentinel.unwrap(), null);
+        const doc, const _tkn = self.tArrayType(
+          tkn,
+          .{.token = tkn + 1},
+          ty.ast.sentinel.unwrap(),
+          null,
+        );
         sb.append(doc);
         last_tkn = _tkn;
       },
       .slice => {
-        const doc, const _tkn = self.tArrayType(tkn, null, ty.ast.sentinel.unwrap(), null);
+        const doc, const _tkn = self.tArrayType(
+          tkn,
+          null,
+          ty.ast.sentinel.unwrap(),
+          null,
+        );
         sb.append(doc);
         last_tkn = _tkn;
-      }
+      },
     }
     var allow: ?*Doc = null;
     var alig: ?*Doc = null;
     var addr: ?*Doc = null;
     var cnst: ?*Doc = null;
     var vol: ?*Doc = null;
-  
+
     var allow_has_no_cmt = false;
     var align_has_no_cmt = false;
     var addr_has_no_cmt = false;
@@ -2118,7 +2301,7 @@ pub const Translate = struct {
     if (ty.ast.align_node.unwrap()) |nd| {
       if (ty.ast.bit_range_start.unwrap()) |brs| {
         var tmp = self.db.seqb();
-        var args = self.db.seqb(); 
+        var args = self.db.seqb();
         const bre = ty.ast.bit_range_end.unwrap().?;
         const f_doc = self.t(nd);
         const s_doc = self.t(brs);
@@ -2148,10 +2331,12 @@ pub const Translate = struct {
         rest_d.decllineOrSoftline(self.tknHasTC(colon_2 - 1));
         rest_d.appends(colon_2_doc).append(e_doc);
         flat_d.appends(colon_1_doc).append(s_doc);
-        flat_d.decllineIf(self.tknHasTC(colon_2 - 1)).appends(colon_2_doc).append(e_doc);
+        flat_d.decllineIf(self.tknHasTC(colon_2 - 1))
+          .appends(colon_2_doc)
+          .append(e_doc);
         split_d.indent(rest_d.finish())._();
         args.ifsplit(id, split_d.finishSeq(), flat_d.finishSeq())._();
-        
+
         tmp.append(self.ttknWithSTL(lbrack - 1));
         self.tCall(tmp, id, lbrack, rbrack, &.{}, null, args.finishSeq(), false);
         align_has_no_cmt = self.tknHasNoTC(rbrack);
@@ -2289,7 +2474,10 @@ pub const Translate = struct {
     }
     const comments = self._comments;
     var args = self.db.seqb();
-    const lb = self._ttkn(lbrace, .{.add_only_trailing_comment = true, .add_trailing_line_for_comment = false});
+    const lb = self._ttkn(
+      lbrace,
+      .{.add_only_trailing_comment = true, .add_trailing_line_for_comment = false},
+    );
     const comments2 = self._comments;
     const top_comments = self.getNextLineComments(lbrace, fields.len != 0);
     sb.decllineIf(self.tknHasTC(lbrace - 1)).append(lb);
@@ -2413,14 +2601,23 @@ pub const Translate = struct {
     add_only_next_line_comments: bool = false,
   };
 
-  fn _tline(self: *Self, sb: *SeqBuilder, start: usize, end: usize, next_is_eof: bool) void {
+  fn _tline(
+    self: *Self,
+    sb: *SeqBuilder,
+    start: usize,
+    end: usize,
+    next_is_eof: bool,
+  ) void {
     // only add newlines if we don't already have comments. comments always handle
     // their own newlines
-    if (std.mem.find(u8, self.tree.source[start .. end], "//") != null) {
+    if (std.mem.find(u8, self.tree.source[start..end], "//") != null) {
       return;
     }
     if (std.mem.findScalar(u8, self.tree.source[start..end], '\n') != null) {
-      const newlines = @min(2, std.mem.countScalar(u8, self.tree.source[start..end], '\n'));
+      const newlines = @min(
+        2,
+        std.mem.countScalar(u8, self.tree.source[start..end], '\n'),
+      );
       for (0..newlines) |_| {
         sb.declline()._();
       }
@@ -2451,20 +2648,34 @@ pub const Translate = struct {
     var comments = @as(u32, 0);
     defer self._comments += comments;
     // NOTE: adapted from (std) Render.zig
-    while (std.mem.find(u8, self.tree.source[idx .. end], "//")) |offset| {
+    while (std.mem.find(u8, self.tree.source[idx..end], "//")) |offset| {
       const comment_start = idx + offset;
       // If there is no newline, the comment ends with EOF
-      const newline_idx = std.mem.findScalar(u8, self.tree.source[comment_start..end], '\n');
+      const newline_idx = std.mem.findScalar(
+        u8,
+        self.tree.source[comment_start..end],
+        '\n',
+      );
       const newline = if (newline_idx) |i| comment_start + i else null;
-      const raw_comment = self.tree.source[comment_start .. newline orelse self.tree.source.len];
-      const trimmed_comment = std.mem.trimEnd(u8, raw_comment, &std.ascii.whitespace);
+      const raw_comment = self.tree.source[
+        comment_start..newline orelse self.tree.source.len
+      ];
+      const trimmed_comment = std.mem.trimEnd(
+        u8,
+        raw_comment,
+        &std.ascii.whitespace,
+      );
       var fmt_comment: ?[]const u8 = null;
       if (idx != 0) {
-        if (std.mem.containsAtLeast(u8, self.tree.source[idx..comment_start], 2, "\n")) {
+        if (
+          std.mem.containsAtLeast(u8, self.tree.source[idx..comment_start], 2, "\n")
+        ) {
           if (cfg.add_only_trailing_comment) return;
           sb.declline().declline()._();
           is_same_line = false;
-        } else if (std.mem.findScalar(u8, self.tree.source[idx..comment_start], '\n') != null) {
+        } else if (
+          std.mem.findScalar(u8, self.tree.source[idx..comment_start], '\n') != null
+        ) {
           if (cfg.add_only_trailing_comment) return;
           sb.declline()._();
           is_same_line = false;
@@ -2482,8 +2693,15 @@ pub const Translate = struct {
         }
       }
       idx = (newline orelse end - 1) + 1;
-      const comment_content = std.mem.trimStart(u8, trimmed_comment["//".len..], &std.ascii.whitespace);
-      if (self.fmt_disabled_pos != null and std.mem.eql(u8, comment_content, "mint fmt: on")) {
+      const comment_content = std.mem.trimStart(
+        u8,
+        trimmed_comment["//".len..],
+        &std.ascii.whitespace,
+      );
+      if (
+        self.fmt_disabled_pos != null
+          and std.mem.eql(u8, comment_content, "mint fmt: on")
+      ) {
         // formatting was disabled but we're now at the point where it's re-enabled
         // first, enable writing to a seqbuilder
         self.db.disable_writes = false;
@@ -2491,7 +2709,10 @@ pub const Translate = struct {
         sb.text(raw)._();
         self.fmt_disabled_pos = null;
         fmt_comment = "// mint fmt: on";
-      } else if (self.fmt_disabled_pos == null and std.mem.eql(u8, comment_content, "mint fmt: off")) {
+      } else if (
+        self.fmt_disabled_pos == null
+          and std.mem.eql(u8, comment_content, "mint fmt: off")
+      ) {
         // disable formatting
         self.fmt_disabled_pos = idx;
         fmt_comment = "// mint fmt: off";
@@ -2525,7 +2746,10 @@ pub const Translate = struct {
           sb.docs.items = sb.docs.items[0..len - 1];
         }
       } else if (cfg.add_trailing_line_for_comment and end != self.tree.source.len) {
-        const newlines = @min(@as(usize, 1), std.mem.countScalar(u8, self.tree.source[idx..end], '\n'));
+        const newlines = @min(
+          @as(usize, 1),
+          std.mem.countScalar(u8, self.tree.source[idx..end], '\n'),
+        );
         for (0..newlines) |_| {
           sb.declline()._();
         }
@@ -2568,11 +2792,18 @@ pub const Translate = struct {
     }
   }
 
-  fn getNextLineComments(self: *Self, tkn: Ast.TokenIndex, add_line_at_comment_end: bool) ?*Doc {
+  fn getNextLineComments(
+    self: *Self,
+    tkn: Ast.TokenIndex,
+    add_line_at_comment_end: bool,
+  ) ?*Doc {
     const start = self.tree.tokenStart(tkn) + self._token(tkn).len;
     const end = self.tree.tokenStart(tkn + 1);
     var sb = self.db.seqb();
-    const cfg: TokenFmtConfig = .{.add_only_next_line_comments = true, .add_trailing_line_for_comment = add_line_at_comment_end};
+    const cfg: TokenFmtConfig = .{
+      .add_only_next_line_comments = true,
+      .add_trailing_line_for_comment = add_line_at_comment_end,
+    };
     self._tcomment(sb, start, end, cfg);
     for (sb.docs.items, 0..) |doc, i| {
       if (doc.is(.line)) {
@@ -2623,7 +2854,7 @@ pub const Translate = struct {
     return self._ttkn(tkn, .{.add_trailing_line_for_comment = true});
   }
 
-  /// token with comment having a stripped trailing line 
+  /// token with comment having a stripped trailing line
   fn ttknWithSTL(self: *Self, tkn: Ast.TokenIndex) *Doc {
     const doc = self._ttkn(tkn, .{});
     if (self.tknHasTC(tkn)) {
@@ -2636,8 +2867,12 @@ pub const Translate = struct {
     const tag = self.tree.nodeTag(n);
     assert(tag != self.tree.nodeTag(Node.Index.root));
     switch (tag) {
-      .identifier, .number_literal, .anyframe_literal,
-      .string_literal, .char_literal, .unreachable_literal => {
+      .identifier,
+      .number_literal,
+      .anyframe_literal,
+      .string_literal,
+      .char_literal,
+      .unreachable_literal => {
         return self.ttkn(self.tree.nodeMainToken(n));
       },
       .anyframe_type => {
@@ -2651,38 +2886,44 @@ pub const Translate = struct {
         return self.db.group(sb.finish());
       },
       .multiline_string_literal => {
-         var start, const end = self.tree.nodeData(n).token_and_token;
-         var sb = self.db.seqb();
-         const prev_tkn = start - 1;
-         // we treat multiline strings as comments so the prev token must
-         // certainly have a trailing comment
-         assert(self.tknHasTC(prev_tkn));
-         var tkns = @as(u32, 0);
-         while (start != end) : (start += 1) {
-           if (tkns > 0) sb.declline()._();
-           sb.append(self.ttkn(start));
-           tkns += 1;
-         }
-         sb.decllineIf(tkns > 0).appends(self.ttkn(end))._();
-         // increment since we treat multiline string literals like comments
-         self._comments += 1;
-         return self.db.group(sb.finish());
-       },
-       .error_set_decl => {
-         const lbrace, const rbrace = self.tree.nodeData(n).token_and_token;
-         var members = std.ArrayList(Ast.TokenIndex).empty;
-         var start = lbrace + 1;
-         while (start != rbrace) : (start += 1) {
-           if (self.tree.tokenTag(start) != .comma) {
-             util.listAppend(start, &members, self.al);
-           }
-         }
-         return self.tErrorSetDecl(self.tree.nodeMainToken(n), members.items, lbrace, rbrace);
-       },
+        var start, const end = self.tree.nodeData(n).token_and_token;
+        var sb = self.db.seqb();
+        const prev_tkn = start - 1;
+        // we treat multiline strings as comments so the prev token must
+        // certainly have a trailing comment
+        assert(self.tknHasTC(prev_tkn));
+        var tkns = @as(u32, 0);
+        while (start != end) : (start += 1) {
+          if (tkns > 0) sb.declline()._();
+          sb.append(self.ttkn(start));
+          tkns += 1;
+        }
+        sb.decllineIf(tkns > 0).appends(self.ttkn(end))._();
+        // increment since we treat multiline string literals like comments
+        self._comments += 1;
+        return self.db.group(sb.finish());
+      },
+      .error_set_decl => {
+        const lbrace, const rbrace = self.tree.nodeData(n).token_and_token;
+        var members = std.ArrayList(Ast.TokenIndex).empty;
+        var start = lbrace + 1;
+        while (start != rbrace) : (start += 1) {
+          if (self.tree.tokenTag(start) != .comma) {
+            util.listAppend(start, &members, self.al);
+          }
+        }
+        return self.tErrorSetDecl(
+          self.tree.nodeMainToken(n),
+          members.items,
+          lbrace,
+          rbrace,
+        );
+      },
       .negation_wrap, .negation, .bool_not, .bit_not => {
         const expr = self.tree.nodeData(n).node;
         var sb = self.db.seqb();
-        sb.appends(self.ttknWithSTL(self.tree.nodeMainToken(n))).append(self.t(expr));
+        sb.appends(self.ttknWithSTL(self.tree.nodeMainToken(n)))
+          .append(self.t(expr));
         return self.db.group(sb.finish());
       },
       .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => {
@@ -2726,7 +2967,8 @@ pub const Translate = struct {
         const proto = self.tree.fnProtoMulti(n);
         const fn_tkn = self.tree.nodeMainToken(n);
         return self.tFnProto(
-          fn_tkn, proto.ast.params,
+          fn_tkn,
+          proto.ast.params,
           proto.ast.align_expr.unwrap(),
           proto.ast.addrspace_expr.unwrap(),
           proto.ast.section_expr.unwrap(),
@@ -2741,7 +2983,8 @@ pub const Translate = struct {
         const fn_tkn = self.tree.nodeMainToken(n);
         const params = if (proto.param.unwrap()) |idx| &.{idx} else &.{};
         return self.tFnProto(
-          fn_tkn, params,
+          fn_tkn,
+          params,
           proto.align_expr.unwrap(),
           proto.addrspace_expr.unwrap(),
           proto.section_expr.unwrap(),
@@ -2754,7 +2997,8 @@ pub const Translate = struct {
         const proto = self.tree.fnProto(n);
         const fn_tkn = self.tree.nodeMainToken(n);
         return self.tFnProto(
-          fn_tkn, proto.ast.params,
+          fn_tkn,
+          proto.ast.params,
           proto.ast.align_expr.unwrap(),
           proto.ast.addrspace_expr.unwrap(),
           proto.ast.section_expr.unwrap(),
@@ -2775,8 +3019,12 @@ pub const Translate = struct {
         var sb = self.db.seqb();
         const lbrace = self.tree.nodeMainToken(n);
         const rbrace = self.tree.lastToken(n);
-        if (self.tree.tokenTag(lbrace - 1) == .colon and self.tree.tokenTag(lbrace - 2) == .identifier) {
-          sb.appends(self.ttknWithTL(lbrace - 2)).append(self.ttknWithSTL(lbrace - 1));
+        if (
+          self.tree.tokenTag(lbrace - 1) == .colon
+            and self.tree.tokenTag(lbrace - 2) == .identifier
+        ) {
+          sb.appends(self.ttknWithTL(lbrace - 2))
+            .append(self.ttknWithSTL(lbrace - 1));
           sb.spaceIf(self.tknHasNoTC(lbrace - 1))._();
         }
         var buf: [2]Node.Index = undefined;
@@ -2789,8 +3037,12 @@ pub const Translate = struct {
         var sb = self.db.seqb();
         const lbrace = self.tree.nodeMainToken(n);
         const rbrace = self.tree.lastToken(n);
-        if (self.tree.tokenTag(lbrace - 1) == .colon and self.tree.tokenTag(lbrace - 2) == .identifier) {
-          sb.appends(self.ttknWithTL(lbrace - 2)).append(self.ttknWithSTL(lbrace - 1));
+        if (
+          self.tree.tokenTag(lbrace - 1) == .colon
+            and self.tree.tokenTag(lbrace - 2) == .identifier
+        ) {
+          sb.appends(self.ttknWithTL(lbrace - 2))
+            .append(self.ttknWithSTL(lbrace - 1));
           sb.spaceIf(self.tknHasNoTC(lbrace - 1))._();
         }
         return self.tBlock(lbrace, rbrace, sb, stmts, .{});
@@ -2805,8 +3057,10 @@ pub const Translate = struct {
           decl.ast.members,
         );
       },
-      .container_decl_two, .container_decl_two_trailing,
-      .tagged_union_two, .tagged_union_two_trailing => {
+      .container_decl_two,
+      .container_decl_two_trailing,
+      .tagged_union_two,
+      .tagged_union_two_trailing => {
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
         const main_tkn = self.tree.nodeMainToken(n);
         var buf: [2]Node.Index = undefined;
@@ -2872,7 +3126,7 @@ pub const Translate = struct {
             .else_expr = ifn.ast.else_expr,
             .then_expr = ifn.ast.then_expr,
             .while_token = ifn.ast.if_token,
-          }
+          },
         };
         return self.tWhile(wl);
       },
@@ -2890,7 +3144,7 @@ pub const Translate = struct {
             .else_expr = ifn.ast.else_expr,
             .then_expr = ifn.ast.then_expr,
             .while_token = ifn.ast.if_token,
-          }
+          },
         };
         return self.tWhile(wl);
       },
@@ -2987,7 +3241,12 @@ pub const Translate = struct {
       },
       .struct_init, .struct_init_comma => {
         const decl = self.tree.structInit(n);
-        return self.tStructOrArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.fields, true);
+        return self.tStructOrArrayInit(
+          n,
+          decl.ast.type_expr.unwrap(),
+          decl.ast.fields,
+          true,
+        );
       },
       .struct_init_one, .struct_init_one_comma => {
         const first, const second = self.tree.nodeData(n).node_and_opt_node;
@@ -3006,7 +3265,12 @@ pub const Translate = struct {
       },
       .array_init, .array_init_comma => {
         const decl = self.tree.arrayInit(n);
-        return self.tStructOrArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements, false);
+        return self.tStructOrArrayInit(
+          n,
+          decl.ast.type_expr.unwrap(),
+          decl.ast.elements,
+          false,
+        );
       },
       .array_init_one, .array_init_one_comma => {
         const first, const second = self.tree.nodeData(n).node_and_node;
@@ -3014,13 +3278,18 @@ pub const Translate = struct {
       },
       .array_init_dot, .array_init_dot_comma => {
         const decl = self.tree.arrayInitDot(n);
-        return self.tStructOrArrayInit(n, decl.ast.type_expr.unwrap(), decl.ast.elements, false);
+        return self.tStructOrArrayInit(
+          n,
+          decl.ast.type_expr.unwrap(),
+          decl.ast.elements,
+          false,
+        );
       },
       .array_init_dot_two, .array_init_dot_two_comma => {
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
         var buf: [2]Node.Index = undefined;
         const args = unwrapTwo(&buf, first, second);
-        return self.tStructOrArrayInit(n, null,  args, false);
+        return self.tStructOrArrayInit(n, null, args, false);
       },
       .@"return" => {
         const tkn = self.tree.nodeMainToken(n);
@@ -3071,11 +3340,23 @@ pub const Translate = struct {
         sb.append(self.t(ad.ast.value_expr));
         return self.db.group(sb.finish());
       },
-      .assign, .assign_add, .assign_mul, .assign_div,
-      .assign_mod, .assign_sub, .assign_shl, .assign_shr,
-      .assign_shl_sat, .assign_bit_and, .assign_bit_xor, 
-      .assign_bit_or, .assign_mul_wrap, .assign_add_wrap, 
-      .assign_sub_wrap, .assign_add_sat, .assign_sub_sat,
+      .assign,
+      .assign_add,
+      .assign_mul,
+      .assign_div,
+      .assign_mod,
+      .assign_sub,
+      .assign_shl,
+      .assign_shr,
+      .assign_shl_sat,
+      .assign_bit_and,
+      .assign_bit_xor,
+      .assign_bit_or,
+      .assign_mul_wrap,
+      .assign_add_wrap,
+      .assign_sub_wrap,
+      .assign_add_sat,
+      .assign_sub_sat,
       .assign_mul_sat => {
         const lhs, const rhs = self.tree.nodeData(n).node_and_node;
         var sb = self.db.seqb();
@@ -3102,11 +3383,34 @@ pub const Translate = struct {
         return self.db.group(sb.finish());
       },
       // ops
-      .add, .add_wrap, .add_sat, .array_cat, .array_mult, .bang_equal,
-      .bit_and, .bit_or, .shl, .shl_sat, .shr, .bit_xor, .bool_and,
-      .bool_or, .div, .greater_or_equal, .greater_than, .equal_equal, 
-      .less_or_equal, .less_than, .merge_error_sets, .mod, .mul, .mul_wrap,
-      .mul_sat, .sub, .sub_wrap, .sub_sat => {
+      .add,
+      .add_wrap,
+      .add_sat,
+      .array_cat,
+      .array_mult,
+      .bang_equal,
+      .bit_and,
+      .bit_or,
+      .shl,
+      .shl_sat,
+      .shr,
+      .bit_xor,
+      .bool_and,
+      .bool_or,
+      .div,
+      .greater_or_equal,
+      .greater_than,
+      .equal_equal,
+      .less_or_equal,
+      .less_than,
+      .merge_error_sets,
+      .mod,
+      .mul,
+      .mul_wrap,
+      .mul_sat,
+      .sub,
+      .sub_wrap,
+      .sub_sat => {
         return self.tBinaryExpr(n, tag);
       },
       .@"try", .@"defer", .@"comptime", .@"suspend", .@"resume", .@"nosuspend" => {
@@ -3163,7 +3467,7 @@ pub const Translate = struct {
         const tkn = self.tree.lastToken(lhs);
         sb.decllineIf(self.tknHasTC(tkn))._();
         const lbrack = tkn + 1;
-        const rest, _  = self.tArrayType(lbrack, .{.node = rhs}, null, null);
+        const rest, _ = self.tArrayType(lbrack, .{.node = rhs}, null, null);
         sb.append(rest);
         return self.db.group(sb.finish());
       },
@@ -3204,13 +3508,18 @@ pub const Translate = struct {
       },
       //: Type Nodes
       .array_type_sentinel, .array_type => {
-        const _n = (
-          if (tag == .array_type) self.tree.arrayType(n)
-          else self.tree.arrayTypeSentinel(n)
-        );
+        const _n = (if (tag == .array_type)
+          self.tree.arrayType(n)
+        else
+          self.tree.arrayTypeSentinel(n));
         const lbrack = self.tree.nodeMainToken(n);
         var sb = self.db.seqb();
-        const doc, _ = self.tArrayType(lbrack, .{.node = _n.ast.elem_count}, _n.ast.sentinel.unwrap(), .{.node = _n.ast.elem_type});
+        const doc, _ = self.tArrayType(
+          lbrack,
+          .{.node = _n.ast.elem_count},
+          _n.ast.sentinel.unwrap(),
+          .{.node = _n.ast.elem_type},
+        );
         sb.append(doc);
         return self.db.group(sb.finish());
       },
@@ -3229,7 +3538,7 @@ pub const Translate = struct {
       else => {
         log.debug("found unhandled node: {}", .{tag});
         unreachable;
-      }
+      },
     }
   }
 
@@ -3243,7 +3552,10 @@ pub const Translate = struct {
       const offset = self.tree.errorOffset(err);
       const loc = self.tree.tokenLocation(offset, err.token);
       // FIXME: for some reason, loc is actually off by 1 for line and column
-      try writer.interface.print("{s}:{}:{}: error: ", .{filename, loc.line + 1, loc.column + 1});
+      try writer.interface.print(
+        "{s}:{}:{}: error: ",
+        .{filename, loc.line + 1, loc.column + 1},
+      );
       try self.tree.renderError(err, &writer.interface);
       // render source line
       const indent = 2;
@@ -3261,7 +3573,12 @@ pub const Translate = struct {
     }
   }
 
-  pub fn translate(self: *Self, filename: []const u8, src: [:0]const u8, mode: Ast.Mode) !*Doc {
+  pub fn translate(
+    self: *Self,
+    filename: []const u8,
+    src: [:0]const u8,
+    mode: Ast.Mode,
+  ) !*Doc {
     self.tree = try Ast.parse(self.al, src, mode);
     if (self.tree.errors.len > 0) {
       try self.writeErrors(filename);

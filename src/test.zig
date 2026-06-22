@@ -31,12 +31,14 @@ test "vardecl 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = foo(abc, bar, baz);
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = foo(
     \\  abc,
     \\  bar,
@@ -66,7 +68,8 @@ test "vardecl 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const y = box(abc, bar, baz);
     \\const a: ?Foo = box(abc, bar, baz);
     \\const b: Foo = box(abc, bar, baz);
@@ -82,7 +85,8 @@ test "vardecl 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const y = box(abc, bar, baz);
     \\const a: ?Foo = box(
     \\  abc,
@@ -166,7 +170,8 @@ test "vardecl 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
     \\const g: [*c]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
@@ -183,7 +188,8 @@ test "vardecl 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
     \\const g: [*c]Foo = box(abc, bar, baz);
     \\const g: [:Bar]Foo = box(abc, bar, baz);
@@ -204,7 +210,8 @@ test "vardecl 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const g: [*:Bar]Foo = box(
     \\  abc,
     \\  bar,
@@ -293,7 +300,8 @@ test "vardecl 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
@@ -322,7 +330,8 @@ test "vardecl 4" {
   );
   // using width: 100
   res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
     \\const buffer: [1024]u8
     \\  align(64)
@@ -345,7 +354,8 @@ test "vardecl 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
@@ -380,7 +390,8 @@ test "vardecl 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var buffer: [1024]u8
     \\  align(64)
     \\  addrspace(.generic)
@@ -447,7 +458,8 @@ test "vardecl 5" {
   const al = arena.allocator();
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -472,7 +484,8 @@ test "vardecl 5" {
   );
   // using width: 100
   res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const buffer: [1024]u8
     \\  align(64) = text(self.token_token_token_token_token_token_token_token_token_token(rhs, abc, lhs));
     \\const buffer: [1024]u8
@@ -489,7 +502,8 @@ test "vardecl 5" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -514,7 +528,8 @@ test "vardecl 5" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const buffer: [1024]u8
     \\  align(64) = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
@@ -557,7 +572,8 @@ test "vardecl 6" {
   const al = arena.allocator();
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\threadlocal const x = expr;
   );
 }
@@ -573,7 +589,8 @@ test "vardecl.chains 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
@@ -588,7 +605,8 @@ test "vardecl.chains 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
@@ -609,7 +627,8 @@ test "vardecl.chains 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var xyz = foo.bar("ok").box();
     \\var ky = self.group(
     \\  self.seqb()
@@ -640,7 +659,8 @@ test "vardecl.chains 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -654,7 +674,8 @@ test "vardecl.chains 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -674,7 +695,8 @@ test "vardecl.chains 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -726,7 +748,8 @@ test "vardecl.chains 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -754,7 +777,8 @@ test "vardecl.chains 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -788,7 +812,8 @@ test "vardecl.chains 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -842,7 +867,8 @@ test "vardecl.chains 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -856,7 +882,8 @@ test "vardecl.chains 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -877,7 +904,8 @@ test "vardecl.chains 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -912,7 +940,8 @@ test "vardecl.chains 5" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb().appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
     \\var ky = selfgroup(
@@ -947,7 +976,8 @@ test "vardecl.chains 5" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb().appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
     \\var ky = selfgroup(
@@ -982,7 +1012,8 @@ test "vardecl.chains 5" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs);
     \\var sb = selfseqbseqbseqbseqbseqbseqbseqbseqb();
@@ -1032,7 +1063,8 @@ test "vardecl.chains 6" {
   const al = arena.allocator();
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()().hahah(a, b, "yes").bar(compute_something(long_arg1, long_arg2));
     \\var q = fox()()
@@ -1041,7 +1073,8 @@ test "vardecl.chains 6" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
     \\var q = fox()()
     \\  .hahah(a, b, "yes")
@@ -1052,7 +1085,8 @@ test "vardecl.chains 6" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var q = fox()()
     \\  .hahah(a, b, "yes")
     \\  .bar(abc());
@@ -1085,17 +1119,20 @@ test "vardecl.chains 7" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(
     \\    compute_value(lhs, rhs),
@@ -1130,7 +1167,8 @@ test "vardecl.chains 8" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1145,7 +1183,8 @@ test "vardecl.chains 8" {
   );
   // default width: 85
   res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1164,7 +1203,8 @@ test "vardecl.chains 8" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1191,7 +1231,8 @@ test "vardecl.chains 8" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.seqb()
     \\  .appends(lhs)
     \\  .sb.ifsplit(
@@ -1242,7 +1283,8 @@ test "vardecl.chains 9" {
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
   // using width: 100
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1254,7 +1296,8 @@ test "vardecl.chains 9" {
     \\  ._();
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1269,7 +1312,8 @@ test "vardecl.chains 9" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1291,7 +1335,8 @@ test "vardecl.chains 9" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1335,7 +1380,8 @@ test "vardecl.chains 10" {
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
   // using width: 100
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1350,7 +1396,8 @@ test "vardecl.chains 10" {
     \\  ._();
   );
   res = try format(doc, .{.width = 90}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1365,7 +1412,8 @@ test "vardecl.chains 10" {
     \\  ._();
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1383,7 +1431,8 @@ test "vardecl.chains 10" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1405,7 +1454,8 @@ test "vardecl.chains 10" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz()
     \\  .pkzy.aaa.seqb()
     \\  .appends(lhs)
@@ -1438,7 +1488,8 @@ test "vardecl.chains 11" {
   const al = arena.allocator();
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const y = text(
     \\  self.token_token_token_token_token_token_token_token_token_token(
     \\    rhs,
@@ -1464,7 +1515,8 @@ test "fundecl 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype, ...) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -1473,7 +1525,8 @@ test "fundecl 1" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
@@ -1489,7 +1542,8 @@ test "fundecl 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
@@ -1505,7 +1559,8 @@ test "fundecl 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  x: std.ArrayList(T),
     \\  comptime x: i32,
@@ -1534,7 +1589,8 @@ test "fundecl 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo2(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1547,7 +1603,8 @@ test "fundecl 2" {
     \\) A(T) {}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo2(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1561,7 +1618,8 @@ test "fundecl 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo2(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1586,16 +1644,19 @@ test "fundecl 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo3(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1616,7 +1677,8 @@ test "fundecl 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn foo4(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1626,7 +1688,8 @@ test "fundecl 4" {
     \\) A(T) {}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn foo4(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1637,7 +1700,8 @@ test "fundecl 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn foo4(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1662,7 +1726,8 @@ test "fundecl 5" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\inline fn foo5(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1680,7 +1745,8 @@ test "fundecl 5" {
     \\) A(T) {}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\inline fn foo5(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1699,7 +1765,8 @@ test "fundecl 5" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\inline fn foo5(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1732,7 +1799,8 @@ test "fundecl 6" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\export fn foo7(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1750,7 +1818,8 @@ test "fundecl 6" {
     \\) A(T) {}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\export fn foo7(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1769,7 +1838,8 @@ test "fundecl 6" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\export fn foo7(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1800,7 +1870,8 @@ test "fundecl 7" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\extern fn foo9(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1818,7 +1889,8 @@ test "fundecl 7" {
     \\) A(T);
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\extern fn foo9(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1837,7 +1909,8 @@ test "fundecl 7" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\extern fn foo9(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1870,7 +1943,8 @@ test "fundecl 8" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1884,7 +1958,8 @@ test "fundecl 8" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1904,7 +1979,8 @@ test "fundecl 8" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar(
     \\  comptime T: type,
     \\  x: std.ArrayList(T),
@@ -1938,7 +2014,8 @@ test "fundecl 9" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
     \\  x: anytype,
@@ -1952,7 +2029,8 @@ test "fundecl 9" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
     \\  x: anytype,
@@ -1972,7 +2050,8 @@ test "fundecl 9" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar(
     \\  comptime T: anytype,
     \\  x: anytype,
@@ -2006,7 +2085,8 @@ test "fundecl 10" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
@@ -2019,7 +2099,8 @@ test "fundecl 10" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
@@ -2033,7 +2114,8 @@ test "fundecl 10" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
@@ -2061,7 +2143,8 @@ test "fundecl 11" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fan() align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2069,7 +2152,8 @@ test "fundecl 11" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fan()
     \\align(64)
     \\addrspace(.generic)
@@ -2083,7 +2167,8 @@ test "fundecl 11" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub fn fan()
     \\align(64)
     \\addrspace(.generic)
@@ -2110,14 +2195,16 @@ test "fundecl 12" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
@@ -2125,7 +2212,8 @@ test "fundecl 12" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) u32;
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
@@ -2137,7 +2225,8 @@ test "fundecl 12" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const T = fn (
     \\  a: anytype,
     \\  comptime T: type,
@@ -2174,14 +2263,16 @@ test "fundecl 13" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
@@ -2189,7 +2280,8 @@ test "fundecl 13" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
@@ -2197,7 +2289,8 @@ test "fundecl 13" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  comptime const x, var y = expr;
     \\  comptime const x, const y = expr;
@@ -2217,7 +2310,8 @@ test "fundecl 14" {
   // using width: 30
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() Foo!A.B(
     \\  0xff,
     \\  123,
@@ -2239,7 +2333,8 @@ test "fundecl 15" {
   // using width: 30
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing(
     \\  x: u2,
     \\) Foo!A.B(0xff, 123) {
@@ -2264,7 +2359,8 @@ test "fundecl 16" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2279,7 +2375,8 @@ test "fundecl 16" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2295,7 +2392,8 @@ test "fundecl 16" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2314,7 +2412,8 @@ test "fundecl 16" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn ship() b: {
     \\  break :b void;
     \\} {
@@ -2364,7 +2463,8 @@ test "fundecl 17" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  ... // abc
     \\) void {
@@ -2393,7 +2493,8 @@ test "fundecl 17" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  ... // abc
     \\) void {
@@ -2433,7 +2534,8 @@ test "fundecl 17" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  ... // abc
     \\) void {
@@ -2512,7 +2614,8 @@ test "fundecl 18" {
   // using width: 30
   const doc = try translate(src, al);
   const res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  x: u32,
     \\  y: usize,
@@ -2595,7 +2698,8 @@ test "expr 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2640,7 +2744,8 @@ test "expr 1" {
   );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\    var x: u3 = 5;
     \\    const a, _ = expr;
@@ -2684,7 +2789,8 @@ test "expr 1" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2738,7 +2844,8 @@ test "expr 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2792,7 +2899,8 @@ test "expr 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -2864,7 +2972,8 @@ test "expr 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2906,7 +3015,8 @@ test "expr 2" {
   );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2947,7 +3057,8 @@ test "expr 2" {
     \\        + bar / boxB * foo);
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -2998,7 +3109,8 @@ test "expr 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -3049,7 +3161,8 @@ test "expr 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b + 5;
@@ -3118,7 +3231,8 @@ test "expr 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3145,7 +3259,8 @@ test "expr 3" {
   );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3171,7 +3286,8 @@ test "expr 3" {
     \\        * foo);
   );
   res = try format(doc, .{.width = 80, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3212,7 +3328,8 @@ test "expr 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3268,7 +3385,8 @@ test "expr 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3366,7 +3484,8 @@ test "expr 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3396,7 +3515,8 @@ test "expr 4" {
   );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3426,7 +3546,8 @@ test "expr 4" {
     \\            * foo);
   );
   res = try format(doc, .{.width = 80, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3466,7 +3587,8 @@ test "expr 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3517,7 +3639,8 @@ test "expr 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: u3 = 5;
     \\var j = a * b;
     \\var j = a * b * 5;
@@ -3612,7 +3735,8 @@ test "expr 5" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
     \\var xyz = a + b - c * d;
@@ -3636,7 +3760,8 @@ test "expr 5" {
   );
   // using width: 100, indent: 4
   res = try format(doc, .{.width = 100, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
     \\var xyz = a + b - c * d;
@@ -3659,7 +3784,8 @@ test "expr 5" {
     \\    + someFunc(1, 2, 3) * expr();
   );
   res = try format(doc, .{.width = 80, .indent = 4}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) catch expr());
     \\var xyz = a + b - c * d;
@@ -3683,7 +3809,8 @@ test "expr 5" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3)
     \\  catch expr();
     \\var abc = 5 * 4
@@ -3718,7 +3845,8 @@ test "expr 5" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = 5 * 4
     \\  + 3
     \\  - abc
@@ -3800,7 +3928,8 @@ test "containerdecl 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct { x: []const u8, y: u32 };
     \\const Ty = struct { ab: []const u8, xyz: u32 };
     \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
@@ -3809,7 +3938,8 @@ test "containerdecl 1" {
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct { x: []const u8, y: u32 };
     \\const Ty = struct { ab: []const u8, xyz: u32 };
     \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
@@ -3819,7 +3949,8 @@ test "containerdecl 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct { x: []const u8, y: u32 };
     \\const Ty = struct { ab: []const u8, xyz: u32 };
     \\const Ty = struct(arg) { ab: []const u8, xyz: u32 };
@@ -3829,7 +3960,8 @@ test "containerdecl 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct {
     \\  x: []const u8,
     \\  y: u32,
@@ -3887,7 +4019,8 @@ test "containerdecl 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -3924,7 +4057,8 @@ test "containerdecl 2" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -3962,7 +4096,8 @@ test "containerdecl 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -4003,7 +4138,8 @@ test "containerdecl 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct {
     \\  xabc: []const u8,
     \\  y123: u32,
@@ -4077,7 +4213,8 @@ test "containerdecl 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -4086,7 +4223,8 @@ test "containerdecl 3" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -4096,7 +4234,8 @@ test "containerdecl 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -4106,7 +4245,8 @@ test "containerdecl 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -4147,7 +4287,8 @@ test "containerdecl 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4168,7 +4309,8 @@ test "containerdecl 4" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4190,7 +4332,8 @@ test "containerdecl 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4212,7 +4355,8 @@ test "containerdecl 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4267,24 +4411,28 @@ test "containerdecl 5" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4321,7 +4469,8 @@ test "containerdecl 6" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4334,7 +4483,8 @@ test "containerdecl 6" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4348,7 +4498,8 @@ test "containerdecl 6" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4362,7 +4513,8 @@ test "containerdecl 6" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo)) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4414,7 +4566,8 @@ test "containerdecl 7" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) { ab: []const u8, xyz: u32 };
     \\const Ty = struct(Foo) { x: []const u8, y: u32 };
     \\const Ty = struct {
@@ -4424,7 +4577,8 @@ test "containerdecl 7" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) {
     \\  ab: []const u8,
     \\  xyz: u32,
@@ -4438,7 +4592,8 @@ test "containerdecl 7" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct(
     \\  arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)
     \\) {
@@ -4457,7 +4612,8 @@ test "containerdecl 7" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = struct(
     \\  arg.foo(xyz, "ok")
     \\    .bar('y')
@@ -4503,7 +4659,8 @@ test "containerdecl 8" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = opaque { x: []const u8, y: u32 };
     \\const Ty = opaque {
     \\  x: []const u8 align(abc),
@@ -4512,7 +4669,8 @@ test "containerdecl 8" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = opaque { x: []const u8, y: u32 };
     \\const Ty = opaque {
     \\  x: []const u8 align(abc),
@@ -4522,7 +4680,8 @@ test "containerdecl 8" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = opaque { x: []const u8, y: u32 };
     \\const Ty = opaque {
     \\  x: []const u8 align(abc),
@@ -4535,7 +4694,8 @@ test "containerdecl 8" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = opaque {
     \\  x: []const u8,
     \\  y: u32,
@@ -4576,7 +4736,8 @@ test "containerdecl 9" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4591,7 +4752,8 @@ test "containerdecl 9" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4607,7 +4769,8 @@ test "containerdecl 9" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4623,7 +4786,8 @@ test "containerdecl 9" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(
     \\  enum(Foo(a, b, c))
     \\) {
@@ -4677,7 +4841,8 @@ test "containerdecl 10" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4695,7 +4860,8 @@ test "containerdecl 10" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4714,7 +4880,8 @@ test "containerdecl 10" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum(Foo(a, b, c))) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4733,7 +4900,8 @@ test "containerdecl 10" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(
     \\  enum(Foo(a, b, c))
     \\) {
@@ -4790,7 +4958,8 @@ test "containerdecl 11" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
@@ -4804,7 +4973,8 @@ test "containerdecl 11" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
@@ -4819,7 +4989,8 @@ test "containerdecl 11" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
     \\    var j = Ty{.x = "yay", .y = 0xff};
@@ -4834,7 +5005,8 @@ test "containerdecl 11" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  pub fn foo(
     \\    self: @This(),
@@ -4885,7 +5057,8 @@ test "containerdecl 12" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4899,7 +5072,8 @@ test "containerdecl 12" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4914,7 +5088,8 @@ test "containerdecl 12" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4929,7 +5104,8 @@ test "containerdecl 12" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const Ty = union(enum) {
     \\  x: []const u8,
     \\  y: u32,
@@ -4982,7 +5158,8 @@ test "containerdecl 13" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5006,7 +5183,8 @@ test "containerdecl 13" {
     \\var x = 5;
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5031,7 +5209,8 @@ test "containerdecl 13" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5056,7 +5235,8 @@ test "containerdecl 13" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5109,7 +5289,8 @@ test "containerdecl 14" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5121,7 +5302,8 @@ test "containerdecl 14" {
     \\var x = 5;
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5134,7 +5316,8 @@ test "containerdecl 14" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5147,7 +5330,8 @@ test "containerdecl 14" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\y: []u8,
     \\abc: []const u8,
     \\z: u32,
@@ -5181,7 +5365,8 @@ test "containerdecl 15" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5192,7 +5377,8 @@ test "containerdecl 15" {
     \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5204,7 +5390,8 @@ test "containerdecl 15" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5224,7 +5411,8 @@ test "containerdecl 15" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const FmtConfig = struct {
     \\  width: u32 = 80,
     \\  indent: u8 = 2,
@@ -5267,7 +5455,8 @@ test "ptr types 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
     \\var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
     \\var j: *align(foo:Car:Bar) rhs = 0xff;
@@ -5284,7 +5473,8 @@ test "ptr types 1" {
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
     \\var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
     \\var j: *align(foo:Car:Bar) rhs = 0xff;
@@ -5302,7 +5492,8 @@ test "ptr types 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
     \\var j: *align(foo(bar.oop(0x12)):Foo():Bar()) rhs = 0xff;
     \\var j: *align(foo:Car:Bar) rhs = 0xff;
@@ -5320,7 +5511,8 @@ test "ptr types 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [*]align(
     \\  foo(bar.oop(0x12))
     \\)
@@ -5377,27 +5569,31 @@ test "ptr types 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [
     \\  lhs:Foo(T, K)
     \\]rhs = 0xff;
@@ -5427,7 +5623,8 @@ test "ptr types 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: *allowzero align(foo("ok")) Rhs
     \\  align(64)
     \\  addrspace(.generic)
@@ -5440,7 +5637,8 @@ test "ptr types 3" {
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) = 0xff;
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: *allowzero align(foo("ok")) Rhs
     \\  align(64)
     \\  addrspace(.generic)
@@ -5460,7 +5658,8 @@ test "ptr types 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: *allowzero align(foo("ok")) Rhs
     \\  align(64)
     \\  addrspace(.generic)
@@ -5486,7 +5685,8 @@ test "ptr types 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: *allowzero
     \\  align(foo("ok"))
     \\  Rhs
@@ -5543,7 +5743,8 @@ test "ptr types 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
     \\  return 0;
     \\}
@@ -5565,7 +5766,8 @@ test "ptr types 4" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
     \\  return 0;
     \\}
@@ -5600,7 +5802,8 @@ test "ptr types 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
     \\  return 0;
     \\}
@@ -5635,7 +5838,8 @@ test "ptr types 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() *allowzero
     \\  align(foo("ok"))
     \\  Rhs {
@@ -5692,7 +5896,8 @@ test "try/catch 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = try someFunc(1, 2, 3);
     \\var abc = someTestFunc(try someFunc(1, 2, 3));
     \\var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
@@ -5700,7 +5905,8 @@ test "try/catch 1" {
     \\var abc = someFunc(1, 2, 3) catch expr();
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = try someFunc(1, 2, 3);
     \\var abc = someTestFunc(try someFunc(1, 2, 3));
     \\var abc = someTestFunc(try someFunc(1, 2, 3), try someFunc(1, 2, 3));
@@ -5709,7 +5915,8 @@ test "try/catch 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = try someFunc(1, 2, 3);
     \\var abc = someTestFunc(try someFunc(1, 2, 3));
     \\var abc = someTestFunc(
@@ -5721,7 +5928,8 @@ test "try/catch 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = try someFunc(
     \\  1,
     \\  2,
@@ -5765,7 +5973,8 @@ test "try/catch 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
@@ -5783,7 +5992,8 @@ test "try/catch 2" {
     \\};
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
@@ -5802,7 +6012,8 @@ test "try/catch 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) catch return;
     \\var abc = someFunc(1, 2, 3) catch |e| {
     \\  someBlock();
@@ -5821,7 +6032,8 @@ test "try/catch 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3)
     \\  catch return;
     \\var abc = someFunc(
@@ -5888,7 +6100,8 @@ test "orelse 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) orelse return;
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
@@ -5907,7 +6120,8 @@ test "orelse 1" {
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) orelse return;
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
@@ -5927,7 +6141,8 @@ test "orelse 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) orelse return;
     \\var abc = someFunc(1, 2, 3) orelse {
     \\  someBlock();
@@ -5952,7 +6167,8 @@ test "orelse 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3)
     \\  orelse return;
     \\var abc = someFunc(
@@ -6012,7 +6228,8 @@ test "if/else 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x| b else d;
@@ -6023,7 +6240,8 @@ test "if/else 1" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x| b else d;
@@ -6035,7 +6253,8 @@ test "if/else 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x| b else d;
@@ -6045,9 +6264,10 @@ test "if/else 1" {
     \\  var z = if (a) b else d;
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (a) b else d;
     \\  if (a) |x|
@@ -6099,7 +6319,8 @@ test "if/else 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  var z = if (a) b: {
     \\    var x = y;
@@ -6124,7 +6345,8 @@ test "if/else 2" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  var z = if (a) b: {
     \\    var x = y;
@@ -6150,7 +6372,8 @@ test "if/else 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  var z = if (a) b: {
     \\    var x = y;
@@ -6174,9 +6397,10 @@ test "if/else 2" {
     \\  }
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  var z = if (
     \\    a
@@ -6233,7 +6457,8 @@ test "if/else 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6252,7 +6477,8 @@ test "if/else 3" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6272,7 +6498,8 @@ test "if/else 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6290,9 +6517,10 @@ test "if/else 3" {
     \\  }
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (someExpr()) {
     \\  } else {
@@ -6360,7 +6588,8 @@ test "if/else 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  {
     \\    if (someExpr()) {
@@ -6406,7 +6635,8 @@ test "if/else 4" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  {
     \\    if (someExpr()) {
@@ -6458,7 +6688,8 @@ test "if/else 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  {
     \\    if (someExpr()) {
@@ -6512,9 +6743,10 @@ test "if/else 4" {
     \\  }
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  {
     \\    if (
@@ -6613,7 +6845,8 @@ test "if/else 5" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6625,7 +6858,8 @@ test "if/else 5" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6638,7 +6872,8 @@ test "if/else 5" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6649,9 +6884,10 @@ test "if/else 5" {
     \\  }
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if (cond()) {
     \\    var x = 5;
@@ -6694,7 +6930,8 @@ test "if/else 6" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
@@ -6721,7 +6958,8 @@ test "if/else 6" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
@@ -6749,7 +6987,8 @@ test "if/else 6" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (some) |*x| lbl: {
     \\    print('yello world');
@@ -6775,9 +7014,10 @@ test "if/else 6" {
     \\  }
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (
     \\    some
@@ -6832,7 +7072,8 @@ test "if/else 7" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (someNiceCondition(a, b, c)) |x| _ = blk: {
     \\    print('yello world');
@@ -6841,7 +7082,8 @@ test "if/else 7" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (someNiceCondition(a, b, c)) |x| _ = blk: {
     \\    print('yello world');
@@ -6851,7 +7093,8 @@ test "if/else 7" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (someNiceCondition(a, b, c)) |x|
     \\    _ = blk: {
@@ -6861,9 +7104,10 @@ test "if/else 7" {
     \\    someFancy(callExpr(), a, b);
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (
     \\    someNiceCondition(a, b, c)
@@ -6900,7 +7144,8 @@ test "if/else 8" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  _ = if (k) |x| blk: {
     \\    std.debug.print("x is: {}\n", .{x});
@@ -6912,7 +7157,8 @@ test "if/else 8" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  _ = if (k) |x| blk: {
     \\    std.debug.print(
@@ -6940,14 +7186,16 @@ test "if/else 9" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  if (last_tkn) |tkn| flat.decllineIf(self.tknHasTC(tkn))._();
     \\}
   );
   // using width: 50
   res = try format(doc, .{.width = 50}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  if (last_tkn) |tkn|
     \\    flat.decllineIf(self.tknHasTC(tkn))._();
@@ -6971,7 +7219,8 @@ test "switch 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\label: switch (expr) {
     \\  a => a,
     \\  b, c => c,
@@ -6981,7 +7230,8 @@ test "switch 1" {
     \\switch (someExpr(jk)) {}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\label: switch (expr) {
     \\  a => a,
     \\  b, c => c,
@@ -6992,7 +7242,8 @@ test "switch 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\label: switch (expr) {
     \\  a => a,
     \\  b, c => c,
@@ -7001,9 +7252,10 @@ test "switch 1" {
     \\},
     \\switch (someExpr(jk)) {}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\label: switch (
     \\  expr
     \\) {
@@ -7058,48 +7310,50 @@ test "switch 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
-  \\fn fun(expr: Type) switch (@TypeOf(expr)) {
-  \\  .a => TyFoo,
-  \\  .b => TyBar,
-  \\  else => TyBaz,
-  \\} {
-  \\  return label: switch (expr) {
-  \\    a => a,
-  \\    b, c => c,
-  \\    inline d...e => e,
-  \\    else => f,
-  \\  };
-  \\}
-  \\
-  \\fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
-  \\  .a => TyFoo,
-  \\  .b => TyBar,
-  \\  else => TyBaz,
-  \\} {
-  \\  return label: switch (expr) {
-  \\    a => a,
-  \\    b, c => c,
-  \\    inline d...e => e,
-  \\    else => f,
-  \\  };
-  \\}
-  \\
-  \\fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
-  \\  .a => TyFoo,
-  \\  .b => TyBar,
-  \\  else => TyBaz,
-  \\} {
-  \\  switch (expr) {
-  \\    a => a,
-  \\    b, c => c,
-  \\    inline d...e => e,
-  \\    else => f,
-  \\  }
-  \\}
+  try check(
+    res,
+    \\fn fun(expr: Type) switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  return label: switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  };
+    \\}
+    \\
+    \\fn fun(expr: Type) lbl: switch (@TypeOf(expr)) {
+    \\  .a => TyFoo,
+    \\  .b => TyBar,
+    \\  else => TyBaz,
+    \\} {
+    \\  switch (expr) {
+    \\    a => a,
+    \\    b, c => c,
+    \\    inline d...e => e,
+    \\    else => f,
+    \\  }
+    \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) switch (@TypeOf(expr)) {
@@ -7147,7 +7401,8 @@ test "switch 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) switch (@TypeOf(expr)) {
@@ -7193,9 +7448,10 @@ test "switch 2" {
     \\  }
     \\}
   );
-  // using width: 20 
+  // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) switch (
@@ -7293,7 +7549,8 @@ test "switch 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7350,7 +7607,8 @@ test "switch 3" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7408,7 +7666,8 @@ test "switch 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7464,9 +7723,10 @@ test "switch 3" {
     \\  else => f,
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) {
     \\  .a => |bar| {},
     \\  inline .x => |*bar, foo| a = call(),
@@ -7590,7 +7850,8 @@ test "switch 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) { // one
     \\  // switching on an expr is good 1
     \\  // switching on an expr is good 2
@@ -7650,7 +7911,8 @@ test "switch 4" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) { // one
     \\  // switching on an expr is good 1
     \\  // switching on an expr is good 2
@@ -7711,7 +7973,8 @@ test "switch 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) { // one
     \\  // switching on an expr is good 1
     \\  // switching on an expr is good 2
@@ -7770,9 +8033,10 @@ test "switch 4" {
     \\  inline else => f,
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) { // one
     \\  // switching on an expr is good 1
     \\  // switching on an expr is good 2
@@ -7874,7 +8138,8 @@ test "for 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
@@ -7886,7 +8151,8 @@ test "for 1" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
@@ -7899,7 +8165,8 @@ test "for 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| lbl: {
     \\    print('yello world');
@@ -7910,9 +8177,10 @@ test "for 1" {
     \\  for (expr) |pl| something();
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -7954,7 +8222,8 @@ test "for 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b| {
     \\  } else {
@@ -7972,7 +8241,8 @@ test "for 2" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b| {
     \\  } else {
@@ -7991,7 +8261,8 @@ test "for 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b| {
     \\  } else {
@@ -8008,9 +8279,10 @@ test "for 2" {
     \\  }
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, a..k) |a, b| {
     \\  } else {
@@ -8061,7 +8333,8 @@ test "for 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
@@ -8083,7 +8356,8 @@ test "for 3" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
@@ -8106,7 +8380,8 @@ test "for 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {
     \\    print('yello world');
@@ -8128,9 +8403,10 @@ test "for 3" {
     \\  }
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -8180,20 +8456,23 @@ test "for 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
     \\}
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z|
     \\    print('yello world')
@@ -8201,9 +8480,10 @@ test "for 4" {
     \\    someCall();
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -8230,27 +8510,31 @@ test "for 5" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -8277,7 +8561,8 @@ test "for 6" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\  for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
@@ -8287,7 +8572,8 @@ test "for 6" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\  for (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
@@ -8298,7 +8584,8 @@ test "for 6" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: for (someNiceCondition(a, b, c)) |x|
     \\    someFancy(callExpr(), a, b);
@@ -8310,9 +8597,10 @@ test "for 6" {
     \\    };
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: for (
     \\    someNiceCondition(a, b, c)
@@ -8371,7 +8659,8 @@ test "while 1" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
     \\  inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
@@ -8395,7 +8684,8 @@ test "while 1" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
     \\  inline while (someNiceCondition(a, b, c)) |*x| : (j += 5) {
@@ -8420,7 +8710,8 @@ test "while 1" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |*x| : (j += 5) {}
     \\  inline while (someNiceCondition(a, b, c)) |*x|
@@ -8444,9 +8735,10 @@ test "while 1" {
     \\  }
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -8512,7 +8804,8 @@ test "while 2" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
@@ -8531,7 +8824,8 @@ test "while 2" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
@@ -8552,7 +8846,8 @@ test "while 2" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| blk: {
     \\    print('yello world');
@@ -8571,9 +8866,10 @@ test "while 2" {
     \\  }
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -8627,7 +8923,8 @@ test "while 3" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world') else |y| someCall();
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5) print('yello world') else someCall();
@@ -8639,7 +8936,8 @@ test "while 3" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    print('yello world')
@@ -8661,7 +8959,8 @@ test "while 3" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| : (j += 5)
     \\    print('yello world')
@@ -8683,9 +8982,10 @@ test "while 3" {
     \\  }
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -8744,7 +9044,8 @@ test "while 4" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res, 
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
@@ -8758,7 +9059,8 @@ test "while 4" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res, 
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
@@ -8774,7 +9076,8 @@ test "while 4" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: while (someNiceCondition(a, b, c)) |x| : (j += 5) {
     \\    print('yello world');
@@ -8788,9 +9091,10 @@ test "while 4" {
     \\    };
     \\}
   );
-  // using width: 30 
+  // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl: while (
     \\    someNiceCondition(a, b, c)
@@ -8834,7 +9138,8 @@ test "zig 0.16.0" {
   // using width: 100
   const doc = try translate(src, al);
   var res = try format(doc, .{.width = 100}, al);
-  try check(res,
+  try check(
+    res,
     \\const U = packed union(u2) { a: i2, b: u2 };
     \\
     \\const u: U = .{.a = -1};
@@ -8844,7 +9149,8 @@ test "zig 0.16.0" {
     \\}
   );
   res = try format(doc, .{.width = 80}, al);
-  try check(res,
+  try check(
+    res,
     \\const U = packed union(u2) { a: i2, b: u2 };
     \\
     \\const u: U = .{.a = -1};
@@ -8855,7 +9161,8 @@ test "zig 0.16.0" {
   );
   // using width: 60
   res = try format(doc, .{.width = 60}, al);
-  try check(res,
+  try check(
+    res,
     \\const U = packed union(u2) { a: i2, b: u2 };
     \\
     \\const u: U = .{.a = -1};
@@ -8866,7 +9173,8 @@ test "zig 0.16.0" {
   );
   // using width: 15
   res = try format(doc, .{.width = 15}, al);
-  try check(res,
+  try check(
+    res,
     \\const U = packed union(
     \\  u2
     \\) {
@@ -8918,7 +9226,8 @@ test "comments/vardecl 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const // start me
     \\fox3 = // haha
     \\union( // open sesame
@@ -8948,7 +9257,8 @@ test "comments/vardecl 1" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\const // start me
     \\fox3 = // haha
     \\union( // open sesame
@@ -9020,7 +9330,8 @@ test "comments/vardecl 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const // start me
     \\fox3 = // haha
     \\union( // open sesame
@@ -9054,7 +9365,8 @@ test "comments/vardecl 2" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\const // start me
     \\fox3 = // haha
     \\union( // open sesame
@@ -9134,7 +9446,8 @@ test "comments/call 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\// this is a line comment x
     \\// this is a line comment y
     \\// this is a line comment z
@@ -9165,7 +9478,8 @@ test "comments/call 1" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\// this is a line comment x
     \\// this is a line comment y
     \\// this is a line comment z
@@ -9249,7 +9563,8 @@ test "comments/call 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\doCall( // opening
     \\  // inner
     \\  tst,
@@ -9299,7 +9614,8 @@ test "comments/call 2" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\doCall( // opening
     \\  // inner
     \\  tst,
@@ -9387,7 +9703,8 @@ test "comments/call 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) switch // 0
@@ -9425,7 +9742,8 @@ test "comments/call 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) switch // 0
@@ -9490,13 +9808,15 @@ test "comments/chains 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz(a, b());
     \\var sb = self_db_xyz(a, b());
   );
-  // using width: 15 
+  // using width: 15
   res = try format(doc, .{.width = 15}, al);
-  try check(res,
+  try check(
+    res,
     \\var sb = self.db.xyz(
     \\  a,
     \\  b(),
@@ -9581,7 +9901,8 @@ test "comments/chains 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = foo // yes
     \\. // two
     \\bar // a
@@ -9640,7 +9961,8 @@ test "comments/chains 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = foo // yes
     \\. // two
     \\bar // a
@@ -9754,7 +10076,8 @@ test "comments/chains 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -9794,7 +10117,8 @@ test "comments/chains 3" {
   );
   // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\var ky = self.group(
     \\  self.seqb()
     \\    .text("Group(")
@@ -9904,7 +10228,8 @@ test "comments/fundecl 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn // comment fn
     \\foo2 // comment name
     \\( // comment bracket
@@ -9956,7 +10281,8 @@ test "comments/fundecl 1" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\fn // comment fn
     \\foo2 // comment name
     \\( // comment bracket
@@ -10057,7 +10383,8 @@ test "comments/fundecl 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\// last one!
     \\j: usize,
     \\
@@ -10083,7 +10410,8 @@ test "comments/fundecl 2" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\// last one!
     \\j: usize,
     \\
@@ -10156,7 +10484,8 @@ test "comments/fundecl 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\pub // comment 1
     \\fn // comment 2
     \\fantasticFooBar // comment 3
@@ -10188,7 +10517,8 @@ test "comments/fundecl 3" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\pub // comment 1
     \\fn // comment 2
     \\fantasticFooBar // comment 3
@@ -10280,7 +10610,8 @@ test "comments/fundecl 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\extern // first one
     \\fn // comment fn
     \\foo2 // comment name
@@ -10320,7 +10651,8 @@ test "comments/fundecl 4" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\extern // first one
     \\fn // comment fn
     \\foo2 // comment name
@@ -10396,7 +10728,8 @@ test "comments/block 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc1 = blk: { // opening
     \\  // the first
     \\  someBlock();
@@ -10422,7 +10755,8 @@ test "comments/block 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc1 = blk: { // opening
     \\  // the first
     \\  someBlock();
@@ -10497,7 +10831,8 @@ test "comments/containerdecl 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = extern // first?
     \\union // test here
     \\( // lbrack
@@ -10534,7 +10869,8 @@ test "comments/containerdecl 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = extern // first?
     \\union // test here
     \\( // lbrack
@@ -10614,7 +10950,8 @@ test "comments/containerdecl 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = union // test here
     \\( // lbrack
     \\  enum // abc
@@ -10651,7 +10988,8 @@ test "comments/containerdecl 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = union // test here
     \\( // lbrack
     \\  enum // abc
@@ -10716,7 +11054,8 @@ test "comments/containerdecl 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = extern // first?
     \\union // test here
     \\( // lbrack
@@ -10743,7 +11082,8 @@ test "comments/containerdecl 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = extern // first?
     \\union // test here
     \\( // lbrack
@@ -10827,7 +11167,8 @@ test "comments/containerdecl 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox2 = enum {
     \\  a,
     \\  b,
@@ -10887,7 +11228,8 @@ test "comments/containerdecl 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox2 = enum {
     \\  a,
     \\  b,
@@ -11004,7 +11346,8 @@ test "comments/containerdecl 5" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\comptime // here here
     \\x // first
     \\: // yes
@@ -11048,7 +11391,8 @@ test "comments/containerdecl 5" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\comptime // here here
     \\x // first
     \\: // yes
@@ -11125,7 +11469,8 @@ test "comments/containerdecl 6" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = extern // first?
     \\union // test here
     \\( // lbrack
@@ -11147,7 +11492,8 @@ test "comments/containerdecl 6" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const fox3 = extern // first?
     \\union // test here
     \\( // lbrack
@@ -11181,14 +11527,16 @@ test "comments/containerdecl 7" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const T = struct {
     \\  mem: u8, // y
     \\};
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const T = struct {
     \\  mem: u8, // y
     \\};
@@ -11314,7 +11662,8 @@ test "comments/if/else 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  // first one
     \\  if // again
@@ -11418,7 +11767,8 @@ test "comments/if/else 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  // first one
     \\  if // again
@@ -11617,7 +11967,8 @@ test "comments/if/else 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  var z = if (a) //
     \\  b: {
@@ -11707,7 +12058,8 @@ test "comments/if/else 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  var z = if (a) //
     \\  b: {
@@ -11854,7 +12206,8 @@ test "comments/if/else 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if //
     \\  ( //
@@ -11904,7 +12257,8 @@ test "comments/if/else 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testing() void {
     \\  if //
     \\  ( //
@@ -11991,7 +12345,8 @@ test "comments/if/else 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if //
     \\  ( //
@@ -12025,7 +12380,8 @@ test "comments/if/else 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if //
     \\  ( //
@@ -12105,7 +12461,8 @@ test "comments/if/else 5" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if //
     \\  ( //
@@ -12141,7 +12498,8 @@ test "comments/if/else 5" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if //
     \\  ( //
@@ -12277,7 +12635,8 @@ test "comments/for 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for //
     \\  ( //
@@ -12360,7 +12719,8 @@ test "comments/for 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for //
     \\  ( //
@@ -12557,7 +12917,8 @@ test "comments/for 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for //
     \\  ( //
@@ -12662,7 +13023,8 @@ test "comments/for 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for //
     \\  ( //
@@ -12805,7 +13167,8 @@ test "comments/for 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for //
     \\  ( //
@@ -12844,7 +13207,8 @@ test "comments/for 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for //
     \\  ( //
@@ -12929,7 +13293,8 @@ test "comments/for 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| //
     \\    print('yello world')
@@ -12964,7 +13329,8 @@ test "comments/for 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  for (
     \\    some,
@@ -13096,7 +13462,8 @@ test "comments/while 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while // a
     \\  ( // b
@@ -13162,7 +13529,8 @@ test "comments/while 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while // a
     \\  ( // b
@@ -13271,7 +13639,8 @@ test "comments/while 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (someNiceCondition(a, b, c)) |x| // a
     \\  blk: {
@@ -13296,7 +13665,8 @@ test "comments/while 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  while (
     \\    someNiceCondition(a, b, c)
@@ -13389,7 +13759,8 @@ test "comments/while 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testme() void {
     \\  while (true) blk: {
     \\    std.debug.print("yello world", .{});
@@ -13443,7 +13814,8 @@ test "comments/while 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testme() void {
     \\  while (true) blk: {
     \\    std.debug.print(
@@ -13564,7 +13936,8 @@ test "comments/while 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl // a
     \\  : // b
@@ -13584,7 +13957,8 @@ test "comments/while 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  lbl // a
     \\  : // b
@@ -13658,7 +14032,8 @@ test "comments/block-label" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (true) blk: {
     \\  } else {
@@ -13694,7 +14069,8 @@ test "comments/block-label" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (true) blk: {
     \\  } else {
@@ -13785,7 +14161,8 @@ test "comments/if-for-while 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (someCondition()) // a
     \\    myExpr();
@@ -13832,7 +14209,8 @@ test "comments/if-for-while 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  if (someCondition()) // a
     \\    myExpr();
@@ -13976,7 +14354,8 @@ test "comments/if-for-while 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  // More torture tests
     \\  if (someCondition()) // a
@@ -14042,7 +14421,8 @@ test "comments/if-for-while 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn testMe() void {
     \\  // More torture tests
     \\  if (someCondition()) // a
@@ -14133,7 +14513,8 @@ test "comments/if-for-while 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  while (true) {}
     \\  while (true) {
@@ -14148,7 +14529,8 @@ test "comments/if-for-while 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  while (true) {}
     \\  while (true) {
@@ -14191,7 +14573,8 @@ test "comments/if-while 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const final_qual: enum {
     \\  @"volatile",
     \\  @"const",
@@ -14214,7 +14597,8 @@ test "comments/if-while 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const final_qual: enum {
     \\  @"volatile",
     \\  @"const",
@@ -14275,7 +14659,8 @@ test "comments/if-while 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  while (cond)
     \\    foo()
@@ -14316,7 +14701,8 @@ test "comments/if-while 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  while (cond)
     \\    foo()
@@ -14416,7 +14802,8 @@ test "comments/switch 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\label // 1
     \\: // 2
     \\switch // 3
@@ -14467,7 +14854,8 @@ test "comments/switch 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\label // 1
     \\: // 2
     \\switch // 3
@@ -14543,7 +14931,8 @@ test "comments/switch 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\switch (someExpr(jk)) {},
     \\
     \\switch // a
@@ -14567,7 +14956,8 @@ test "comments/switch 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\switch (someExpr(jk)) {},
     \\
     \\switch // a
@@ -14619,7 +15009,8 @@ test "comments/switch 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) lbl // ok
@@ -14640,7 +15031,8 @@ test "comments/switch 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) lbl // ok
@@ -14706,7 +15098,8 @@ test "comments/switch 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) { // one
     \\  // switching on an expr is good 1
     \\  // switching on an expr is good 2
@@ -14767,7 +15160,8 @@ test "comments/switch 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\tag: switch (expr2) { // one
     \\  // switching on an expr is good 1
     \\  // switching on an expr is good 2
@@ -14881,7 +15275,8 @@ test "comments/switch 5" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\switch (expr(jla)) // 0
     \\{
     \\  inline // 1
@@ -14906,7 +15301,8 @@ test "comments/switch 5" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\switch (
     \\  expr(
     \\    jla,
@@ -14983,7 +15379,8 @@ test "comments/error-union" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) Foo // 1
@@ -15012,7 +15409,8 @@ test "comments/error-union" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn fun(
     \\  expr: Type,
     \\) Foo // 1
@@ -15186,7 +15584,8 @@ test "comments/struct-init" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var a = Ty // 1
     \\{ // 2
     \\  . // 3
@@ -15307,7 +15706,8 @@ test "comments/struct-init" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var a = Ty // 1
     \\{ // 2
     \\  . // 3
@@ -15525,7 +15925,8 @@ test "comments/array-init" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var a = Ty // 1
     \\{ // 2
     \\  "yay" // 3
@@ -15606,7 +16007,8 @@ test "comments/array-init" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var a = Ty // 1
     \\{ // 2
     \\  "yay" // 3
@@ -15753,7 +16155,8 @@ test "comments/break-return" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  // this is true
     \\  return // my ret
@@ -15804,7 +16207,8 @@ test "comments/break-return" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  // this is true
     \\  return // my ret
@@ -15897,7 +16301,8 @@ test "comments/assign-destructure" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  // this is true
     \\  const // 1
@@ -15934,7 +16339,8 @@ test "comments/assign-destructure" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  // this is true
     \\  const // 1
@@ -16035,7 +16441,8 @@ test "comments/assign-add" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  // this is true
     \\  const // 1
@@ -16082,7 +16489,8 @@ test "comments/assign-add" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  // this is true
     \\  const // 1
@@ -16237,7 +16645,8 @@ test "comments/field-access" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  var x = self
     \\    .tree
@@ -16317,7 +16726,8 @@ test "comments/field-access" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  var x = self
     \\    .tree
@@ -16471,7 +16881,8 @@ test "comments/binexpr" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -16573,7 +16984,8 @@ test "comments/binexpr" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(bar: T) void {
     \\  var x: u3 = 5;
     \\  const a, _ = expr;
@@ -16707,7 +17119,8 @@ test "comments/try-catch" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = try // my try
     \\someFunc(1, 2, 3); // stuff
     \\var abc = someTestFunc(
@@ -16732,7 +17145,8 @@ test "comments/try-catch" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = try // my try
     \\someFunc(1, 2, 3); // stuff
     \\var abc = someTestFunc(
@@ -16803,7 +17217,8 @@ test "comments/orelse" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3) orelse // 1
     \\  return;
     \\var abc = someFunc(1, 2, 3) orelse // 1
@@ -16836,7 +17251,8 @@ test "comments/orelse" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var abc = someFunc(1, 2, 3)
     \\  orelse // 1
     \\  return;
@@ -16918,7 +17334,8 @@ test "comments/addressop-optional" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = & // a
     \\foo(1, 2, 3);
     \\
@@ -16935,7 +17352,8 @@ test "comments/addressop-optional" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = & // a
     \\foo(1, 2, 3);
     \\
@@ -17048,7 +17466,8 @@ test "comments/pointer-type 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [ // 1
     \\  * // 2
     \\] // 3
@@ -17138,7 +17557,8 @@ test "comments/pointer-type 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [ // 1
     \\  * // 2
     \\] // 3
@@ -17262,7 +17682,8 @@ test "comments/pointer-type 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [
     \\  lhs: // only
     \\  Foo(T, K)
@@ -17281,7 +17702,8 @@ test "comments/pointer-type 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [
     \\  lhs: // only
     \\  Foo(T, K)
@@ -17416,7 +17838,8 @@ test "comments/pointer-type 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: * // 1
     \\allowzero // 2
     \\align( // 3
@@ -17543,7 +17966,8 @@ test "comments/pointer-type 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var x: * // 1
     \\allowzero // 2
     \\  align( // 3
@@ -17727,7 +18151,8 @@ test "comments/pointer-type 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [
     \\  * // 2
     \\] // 3
@@ -17782,7 +18207,8 @@ test "comments/pointer-type 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\var j: [
     \\  * // 2
     \\] // 3
@@ -17880,7 +18306,8 @@ test "comments/doc-comment 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\/// This is a doc comment 1
     \\// abc
     \\// xyz
@@ -17911,7 +18338,8 @@ test "comments/doc-comment 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\/// This is a doc comment 1
     \\// abc
     \\// xyz
@@ -17967,7 +18395,8 @@ test "comments/doc-comment 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\/// first T
     \\const T = struct {
     \\  /// the mem member
@@ -17984,7 +18413,8 @@ test "comments/doc-comment 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\/// first T
     \\const T = struct {
     \\  /// the mem member
@@ -18026,7 +18456,8 @@ test "comments/doc-comment 3" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\/// first T
     \\const T = struct {
     \\  /// the mem member
@@ -18048,7 +18479,8 @@ test "comments/doc-comment 3" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\/// first T
     \\const T = struct {
     \\  /// the mem member
@@ -18089,7 +18521,8 @@ test "comments/doc-comment 4" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  /// The first param, x
     \\  x: u32,
@@ -18105,7 +18538,8 @@ test "comments/doc-comment 4" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo(
     \\  /// The first param, x
     \\  x: u32,
@@ -18162,7 +18596,8 @@ test "comments/mint-off-on 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\// mint fmt: off
     \\ // xyz
     \\ /// This is a doc comment 2
@@ -18193,7 +18628,8 @@ test "comments/mint-off-on 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\// mint fmt: off
     \\ // xyz
     \\ /// This is a doc comment 2
@@ -18262,7 +18698,8 @@ test "comments/mint-off-on 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\// mint fmt: off
     \\ // xyz
     \\ /// This is a doc comment 2
@@ -18296,7 +18733,8 @@ test "comments/mint-off-on 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\// mint fmt: off
     \\ // xyz
     \\ /// This is a doc comment 2
@@ -18391,7 +18829,8 @@ test "slice" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\foo() // 1
     \\[ // 2
     \\  // 3
@@ -18447,7 +18886,8 @@ test "slice" {
   );
   // using width: 10
   res = try format(doc, .{.width = 10}, al);
-  try check(res,
+  try check(
+    res,
     \\foo() // 1
     \\[ // 2
     \\  // 3
@@ -18553,7 +18993,8 @@ test "catch-orelse 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\const p = paths orelse blk: {
     \\  const size = try std.Io.Dir.cwd().realPath(io, &buf);
     \\  break :blk &.{buf[0..size]};
@@ -18587,7 +19028,8 @@ test "catch-orelse 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\const p = paths orelse blk: {
     \\  const size = try std.Io.Dir.cwd()
     \\    .realPath(io, &buf);
@@ -18652,7 +19094,8 @@ test "catch-orelse 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  writer.flush() catch {};
     \\  writer.flush() orelse {};
@@ -18660,7 +19103,8 @@ test "catch-orelse 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  writer.flush() catch {};
     \\  writer.flush() orelse {};
@@ -18708,7 +19152,8 @@ test "array-access" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\_ = buf // 1
     \\[ // 2
     \\  // toplevel stuff 1
@@ -18739,7 +19184,8 @@ test "array-access" {
   );
   // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\_ = buf // 1
     \\[ // 2
     \\  // toplevel stuff 1
@@ -18791,7 +19237,8 @@ test "error-value" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = error // 1
     \\. // 2
     \\FooIsInvalid // 3
@@ -18800,7 +19247,8 @@ test "error-value" {
   );
   // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\var x = error // 1
     \\  . // 2
     \\  FooIsInvalid // 3
@@ -18875,7 +19323,8 @@ test "multiline-string 1" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn MyFoo() void {
     \\  var x = // my foo
     \\  \\ j
@@ -18948,7 +19397,8 @@ test "multiline-string 1" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\fn MyFoo() void {
     \\  var x = // my foo
     \\  \\ j
@@ -19040,7 +19490,8 @@ test "multiline-string 2" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const ArgParse = struct {
     \\  const info =
     \\  \\Usage:
@@ -19054,7 +19505,8 @@ test "multiline-string 2" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\pub const ArgParse = struct {
     \\  const info =
     \\  \\Usage:
@@ -19081,7 +19533,8 @@ test "bang-return" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\pub inline fn getStatMTime(io: std.Io, f: []const u8) !std.Io.Timestamp {
     \\  const stat = try std.Io.Dir.cwd().statFile(io, f, .{});
     \\  return stat.mtime;
@@ -19089,7 +19542,8 @@ test "bang-return" {
   );
   // using width: 30
   res = try format(doc, .{.width = 30}, al);
-  try check(res,
+  try check(
+    res,
     \\pub inline fn getStatMTime(
     \\  io: std.Io,
     \\  f: []const u8,
@@ -19195,7 +19649,8 @@ test "misc" {
   // default width: 85
   const doc = try translate(src, al);
   var res = try format(doc, .{}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  lhs <<|= // x
     \\  rhs;
@@ -19286,7 +19741,8 @@ test "misc" {
   );
   // using width: 20
   res = try format(doc, .{.width = 20}, al);
-  try check(res,
+  try check(
+    res,
     \\fn foo() void {
     \\  lhs <<|= // x
     \\  rhs;

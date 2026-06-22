@@ -8,23 +8,36 @@ const ArenaAllocator = std.heap.ArenaAllocator;
 const log = std.log.scoped(.glue);
 
 pub const FileType = std.zig.Ast.Mode;
-pub const Mode = enum{ imm, watch, help, init };
-pub const Path = struct {path: []const u8, ty: FileType, ignore: bool = false, is_config: bool = false};
+pub const Mode = enum { imm, watch, help, init };
+pub const Path = struct {
+  path: []const u8,
+  ty: FileType,
+  ignore: bool = false,
+  is_config: bool = false,
+};
 // NOTE: keep `FileTypes` in sync with `ExtensionFilters`
-pub const FileTypes = [_]FileType {.zig, .zon};
-pub const ExtensionFilters = [_][]const u8 {"zig", "zon"};
-pub const IgnoreList = [_][]const u8 {".zig-", "zig-"};
+pub const FileTypes = [_]FileType{.zig, .zon};
+pub const ExtensionFilters = [_][]const u8{"zig", "zon"};
+pub const IgnoreList = [_][]const u8{".zig-", "zig-"};
 
 pub const MintConfig = struct {
-  width: u32, indent: u8, ignore: [][]const u8,
+  width: u32,
+  indent: u8,
+  ignore: [][]const u8,
 
   pub fn toFmtConfig(self: MintConfig) fmt.FmtConfig {
     return .{.width = self.width, .indent = self.indent, .write_mode = .file};
   }
 };
 
-pub const Project = struct {config: ?struct{p: Path, mtime: std.Io.Timestamp, fmt_cfg: fmt.FmtConfig = .{.write_mode = .file}} = null, 
+pub const Project = struct {
+  config: ?struct {
+    p: Path,
+    mtime: std.Io.Timestamp,
+    fmt_cfg: fmt.FmtConfig = .{.write_mode = .file},
+  } = null,
   files: []Path,
+
   pub fn getFmtConfig(self: Project) fmt.FmtConfig {
     if (self.config) |cfg| {
       return cfg.fmt_cfg;
@@ -47,8 +60,12 @@ pub const Glue = struct {
   inline fn allocator(self: *Glue) Allocator {
     return self.arena.allocator();
   }
-  
-  pub inline fn getFormatter(self: *Glue, al: Allocator, cfg: fmt.FmtConfig) struct{ts.Translate, fmt.Format} {
+
+  pub inline fn getFormatter(
+    self: *Glue,
+    al: Allocator,
+    cfg: fmt.FmtConfig,
+  ) struct { ts.Translate, fmt.Format } {
     // NOTE: we could reset every field of `t` and `f` but we'd
     // have to do it intrusively. This can easily break if we add
     // new fields to `t` or `f` or both. For now, simply creating
@@ -56,7 +73,12 @@ pub const Glue = struct {
     return .{try ts.Translate.init(al, self.io), fmt.Format.init(self.io, al, cfg)};
   }
 
-  fn readFile(self: *Glue, filename: []const u8, mode: std.Io.File.OpenFlags.Mode, al: Allocator) !struct{std.Io.File, [:0]const u8} {
+  fn readFile(
+    self: *Glue,
+    filename: []const u8,
+    mode: std.Io.File.OpenFlags.Mode,
+    al: Allocator,
+  ) !struct { std.Io.File, [:0]const u8 } {
     var file = try std.Io.Dir.cwd().openFile(self.io, filename, .{.mode = mode});
     const size = try file.length(self.io);
     var buf = util.allocSlice(u8, size + 1, al);
@@ -65,9 +87,10 @@ pub const Glue = struct {
     buf[size] = 0;
     return .{file, buf[0..size:0]};
   }
-  
+
   fn writeFile(self: *Glue, filename: []const u8, content: []const u8) !void {
-    var file = try std.Io.Dir.cwd().openFile(self.io, filename, .{.mode = .write_only});
+    var file = try std.Io.Dir.cwd()
+      .openFile(self.io, filename, .{.mode = .write_only});
     defer file.close(self.io);
     try file.setLength(self.io, 0);
     try file.writePositionalAll(self.io, content, 0);
@@ -89,7 +112,7 @@ pub const Glue = struct {
     var diag = std.zon.parse.Diagnostics{};
     return std.zon.parse.fromSliceAlloc(MintConfig, al, src, &diag, .{});
   }
-  
+
   pub fn loadConfig(self: *Glue, proj: *Project, is_imm: bool, al: Allocator) !void {
     if (proj.config) |*cfg| {
       const mtime = try util.getStatMTime(self.io, cfg.p.path);
@@ -106,7 +129,7 @@ pub const Glue = struct {
         cfg.fmt_cfg = m_cfg.toFmtConfig();
         // TODO: integrate .gitignore
         l: for (proj.files) |*_p| {
-          // FIXME: inefficient, rework this. 
+          // FIXME: inefficient, rework this.
           for (m_cfg.ignore) |ign| {
             if (std.mem.containsAtLeast(u8, _p.path, 1, ign)) {
               _p.ignore = true;

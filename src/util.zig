@@ -18,21 +18,34 @@ pub inline fn allocSlice(comptime T: type, n: usize, al: Allocator) []T {
   };
 }
 
-pub inline fn listInit(comptime T: type, cap: usize, al: Allocator) std.ArrayList(T) {
+pub inline fn listInit(
+  comptime T: type,
+  cap: usize,
+  al: Allocator,
+) std.ArrayList(T) {
   return std.ArrayList(T).initCapacity(al, cap) catch |e| {
     std.debug.print("list init failed: {}\n", .{e});
     std.posix.system.exit(1);
   };
 }
 
-pub inline fn listAppend(val: anytype, list: *std.ArrayList(@TypeOf(val)), al: Allocator) void {
+pub inline fn listAppend(
+  val: anytype,
+  list: *std.ArrayList(@TypeOf(val)),
+  al: Allocator,
+) void {
   list.append(al, val) catch |e| {
     std.debug.print("list append failed: {}\n", .{e});
     std.posix.system.exit(1);
   };
 }
 
-pub inline fn listAppendSlice(comptime T: type, list: *std.ArrayList(T), val: []T, al: Allocator) void {
+pub inline fn listAppendSlice(
+  comptime T: type,
+  list: *std.ArrayList(T),
+  val: []T,
+  al: Allocator,
+) void {
   list.appendSlice(al, val) catch |e| {
     std.debug.print("list append slice failed: {}\n", .{e});
     std.posix.system.exit(1);

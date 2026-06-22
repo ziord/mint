@@ -4,23 +4,16 @@ const util = @import("util.zig");
 const Allocator = std.mem.Allocator;
 pub const DocList = std.ArrayList(*Doc);
 
-pub const Text = struct {
-  s: []const u8,
-};
+pub const Text = struct { s: []const u8 };
 
-pub const Seq = struct {
-  docs: []*Doc,
-};
+pub const Seq = struct { docs: []*Doc };
 
-pub const Group = struct {
-  id: u32,
-  docs: []*Doc,
-};
+pub const Group = struct { id: u32, docs: []*Doc };
 
 pub const Line = struct {
   ty: Ty,
 
-  pub const Ty = enum (u4) {
+  pub const Ty = enum(u4) {
     /// adds a line only when we break,
     /// when we don't it's equiv to ""
     soft,
@@ -74,7 +67,6 @@ pub const Doc = union(enum) {
       else => false,
     };
   }
-
 };
 
 pub const SeqBuilder = struct {
@@ -286,7 +278,7 @@ pub const SeqBuilder = struct {
     }
     return Doc.new(.{.seq = Seq{.docs = self.docs.items}}, self.al);
   }
-  
+
   pub fn reset(self: *@This()) void {
     self.done = false;
     self.docs = .empty;
@@ -320,7 +312,7 @@ pub const DocBuilder = struct {
   /// builders stored on the heap
   heap_builders: std.ArrayList(*SeqBuilder) = .empty,
   len: usize = 0,
-  // FIXME: need to handle this in a better/more efficient way 
+  // FIXME: need to handle this in a better/more efficient way
   /// skip all write operations on a SeqBuilder
   disable_writes: bool = false,
 
