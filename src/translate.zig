@@ -239,6 +239,293 @@ pub const Translate = struct {
     return rbrack;
   }
 
+  fn _tline(
+    self: *Self,
+    sb: *SeqBuilder,
+    start: usize,
+    end: usize,
+    next_is_eof: bool,
+  ) void {
+    // only add newlines if we don't already have comments. comments always handle
+    // their own newlines
+    if (std.mem.find(u8, self.tree.source[start..end], "//") != null) {
+      return;
+    }
+    if (std.mem.findScalar(u8, self.tree.source[start..end], '\n') != null) {
+      const newlines = @min(
+        2,
+        std.mem.countScalar(u8, self.tree.source[start..end], '\n'),
+      );
+      for (0..newlines) |_| {
+        sb.declline()._();
+      }
+    } else if (next_is_eof) {
+      sb.declline()._();
+    }
+  }
+
+  fn tline(self: *Self, sb: *SeqBuilder, tkn: Ast.TokenIndex) void {
+    const start = self.tree.tokenStart(tkn) + self._token(tkn).len;
+    const end = self.tree.tokenStart(tkn + 1);
+    self._tline(sb, start, end, self.tree.tokenTag(tkn + 1) == .eof);
+  }
+
+  fn _tcomment(
+    self: *Self,
+    sb: *SeqBuilder,
+    start: usize,
+    end: usize,
+    cfg: TokenFmtConfig,
+  ) void {
+    // NOTE: _tcomment() doesn't handle doc_comment as those are separate
+    // nodes not stored in the tree's token seq
+    var idx = start;
+    // handle trailing comments
+    var add_only_next_line_comments = cfg.add_only_next_line_comments;
+    var is_same_line = true;
+    var comments = @as(u32, 0);
+    defer self._comments += comments;
+    // NOTE: adapted from (std) Render.zig
+    while (std.mem.find(u8, self.tree.source[idx..end], "//")) |offset| {
+      const comment_start = idx + offset;
+      // If there is no newline, the comment ends with EOF
+      const newline_idx = std.mem.findScalar(
+        u8,
+        self.tree.source[comment_start..end],
+        '\n',
+      );
+      const newline = if (newline_idx) |i| comment_start + i else null;
+      const raw_comment = self.tree.source[
+        comment_start..newline orelse self.tree.source.len
+      ];
+      const trimmed_comment = std.mem.trimEnd(
+        u8,
+        raw_comment,
+        &std.ascii.whitespace,
+      );
+      var fmt_comment: ?[]const u8 = null;
+      if (idx != 0) {
+        if (
+          std.mem.containsAtLeast(u8, self.tree.source[idx..comment_start], 2, "\n")
+        ) {
+          if (cfg.add_only_trailing_comment) return;
+          sb.declline().declline()._();
+          is_same_line = false;
+        } else if (
+          std.mem.findScalar(u8, self.tree.source[idx..comment_start], '\n') != null
+        ) {
+          if (cfg.add_only_trailing_comment) return;
+          sb.declline()._();
+          is_same_line = false;
+        } else if (idx == start) {
+          if (!add_only_next_line_comments) {
+            sb.space()._();
+          }
+        }
+        if (add_only_next_line_comments) {
+          add_only_next_line_comments = false;
+          if (is_same_line) {
+            idx = (newline orelse end - 1) + 1;
+            continue;
+          }
+        }
+      }
+      idx = (newline orelse end - 1) + 1;
+      const comment_content = std.mem.trimStart(
+        u8,
+        trimmed_comment["//".len..],
+        &std.ascii.whitespace,
+      );
+      if (
+        self.fmt_disabled_pos != null
+          and std.mem.eql(u8, comment_content, "mint fmt: on")
+      ) {
+        // formatting was disabled but we're now at the point where it's re-enabled
+        // first, enable writing to a seqbuilder
+        self.db.disable_writes = false;
+        const raw = self.tree.source[self.fmt_disabled_pos.?..comment_start];
+        sb.text(raw)._();
+        self.fmt_disabled_pos = null;
+        fmt_comment = "// mint fmt: on";
+      } else if (
+        self.fmt_disabled_pos == null
+          and std.mem.eql(u8, comment_content, "mint fmt: off")
+      ) {
+        // disable formatting
+        self.fmt_disabled_pos = idx;
+        fmt_comment = "// mint fmt: off";
+      }
+      // it is still our responsibility to separate multiline
+      // comments even if add_trailing_line_for_comment is unset
+      if (comments > 0 and !cfg.add_trailing_line_for_comment) {
+        sb.declline()._();
+      }
+      if (fmt_comment) |cmt| {
+        sb.text(cmt)._();
+        fmt_comment = null;
+      } else {
+        sb.text(trimmed_comment)._();
+      }
+      comments += 1;
+      if (cfg.add_trailing_line_for_comment) {
+        sb.declline()._();
+      }
+      if (self.fmt_disabled_pos != null) {
+        // we're in no fmt mode, so disable writing to a seqbuilder
+        self.db.disable_writes = true;
+      }
+      if (cfg.add_only_trailing_comment) return;
+    }
+    if (idx != start) {
+      if (cfg.add_only_next_line_comments and !cfg.add_trailing_line_for_comment) {
+        // trim off the last line
+        const len = sb.len();
+        if (len > 0 and sb.docs.items[len - 1].is(.line)) {
+          sb.docs.items = sb.docs.items[0..len - 1];
+        }
+      } else if (cfg.add_trailing_line_for_comment and end != self.tree.source.len) {
+        const newlines = @min(
+          @as(usize, 1),
+          std.mem.countScalar(u8, self.tree.source[idx..end], '\n'),
+        );
+        for (0..newlines) |_| {
+          sb.declline()._();
+        }
+      }
+    } else if (cfg.add_only_lines_if_no_comment) {
+      self._tline(sb, start, end, false);
+    }
+  }
+
+  /// add the trailing lines associated with an rbrace's `}` comments
+  fn _tBlockRbraceLines(self: *Self, sb: *SeqBuilder, term_tkn: Ast.TokenIndex) void {
+    const start = self.tree.tokenStart(term_tkn) + @as(usize, 1);
+    const end = self.tree.tokenStart(term_tkn + 1);
+    var idx = start;
+    while (std.mem.find(u8, self.tree.source[idx..end], "//")) |offset| {
+      const comment_start = idx + offset;
+      // If there is no newline, the comment ends with EOF
+      const newline_idx = std.mem.findScalar(
+        u8,
+        self.tree.source[comment_start..end],
+        '\n',
+      );
+      const newline = if (newline_idx) |j| comment_start + j else null;
+      idx = (newline orelse end - 1) + 1;
+    }
+    if (idx != start) {
+      const lines = std.mem.countScalar(u8, self.tree.source[idx..end], '\n');
+      const newlines = if (lines >= 2) 2 else lines + 1; 
+      for (0..newlines) |_| {
+        sb.declline()._();
+      }
+    }
+  }
+
+  fn _tContainerComment(self: *Self, sb: *SeqBuilder, start: Ast.TokenIndex) void {
+    // NOTE: adapted from (std) Render.zig
+    var tkn = start;
+    while (self.tree.tokenTag(tkn) == .container_doc_comment) : (tkn += 1) {
+      sb.append(self.ttknWithSTL(tkn));
+    }
+  }
+
+  fn _tDocComment(self: *Self, sb: *SeqBuilder, end: Ast.TokenIndex) void {
+    // NOTE: adapted from (std) Render.zig
+    // search backwards for the first doc comment.
+    if (end == 0) return;
+    var tkn = end - 1;
+    while (self.tree.tokenTag(tkn) == .doc_comment) {
+      if (tkn == 0) break;
+      tkn -= 1;
+    } else {
+      tkn += 1;
+    }
+    const first = tkn;
+    if (first == end) return;
+    if (first != 0) {
+      const prev_tkn_tag = self.tree.tokenTag(first - 1);
+      assert(prev_tkn_tag != .l_paren);
+      // TODO: if (prev_tkn_tag != .l_brace) { }
+    }
+    while (self.tree.tokenTag(tkn) == .doc_comment) : (tkn += 1) {
+      // NOTE: _ttkn(..) handles comment increment for `doc_comment`
+      sb.append(self.ttkn(tkn));
+      sb.declline()._();
+    }
+  }
+
+  fn _ttkn(self: *Self, tkn: Ast.TokenIndex, cfg: TokenFmtConfig) *Doc {
+    var sb = self.db.seqb();
+    const lxm = self._token(tkn);
+    if (self.fmt_disabled_pos == null) {
+      if (self.tree.tokenTag(tkn) != .doc_comment) {
+        sb.text(lxm)._();
+      } else {
+        const trimmed_comment = std.mem.trimEnd(u8, lxm, &std.ascii.whitespace);
+        sb.text(trimmed_comment)._();
+        self._comments += 1;
+      }
+    } else {
+      sb.append(self.db.empty());
+    }
+    const start = self.tree.tokenStart(tkn) + lxm.len;
+    const end = self.tree.tokenStart(tkn + 1);
+    self.tkn_cache = .{.tkn = tkn, .has_trailing_comment = false};
+    self._tcomment(sb, start, end, cfg);
+    if (sb.len() > 1) {
+      self.tkn_cache.has_trailing_comment = true;
+      return self.db.group(sb.finish());
+    }
+    return sb.finish()[0];
+  }
+
+  fn tcomment(self: *Self, sb: *SeqBuilder, start: usize, end: usize) void {
+    self._tcomment(sb, start, end, .{});
+  }
+
+  fn getNextLineComments(
+    self: *Self,
+    tkn: Ast.TokenIndex,
+    add_line_at_comment_end: bool,
+  ) ?*Doc {
+    const start = self.tree.tokenStart(tkn) + self._token(tkn).len;
+    const end = self.tree.tokenStart(tkn + 1);
+    var sb = self.db.seqb();
+    const cfg: TokenFmtConfig = .{
+      .add_only_next_line_comments = true,
+      .add_trailing_line_for_comment = add_line_at_comment_end,
+    };
+    self._tcomment(sb, start, end, cfg);
+    for (sb.docs.items, 0..) |doc, i| {
+      if (doc.is(.line)) {
+        sb.docs.items[i] = self.db.empty();
+      } else {
+        break;
+      }
+    }
+    const docs = sb.finish();
+    return if (docs.len != 0) self.db.group(docs) else null;
+  }
+
+  fn ttkn(self: *Self, tkn: Ast.TokenIndex) *Doc {
+    return self._ttkn(tkn, .{});
+  }
+
+  /// token with comment having a trailing line as seen in the source
+  fn ttknWithTL(self: *Self, tkn: Ast.TokenIndex) *Doc {
+    return self._ttkn(tkn, .{.add_trailing_line_for_comment = true});
+  }
+
+  /// token with comment having a stripped trailing line
+  fn ttknWithSTL(self: *Self, tkn: Ast.TokenIndex) *Doc {
+    const doc = self._ttkn(tkn, .{});
+    if (self.tknHasTC(tkn)) {
+      return self.db.seqb().appends(doc).declline().finishSeq();
+    }
+    return doc;
+  }
+
   /// simple abstraction over call chains
   const Chain = union(enum) {
     ident: Ast.TokenIndex,
@@ -777,7 +1064,7 @@ pub const Translate = struct {
         .{.ignore_rbrace = has_stmts, .group = false},
       );
       if (has_stmts) {
-        sb.indent(b.seq.docs).hardline().append(self.tRbrace(rbrace, true));
+        sb.indent(b.seq.docs).hardline().append(self.ttkn(rbrace));
       } else {
         sb.indent(b.seq.docs)._();
       }
@@ -1238,6 +1525,12 @@ pub const Translate = struct {
         }
       } else {
         term_tkn = self.tree.lastToken(_n);
+        if (i != members.len or add_last_line) {
+          // handle `}`'s trailing line if it has a trailing comment
+          if (self.tree.tokenTag(term_tkn) == .r_brace and self.tknHasTC(term_tkn)) {
+            self._tBlockRbraceLines(sb, term_tkn);
+          }
+        }
       }
       if (i == members.len and !add_last_line) break;
       const len = sb.len();
@@ -1248,25 +1541,6 @@ pub const Translate = struct {
     }
   }
 
-  fn tRbrace(
-    self: *Self,
-    rbrace: Ast.TokenIndex,
-    add_rbrace_trailing_line: bool,
-  ) *Doc {
-    // when `}` has a comment, we add a trailing line to the comment, only if
-    // the next token is a keyword (i.e. the start of a new decl).
-    if (add_rbrace_trailing_line) {
-      const next_tag = self.tree.tokenTag(rbrace + 1);
-      const next_is_kwd = next_tag != .keyword_else
-        and (next_tag == .eof
-          or std.mem.startsWith(u8, @tagName(next_tag), "keyword"));
-      if (next_is_kwd) {
-        return self.ttknWithTL(rbrace);
-      }
-    }
-    return self.ttkn(rbrace);
-  }
-
   const BlockFmtConfig = struct {
     /// group the generated doc
     group: bool = false,
@@ -1274,8 +1548,6 @@ pub const Translate = struct {
     combine_braces_if_empty: bool = true,
     /// add a sep/decl line after '{'
     add_top_separator_line: bool = true,
-    /// add trailing line after '}'
-    add_rbrace_trailing_line: bool = true,
     /// only translate the lbrace '{' and its associated comments
     lbrace_only: bool = false,
     /// translate the block but do not add '}' and its associated comments
@@ -1311,7 +1583,7 @@ pub const Translate = struct {
       return lb;
     }
     self.tBlockMembers(tmp, stmts, false);
-    const rb = self.tRbrace(rbrace, cfg.add_rbrace_trailing_line);
+    const rb = self.ttkn(rbrace);
     if (
       !cfg.ignore_rbrace
         and cfg.combine_braces_if_empty
@@ -1431,6 +1703,7 @@ pub const Translate = struct {
       return self.db.groupi(id, sb.finish());
     }
     var term_tkn: Ast.TokenIndex = lbrace;
+    // NOTE: keep in sync with `tBlockMembers()`
     for (members, 1..) |_n, i| {
       self._tDocComment(tmp, self.tree.firstToken(_n));
       tmp.append(self.t(_n));
@@ -1466,6 +1739,12 @@ pub const Translate = struct {
           term_tkn = tkn;
         } else {
           term_tkn = tkn - 1;
+          if (i != members.len) {
+            // handle `}`'s trailing line if it has a trailing comment
+            if (self.tree.tokenTag(term_tkn) == .r_brace and self.tknHasTC(term_tkn)) {
+              self._tBlockRbraceLines(tmp, term_tkn);
+            }
+          }
         }
       }
       if (i != members.len and self.tknHasNoTC(term_tkn)) {
@@ -2089,7 +2368,7 @@ pub const Translate = struct {
       _ = cases.finish();
       sb.decllineIf(self.tknHasTC(last_tkn))._();
     }
-    sb.append(self.tRbrace(rbrace, true));
+    sb.append(self.ttkn(rbrace));
     return self.db.group(sb.finish());
   }
 
@@ -2600,268 +2879,6 @@ pub const Translate = struct {
     add_only_trailing_comment: bool = false,
     add_only_next_line_comments: bool = false,
   };
-
-  fn _tline(
-    self: *Self,
-    sb: *SeqBuilder,
-    start: usize,
-    end: usize,
-    next_is_eof: bool,
-  ) void {
-    // only add newlines if we don't already have comments. comments always handle
-    // their own newlines
-    if (std.mem.find(u8, self.tree.source[start..end], "//") != null) {
-      return;
-    }
-    if (std.mem.findScalar(u8, self.tree.source[start..end], '\n') != null) {
-      const newlines = @min(
-        2,
-        std.mem.countScalar(u8, self.tree.source[start..end], '\n'),
-      );
-      for (0..newlines) |_| {
-        sb.declline()._();
-      }
-    } else if (next_is_eof) {
-      sb.declline()._();
-    }
-  }
-
-  fn tline(self: *Self, sb: *SeqBuilder, tkn: Ast.TokenIndex) void {
-    const start = self.tree.tokenStart(tkn) + self._token(tkn).len;
-    const end = self.tree.tokenStart(tkn + 1);
-    self._tline(sb, start, end, self.tree.tokenTag(tkn + 1) == .eof);
-  }
-
-  fn _tcomment(
-    self: *Self,
-    sb: *SeqBuilder,
-    start: usize,
-    end: usize,
-    cfg: TokenFmtConfig,
-  ) void {
-    // NOTE: _tcomment() doesn't handle doc_comment as those are separate
-    // nodes not stored in the tree's token seq
-    var idx = start;
-    // handle trailing comments
-    var add_only_next_line_comments = cfg.add_only_next_line_comments;
-    var is_same_line = true;
-    var comments = @as(u32, 0);
-    defer self._comments += comments;
-    // NOTE: adapted from (std) Render.zig
-    while (std.mem.find(u8, self.tree.source[idx..end], "//")) |offset| {
-      const comment_start = idx + offset;
-      // If there is no newline, the comment ends with EOF
-      const newline_idx = std.mem.findScalar(
-        u8,
-        self.tree.source[comment_start..end],
-        '\n',
-      );
-      const newline = if (newline_idx) |i| comment_start + i else null;
-      const raw_comment = self.tree.source[
-        comment_start..newline orelse self.tree.source.len
-      ];
-      const trimmed_comment = std.mem.trimEnd(
-        u8,
-        raw_comment,
-        &std.ascii.whitespace,
-      );
-      var fmt_comment: ?[]const u8 = null;
-      if (idx != 0) {
-        if (
-          std.mem.containsAtLeast(u8, self.tree.source[idx..comment_start], 2, "\n")
-        ) {
-          if (cfg.add_only_trailing_comment) return;
-          sb.declline().declline()._();
-          is_same_line = false;
-        } else if (
-          std.mem.findScalar(u8, self.tree.source[idx..comment_start], '\n') != null
-        ) {
-          if (cfg.add_only_trailing_comment) return;
-          sb.declline()._();
-          is_same_line = false;
-        } else if (idx == start) {
-          if (!add_only_next_line_comments) {
-            sb.space()._();
-          }
-        }
-        if (add_only_next_line_comments) {
-          add_only_next_line_comments = false;
-          if (is_same_line) {
-            idx = (newline orelse end - 1) + 1;
-            continue;
-          }
-        }
-      }
-      idx = (newline orelse end - 1) + 1;
-      const comment_content = std.mem.trimStart(
-        u8,
-        trimmed_comment["//".len..],
-        &std.ascii.whitespace,
-      );
-      if (
-        self.fmt_disabled_pos != null
-          and std.mem.eql(u8, comment_content, "mint fmt: on")
-      ) {
-        // formatting was disabled but we're now at the point where it's re-enabled
-        // first, enable writing to a seqbuilder
-        self.db.disable_writes = false;
-        const raw = self.tree.source[self.fmt_disabled_pos.?..comment_start];
-        sb.text(raw)._();
-        self.fmt_disabled_pos = null;
-        fmt_comment = "// mint fmt: on";
-      } else if (
-        self.fmt_disabled_pos == null
-          and std.mem.eql(u8, comment_content, "mint fmt: off")
-      ) {
-        // disable formatting
-        self.fmt_disabled_pos = idx;
-        fmt_comment = "// mint fmt: off";
-      }
-      // it is still our responsibility to separate multiline
-      // comments even if add_trailing_line_for_comment is unset
-      if (comments > 0 and !cfg.add_trailing_line_for_comment) {
-        sb.declline()._();
-      }
-      if (fmt_comment) |cmt| {
-        sb.text(cmt)._();
-        fmt_comment = null;
-      } else {
-        sb.text(trimmed_comment)._();
-      }
-      comments += 1;
-      if (cfg.add_trailing_line_for_comment) {
-        sb.declline()._();
-      }
-      if (self.fmt_disabled_pos != null) {
-        // we're in no fmt mode, so disable writing to a seqbuilder
-        self.db.disable_writes = true;
-      }
-      if (cfg.add_only_trailing_comment) return;
-    }
-    if (idx != start) {
-      if (cfg.add_only_next_line_comments and !cfg.add_trailing_line_for_comment) {
-        // trim off the last line
-        const len = sb.len();
-        if (len > 0 and sb.docs.items[len - 1].is(.line)) {
-          sb.docs.items = sb.docs.items[0..len - 1];
-        }
-      } else if (cfg.add_trailing_line_for_comment and end != self.tree.source.len) {
-        const newlines = @min(
-          @as(usize, 1),
-          std.mem.countScalar(u8, self.tree.source[idx..end], '\n'),
-        );
-        for (0..newlines) |_| {
-          sb.declline()._();
-        }
-      }
-    } else if (cfg.add_only_lines_if_no_comment) {
-      self._tline(sb, start, end, false);
-    }
-  }
-
-  fn _tContainerComment(self: *Self, sb: *SeqBuilder, start: Ast.TokenIndex) void {
-    // NOTE: adapted from (std) Render.zig
-    var tkn = start;
-    while (self.tree.tokenTag(tkn) == .container_doc_comment) : (tkn += 1) {
-      sb.append(self.ttknWithSTL(tkn));
-    }
-  }
-
-  fn _tDocComment(self: *Self, sb: *SeqBuilder, end: Ast.TokenIndex) void {
-    // NOTE: adapted from (std) Render.zig
-    // search backwards for the first doc comment.
-    if (end == 0) return;
-    var tkn = end - 1;
-    while (self.tree.tokenTag(tkn) == .doc_comment) {
-      if (tkn == 0) break;
-      tkn -= 1;
-    } else {
-      tkn += 1;
-    }
-    const first = tkn;
-    if (first == end) return;
-    if (first != 0) {
-      const prev_tkn_tag = self.tree.tokenTag(first - 1);
-      assert(prev_tkn_tag != .l_paren);
-      // TODO: if (prev_tkn_tag != .l_brace) { }
-    }
-    while (self.tree.tokenTag(tkn) == .doc_comment) : (tkn += 1) {
-      // NOTE: _ttkn(..) handles comment increment for `doc_comment`
-      sb.append(self.ttkn(tkn));
-      sb.declline()._();
-    }
-  }
-
-  fn getNextLineComments(
-    self: *Self,
-    tkn: Ast.TokenIndex,
-    add_line_at_comment_end: bool,
-  ) ?*Doc {
-    const start = self.tree.tokenStart(tkn) + self._token(tkn).len;
-    const end = self.tree.tokenStart(tkn + 1);
-    var sb = self.db.seqb();
-    const cfg: TokenFmtConfig = .{
-      .add_only_next_line_comments = true,
-      .add_trailing_line_for_comment = add_line_at_comment_end,
-    };
-    self._tcomment(sb, start, end, cfg);
-    for (sb.docs.items, 0..) |doc, i| {
-      if (doc.is(.line)) {
-        sb.docs.items[i] = self.db.empty();
-      } else {
-        break;
-      }
-    }
-    const docs = sb.finish();
-    return if (docs.len != 0) self.db.group(docs) else null;
-  }
-
-  fn _ttkn(self: *Self, tkn: Ast.TokenIndex, cfg: TokenFmtConfig) *Doc {
-    var sb = self.db.seqb();
-    const lxm = self._token(tkn);
-    if (self.fmt_disabled_pos == null) {
-      if (self.tree.tokenTag(tkn) != .doc_comment) {
-        sb.text(lxm)._();
-      } else {
-        const trimmed_comment = std.mem.trimEnd(u8, lxm, &std.ascii.whitespace);
-        sb.text(trimmed_comment)._();
-        self._comments += 1;
-      }
-    } else {
-      sb.append(self.db.empty());
-    }
-    const start = self.tree.tokenStart(tkn) + lxm.len;
-    const end = self.tree.tokenStart(tkn + 1);
-    self.tkn_cache = .{.tkn = tkn, .has_trailing_comment = false};
-    self._tcomment(sb, start, end, cfg);
-    if (sb.len() > 1) {
-      self.tkn_cache.has_trailing_comment = true;
-      return self.db.group(sb.finish());
-    }
-    return sb.finish()[0];
-  }
-
-  fn tcomment(self: *Self, sb: *SeqBuilder, start: usize, end: usize) void {
-    self._tcomment(sb, start, end, .{});
-  }
-
-  fn ttkn(self: *Self, tkn: Ast.TokenIndex) *Doc {
-    return self._ttkn(tkn, .{});
-  }
-
-  /// token with comment having a trailing line as seen in the source
-  fn ttknWithTL(self: *Self, tkn: Ast.TokenIndex) *Doc {
-    return self._ttkn(tkn, .{.add_trailing_line_for_comment = true});
-  }
-
-  /// token with comment having a stripped trailing line
-  fn ttknWithSTL(self: *Self, tkn: Ast.TokenIndex) *Doc {
-    const doc = self._ttkn(tkn, .{});
-    if (self.tknHasTC(tkn)) {
-      return self.db.seqb().appends(doc).declline().finishSeq();
-    }
-    return doc;
-  }
 
   fn t(self: *Self, n: Node.Index) *Doc {
     const tag = self.tree.nodeTag(n);

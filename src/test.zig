@@ -19555,6 +19555,296 @@ test "bang-return" {
   );
 }
 
+test "rbrace-trailing-comment 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ fn foo() void {
+  \\var seen_dec = false;
+  \\if (self.peek() == '.') {
+  \\  const c = self.peekN(1);
+  \\  if (c == '.' or (!std.ascii.isDigit(c) and std.ascii.toLower(c) != 'e')) {
+  \\    return self.newToken(.tk_integer);
+  \\  }
+  \\  // "." dec_int
+  \\  seen_dec = true;
+  \\  self.adv(); // skip '.'
+  \\  if (std.ascii.isDigit(self.peek())) {
+  \\    while (std.ascii.isDigit(self.peek())) {
+  \\      self.adv();
+  \\      if (self.peek() == '_') {
+  \\        self.adv();
+  \\        if (!std.ascii.isDigit(self.peek())) {
+  \\          return err_;
+  \\        }
+  \\      }
+  \\    }
+  \\  } else {
+  \\    // hack for: 0.e1234 i.e. dec+ "." e dec+ since zig supports this
+  \\    if (std.ascii.toLower(self.peek()) != 'e') return err_;
+  \\  }
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\fn foo() void {
+    \\  var seen_dec = false;
+    \\  if (self.peek() == '.') {
+    \\    const c = self.peekN(1);
+    \\    if (c == '.' or (!std.ascii.isDigit(c) and std.ascii.toLower(c) != 'e')) {
+    \\      return self.newToken(.tk_integer);
+    \\    }
+    \\    // "." dec_int
+    \\    seen_dec = true;
+    \\    self.adv(); // skip '.'
+    \\    if (std.ascii.isDigit(self.peek())) {
+    \\      while (std.ascii.isDigit(self.peek())) {
+    \\        self.adv();
+    \\        if (self.peek() == '_') {
+    \\          self.adv();
+    \\          if (!std.ascii.isDigit(self.peek())) {
+    \\            return err_;
+    \\          }
+    \\        }
+    \\      }
+    \\    } else {
+    \\      // hack for: 0.e1234 i.e. dec+ "." e dec+ since zig supports this
+    \\      if (std.ascii.toLower(self.peek()) != 'e') return err_;
+    \\    }
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\fn foo() void {
+    \\  var seen_dec = false;
+    \\  if (self.peek() == '.') {
+    \\    const c = self.peekN(1);
+    \\    if (
+    \\      c == '.'
+    \\        or (!std.ascii.isDigit(
+    \\          c,
+    \\        )
+    \\          and std.ascii.toLower(
+    \\            c,
+    \\          ) != 'e')
+    \\    ) {
+    \\      return self.newToken(
+    \\        .tk_integer,
+    \\      );
+    \\    }
+    \\    // "." dec_int
+    \\    seen_dec = true;
+    \\    self.adv(); // skip '.'
+    \\    if (
+    \\      std.ascii.isDigit(
+    \\        self.peek(),
+    \\      )
+    \\    ) {
+    \\      while (
+    \\        std.ascii.isDigit(
+    \\          self.peek(),
+    \\        )
+    \\      ) {
+    \\        self.adv();
+    \\        if (
+    \\          self.peek() == '_'
+    \\        ) {
+    \\          self.adv();
+    \\          if (
+    \\            !std.ascii.isDigit(
+    \\              self.peek(),
+    \\            )
+    \\          ) {
+    \\            return err_;
+    \\          }
+    \\        }
+    \\      }
+    \\    } else {
+    \\      // hack for: 0.e1234 i.e. dec+ "." e dec+ since zig supports this
+    \\      if (
+    \\        std.ascii.toLower(
+    \\          self.peek(),
+    \\        ) != 'e'
+    \\      )
+    \\        return err_;
+    \\    }
+    \\  }
+    \\}
+  );
+}
+
+test "rbrace-trailing-comment 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const J = struct {
+  \\  fn fox() void {
+  \\  print("nothing");
+  \\ } // my trail
+  \\ fn foo() void {}
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  } // my trail
+    \\  fn foo() void {}
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  } // my trail
+    \\  fn foo() void {}
+    \\};
+  );
+}
+
+test "rbrace-trailing-comment 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const J = struct {
+  \\  fn fox() void {
+  \\  print("nothing");
+  \\ } // my trail
+  \\
+  \\
+  \\
+  \\ fn foo() void {}
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  } // my trail
+    \\
+    \\  fn foo() void {}
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  } // my trail
+    \\
+    \\  fn foo() void {}
+    \\};
+  );
+}
+
+test "rbrace-trailing-comment 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const J = struct {
+  \\  fn fox() void {
+  \\  print("nothing");
+  \\ }
+  \\ // my trail
+  \\ fn foo() void {}
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  }
+    \\  // my trail
+    \\  fn foo() void {}
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  }
+    \\  // my trail
+    \\  fn foo() void {}
+    \\};
+  );
+}
+
+test "rbrace-trailing-comment 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const J = struct {
+  \\  fn fox() void {
+  \\  print("nothing");
+  \\ }
+  \\ // my trail
+  \\
+  \\
+  \\
+  \\ fn foo() void {}
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  }
+    \\  // my trail
+    \\
+    \\  fn foo() void {}
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const J = struct {
+    \\  fn fox() void {
+    \\    print("nothing");
+    \\  }
+    \\  // my trail
+    \\
+    \\  fn foo() void {}
+    \\};
+  );
+}
+
 test "misc" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
