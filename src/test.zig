@@ -18092,11 +18092,11 @@ test "comments/doc-comment 4" {
   try check(res,
     \\fn foo(
     \\  /// The first param, x
-    \\  u32,
+    \\  x: u32,
     \\  /// The second param, y
-    \\  usize,
+    \\  y: usize,
     \\  /// The third param, z
-    \\  usize,
+    \\  z: usize,
     \\  /// The last param, varargs
     \\  ..., // abc
     \\) void {
@@ -18108,11 +18108,11 @@ test "comments/doc-comment 4" {
   try check(res,
     \\fn foo(
     \\  /// The first param, x
-    \\  u32,
+    \\  x: u32,
     \\  /// The second param, y
-    \\  usize,
+    \\  y: usize,
     \\  /// The third param, z
-    \\  usize,
+    \\  z: usize,
     \\  /// The last param, varargs
     \\  ..., // abc
     \\) void {
@@ -18810,7 +18810,7 @@ test "error-value" {
   );
 }
 
-test "multiline-string" {
+test "multiline-string 1" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
   const src =
@@ -19021,6 +19021,53 @@ test "multiline-string" {
   );
 }
 
+test "multiline-string 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub const ArgParse = struct {
+  \\const info =
+  \\\\Usage:
+  \\\\  mint <command> [<args>]
+  \\\\    init                        -  create a `mint.zon` config file
+  \\\\    fmt [filename|directory]    -  format a file or directory of files
+  \\\\    watch [filename|directory]  -  format in watch mode
+  \\\\    help                        -  display usage information
+  \\;
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\pub const ArgParse = struct {
+    \\  const info =
+    \\  \\Usage:
+    \\  \\  mint <command> [<args>]
+    \\  \\    init                        -  create a `mint.zon` config file
+    \\  \\    fmt [filename|directory]    -  format a file or directory of files
+    \\  \\    watch [filename|directory]  -  format in watch mode
+    \\  \\    help                        -  display usage information
+    \\  ;
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\pub const ArgParse = struct {
+    \\  const info =
+    \\  \\Usage:
+    \\  \\  mint <command> [<args>]
+    \\  \\    init                        -  create a `mint.zon` config file
+    \\  \\    fmt [filename|directory]    -  format a file or directory of files
+    \\  \\    watch [filename|directory]  -  format in watch mode
+    \\  \\    help                        -  display usage information
+    \\  ;
+    \\};
+  );
+}
+
 test "misc" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -19171,7 +19218,7 @@ test "misc" {
     \\  -> // 2
     \\  foo(1, 2, 4);
     \\}
-    \\const E = error { // a
+    \\const E = error{ // a
     \\  /// just some stuff
     \\  a,
     \\  b,
@@ -19179,7 +19226,7 @@ test "misc" {
     \\  c,
     \\} // last
     \\;
-    \\const E = error { a, b, c };
+    \\const E = error{ a, b, c };
     \\
     \\test // 1
     \\"foo" // 2
@@ -19288,7 +19335,7 @@ test "misc" {
     \\  -> // 2
     \\  foo(1, 2, 4);
     \\}
-    \\const E = error { // a
+    \\const E = error{ // a
     \\  /// just some stuff
     \\  a,
     \\  b,
@@ -19296,7 +19343,7 @@ test "misc" {
     \\  c,
     \\} // last
     \\;
-    \\const E = error {
+    \\const E = error{
     \\  a,
     \\  b,
     \\  c,

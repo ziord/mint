@@ -9,33 +9,32 @@ const Mode = glue.Mode;
 const FileType = glue.FileType;
 const FileTypes = glue.FileTypes;
 const ExtensionFilters = glue.ExtensionFilters;
+const IgnoreList = glue.IgnoreList;
+const Project = glue.Project;
+
+const log = std.log.scoped(.cli);
 
 pub const Cli = struct {
   al: Allocator,
   io: std.Io,
-  paths: []Path,
   mode: Mode,
-  /// dirs to watch
-  dirs: std.StringHashMapUnmanaged(void) = .empty,
-  cfg: fmt.FmtConfig = .{},
-  has_cfg_file: bool = false,
+  projects: std.StringArrayHashMapUnmanaged(Project) = .empty,
 
   var WriteBuf: [2048]u8 = undefined;
   
-  // TODO: populate this from a config file like a `config.mint` file
-  const IgnoreList = [_][]const u8 {".zig-", "zig-"};
+  const CfgFilename = "mint.zon";
 
   pub fn init(parent_al: Allocator, io: std.Io, paths: ?[]const []const u8, mode: Mode) !Cli {
-    var self = Cli{.al = parent_al, .io = io, .paths = &.{}, .mode = mode};
-    if (mode == .help) return self;
+    var self = Cli{.al = parent_al, .io = io, .mode = mode};
+    if (mode == .help or mode == .init) return self;
     const p = paths orelse &.{@as([]const u8, ".")};
     try self.findFilePaths(p);
     return self;
   }
 
   fn findFilePaths(self: *Cli, paths: []const []const u8) !void {
-    var files: std.ArrayList(Path) = .empty;
-    for (paths) |path| {
+    m: for (paths) |path| {
+      var files: std.ArrayList(Path) = .empty;
       _ = std.Io.Dir.cwd().openFile(self.io, path, .{.allow_directory = false}) catch |e| {
         switch (e) {
           error.IsDir => {
@@ -44,12 +43,6 @@ pub const Cli = struct {
             l: while (try walker.next(self.io)) |entry| {
               switch (entry.kind) {
                 .file => {
-                  // FIXME: inefficient, rework this. 
-                  for (IgnoreList) |ign| {
-                    if (std.mem.containsAtLeast(u8, entry.path, 1, ign)) {
-                      continue :l;
-                    }
-                  }
                   var idx = @as(usize, 0);
                   inline for (ExtensionFilters, 0..) |filter, i| {
                     if (std.mem.endsWith(u8, entry.path, "." ++ filter)) {
@@ -67,11 +60,11 @@ pub const Cli = struct {
               }
             }
             // save for rescan later
-            if (files.items.len > 0 and self.mode == .watch) {
-              try self.dirs.put(self.al, path, {});
+            if (files.items.len > 0) {
+              try self.projects.put(self.al, path, .{.files = files.items});
+              files = .empty;
             }
-            self.paths = files.items;
-            return;
+            continue :m;
           },
           else => return e,
         }
@@ -86,72 +79,117 @@ pub const Cli = struct {
         return error.InvalidPath;
       }
       tmp[0] = .{.path = path, .ty = ty};
-      self.paths = tmp;
+      try self.projects.put(self.al, path, .{.files = tmp});
+    }
+  }
+
+  inline fn configFileIsModified(self: *Cli, proj: *Project) bool {
+    if (proj.config) |cfg| {
+      const mtime = util.getStatMTime(self.io, cfg.p.path) catch return false;
+      return mtime.toNanoseconds() != cfg.mtime.toNanoseconds();
+    }
+    return false;
+  }
+  
+  fn discoverConfigs(self: *Cli) !void {
+    for (self.projects.values()) |*proj| {
+      if (proj.config == null) {
+        var cfg: ?Path = null;
+        for (proj.files) |*f| {
+          if (f.ty == .zon and std.mem.eql(u8, std.fs.path.basename(f.path), CfgFilename)) {
+            if (cfg == null) {
+              f.is_config = true;
+              cfg = f.*;
+              // we don't break immediately because we also try to
+              // validate that there's only one `mint.zon` file per project
+            } else {
+              std.debug.print("error: found multiple `mint.zon` files:\n", .{});
+              std.debug.print("  {s} and {s}\n", .{cfg.?.path, f.path});
+              return error.MultipleConfigFiles;
+            }
+          }
+        }
+        if (cfg) |p| {
+          proj.config = .{.p = p, .mtime = try util.getStatMTime(self.io, p.path)};
+        }
+      }
     }
   }
   
-  fn loadConfig(self: *Cli) !void {
-    // TODO:
-    // var cfg_path: ?Path = null;
-    // for (self.paths) |p| {
-    //   if (p.ty == .mint) {
-    //     if (cfg_path != null) {
-    //       return error.MultipleMintFiles;
-    //     }
-    //     if (std.mem.eql(u8, "config.mint", p.path)) {
-    //       cfg_path = p;
-    //     }
-    //   }
-    // }
-    // if (cfg_path) |p| {
-    //   // TODO:
-    //   // read file and load config contents
-    //   _ = p;
-    //   self.has_cfg_file = true;
-    // }
-    // 85 is the ideal width by default
-    self.cfg = .{.write_mode = .file};
-    // return error.NoConfigFileFound;
-  }
-
-  inline fn getStatMTime(self: *Cli, f: []const u8) !std.Io.Timestamp {
-    const stat = try std.Io.Dir.cwd().statFile(self.io, f, .{});
-    return stat.mtime;
-  }
-
   fn formatWatch(self: *Cli, g: *Glue) !void {
-    // TODO: rescan dirs at some point
     // TODO: should update to use hashes instead of timestamps
     var simple_hash = std.StringHashMapUnmanaged(std.Io.Timestamp){};
     while (true) {
-      for (self.paths) |p| {
-        var mtime_a: std.Io.Timestamp = undefined;
-        if (simple_hash.get(p.path)) |time| {
-          const mtime_b = try self.getStatMTime(p.path);
-          if (mtime_b.toNanoseconds() == time.toNanoseconds()) continue;
-          mtime_a = time;
-        } else {
-          mtime_a = try self.getStatMTime(p.path);
+      for (self.projects.values()) |*proj| {
+        const cfg_was_modified = self.configFileIsModified(proj);
+        for (proj.files) |p| {
+          if (cfg_was_modified) {
+            if (!p.is_config) {
+              g.formatWatch(p, proj, self.al) catch continue;
+              const mtime_b = try util.getStatMTime(self.io, p.path);
+              try simple_hash.put(self.al, p.path, mtime_b);
+              log.debug("{s} (changed)", .{p.path});
+            } else {
+              try g.loadConfig(proj, false, self.al);
+            }
+          } else {
+            var mtime_a: std.Io.Timestamp = undefined;
+            if (simple_hash.get(p.path)) |time| {
+              var curr_time = try util.getStatMTime(self.io, p.path);
+              if (curr_time.toNanoseconds() == time.toNanoseconds()) continue;
+              mtime_a = time;
+              g.formatWatch(p, proj, self.al) catch continue;
+              curr_time = try util.getStatMTime(self.io, p.path);
+              log.debug("watching {s}", .{p.path});
+              if (curr_time.toNanoseconds() != mtime_a.toNanoseconds()) {
+                log.debug("{s} (changed)", .{p.path});
+                try simple_hash.put(self.al, p.path, curr_time);
+              }
+            } else {
+              mtime_a = try util.getStatMTime(self.io, p.path);
+              g.formatWatch(p, proj, self.al) catch continue;
+              try simple_hash.put(self.al, p.path, try util.getStatMTime(self.io, p.path));
+              log.debug("{s} (new)", .{p.path});
+            }
+          }
         }
-        try g.formatWatch(p);
-        const mtime_b = try self.getStatMTime(p.path);
-        if (mtime_b.toNanoseconds() != mtime_a.toNanoseconds()) {
-          try simple_hash.put(self.al, p.path, mtime_b);
-        }
+      }
+      try self.io.sleep(.fromMilliseconds(500), .awake);
+    }
+  }
+
+  fn formatImm(self: *Cli, g: *Glue) !void {
+    for (self.projects.values()) |*proj| {
+      try g.loadConfig(proj, true, self.al);
+      for (proj.files) |p| {
+        try g.formatImm(p, proj.getFmtConfig());
       }
     }
   }
 
-  pub fn format(self: *Cli) !void {
-    if (self.mode == .help) return;
-    try self.loadConfig();
-    var g = try Glue.init(self.io, self.cfg);
-    if (self.mode == .watch) {
-      try self.formatWatch(&g);
-    } else {
-      for (self.paths) |p| {
-        try g.formatImm(p);
-      }
+  fn doInit(self: *Cli) !void {
+    const template =
+    \\.{.width = 85, .indent = 2, .ignore = .{}}
+    \\
+    ;
+    var g = try Glue.init(self.io);
+    try g.writeFileCwd(CfgFilename, template);
+    std.debug.print("created {s}.\n", .{CfgFilename});
+  }
+
+  pub fn run(self: *Cli) !void {
+    switch (self.mode) {
+      .help => return,
+      .init => return self.doInit(),
+      else => {
+        var g = try Glue.init(self.io);
+        self.discoverConfigs() catch return;
+        if (self.mode == .watch) {
+          try self.formatWatch(&g);
+        } else {
+          try self.formatImm(&g);
+        }
+      },
     }
   }
 };
@@ -159,13 +197,19 @@ pub const Cli = struct {
 pub const ArgParse = struct {
   const info =
   \\Usage:
-  \\  mint fmt [filename|directory]    -  format a file or directory of files
-  \\  mint watch [filename|directory]  -  format in watch mode
-  \\  mint help                        -  display usage information
+  \\  mint <command> [<args>]
+  \\    init                        -  create a `mint.zon` config file
+  \\    fmt [filename|directory]    -  format a file or directory of files
+  \\    watch [filename|directory]  -  format in watch mode
+  \\    help                        -  display usage information
   ;
+
+  inline fn getHelp(al: Allocator, io: std.Io) !Cli {
+    std.debug.print("{s}\n", .{info});
+    return Cli.init(al, io, null, .help);
+  }
+  
   pub fn parseArgs(al: Allocator, io: std.Io, args: []const [:0]const u8) !Cli {
-    // mint [filename|directory]
-    // mint watch [filename|directory]
     if (args.len == 0) {
       std.debug.print("{s}\n", .{info});
       return Cli.init(al, io, null, .help);
@@ -175,14 +219,19 @@ pub const ArgParse = struct {
         return Cli.init(al, io, if (args.len > 1) args[1..] else null, .imm);
       } else if (std.mem.eql(u8, "watch", m_cmd)) {
         return Cli.init(al, io, if (args.len > 1) args[1..] else null, .watch);
+      } else if (std.mem.eql(u8, "init", m_cmd)) {
+        if (args.len > 1) {
+          std.debug.print("Invalid argument(s) passed to 'init'.\n", .{});
+          return getHelp(al, io);
+        }
+        return Cli.init(al, io, null, .init);
       } else {
         if (std.mem.eql(u8, "help", m_cmd)) {
           if (args.len > 1) std.debug.print("Invalid argument(s) passed to 'help'.\n", .{});
         } else {
           std.debug.print("Invalid argument.\n", .{});
         }
-        std.debug.print("{s}\n", .{info});
-        return Cli.init(al, io, null, .help);
+        return getHelp(al, io);
       }
     }
   }

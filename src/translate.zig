@@ -159,7 +159,8 @@ pub const Translate = struct {
         .keyword_fn, .keyword_pub,
         .keyword_inline, .keyword_noinline,
         .keyword_union, .keyword_struct,
-        .keyword_extern, .keyword_test => return false,
+        .keyword_extern, .keyword_test,
+        .multiline_string_literal_line => return false,
         else => {},
       }
     }
@@ -921,6 +922,7 @@ pub const Translate = struct {
           if (
             prev == .l_paren or
             prev == .comma or
+            prev == .doc_comment or
             prev == .keyword_comptime or
             prev == .keyword_noalias
           ) {
@@ -1333,10 +1335,10 @@ pub const Translate = struct {
       self._tDocComment(tmp, self.tree.firstToken(_n));
       tmp.append(self.t(_n));
       if (self.hasTerminator(_n, &.{.semicolon})) |tkn| {
-        sb.decllineIf(self.tknHasTC(tkn - 1))._();
+        tmp.decllineIf(self.tknHasTC(tkn - 1))._();
+        term_tkn = tkn;
         if (i != members.len) {
           tmp.append(self.ttknWithTL(tkn));
-          term_tkn = tkn;
         } else {
           tmp.append(self.ttkn(tkn));
           break;
@@ -1396,7 +1398,6 @@ pub const Translate = struct {
     sb.append(self.ttkn(container));
     assert(self.tree.tokenTag(lbrace) == .l_brace);
     assert(self.tree.tokenTag(rbrace) == .r_brace);
-    sb.spaceIf(self.tknHasNoTC(lbrace - 1))._();
     const id = d.genGroupID();
     const lb = self._ttkn(lbrace, .{.add_only_trailing_comment = true});
     sb.decllineIf(self.tknHasTC(lbrace - 1))._();
@@ -3232,6 +3233,8 @@ pub const Translate = struct {
     }
   }
 
+  const MaxSnippetLength = 30;
+
   fn writeErrors(self: *Self, filename: []const u8) !void {
     var buf: [2048]u8 = undefined;
     var writer = std.Io.File.stdout().writer(self.io, &buf);
@@ -3246,7 +3249,11 @@ pub const Translate = struct {
       const indent = 2;
       try writer.interface.writeByte('\n');
       _ = try writer.interface.splatByte(' ', indent);
-      try writer.interface.print("{s}\n", .{self.tree.source[loc.line_start..loc.line_end]});
+      var src = self.tree.source[loc.line_start..loc.line_end];
+      if (src.len > MaxSnippetLength) {
+        src = src[src.len - MaxSnippetLength..];
+      }
+      try writer.interface.print("{s}\n", .{src});
       // render squiggle
       _ = try writer.interface.splatByte(' ', loc.column + indent);
       try writer.interface.writeAll("^\n");

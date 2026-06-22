@@ -39,6 +39,11 @@ pub inline fn listAppendSlice(comptime T: type, list: *std.ArrayList(T), val: []
   };
 }
 
+pub inline fn getStatMTime(io: std.Io, f: []const u8) !std.Io.Timestamp {
+  const stat = try std.Io.Dir.cwd().statFile(io, f, .{});
+  return stat.mtime;
+}
+
 pub fn todo(comptime s: []const u8) noreturn {
   @panic("Todo: " ++ s ++ "!");
 }
