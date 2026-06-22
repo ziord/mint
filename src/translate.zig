@@ -1124,7 +1124,7 @@ pub const Translate = struct {
           updateLinesToDecllines(tmp);
         }
         sb.group(tmp.finish())._();
-        const tkn = self.tree.nodeMainToken(_n) - 1;
+        const tkn = self.tree.firstToken(_n) - 1;
         if (self.tree.tokenTag(tkn) == .bang) {
           sb.append(self.ttknWithSTL(tkn));
         }
@@ -1132,7 +1132,7 @@ pub const Translate = struct {
       } else {
         sb.decllineOrSpace(rbrack_has_tc);
         _ = tmp.finish();
-        const tkn = self.tree.nodeMainToken(_n) - 1;
+        const tkn = self.tree.firstToken(_n) - 1;
         if (self.tree.tokenTag(tkn) == .bang) {
           sb.append(self.ttknWithSTL(tkn));
         }

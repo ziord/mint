@@ -57,7 +57,7 @@ pub const Glue = struct {
   }
 
   fn readFile(self: *Glue, filename: []const u8, mode: std.Io.File.OpenFlags.Mode, al: Allocator) !struct{std.Io.File, [:0]const u8} {
-    var file = try std.Io.Dir.openFileAbsolute(self.io, filename, .{.mode = mode});
+    var file = try std.Io.Dir.cwd().openFile(self.io, filename, .{.mode = mode});
     const size = try file.length(self.io);
     var buf = util.allocSlice(u8, size + 1, al);
     const r_size = try file.readPositionalAll(self.io, buf, 0);
@@ -67,7 +67,7 @@ pub const Glue = struct {
   }
   
   fn writeFile(self: *Glue, filename: []const u8, content: []const u8) !void {
-    var file = try std.Io.Dir.openFileAbsolute(self.io, filename, .{.mode = .write_only});
+    var file = try std.Io.Dir.cwd().openFile(self.io, filename, .{.mode = .write_only});
     defer file.close(self.io);
     try file.setLength(self.io, 0);
     try file.writePositionalAll(self.io, content, 0);

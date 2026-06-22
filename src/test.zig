@@ -19068,6 +19068,39 @@ test "multiline-string 2" {
   );
 }
 
+test "bang-return" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub inline fn getStatMTime(io: std.Io, f: []const u8) !std.Io.Timestamp {
+  \\  const stat = try std.Io.Dir.cwd().statFile(io, f, .{});
+  \\  return stat.mtime;
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(res,
+    \\pub inline fn getStatMTime(io: std.Io, f: []const u8) !std.Io.Timestamp {
+    \\  const stat = try std.Io.Dir.cwd().statFile(io, f, .{});
+    \\  return stat.mtime;
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(res,
+    \\pub inline fn getStatMTime(
+    \\  io: std.Io,
+    \\  f: []const u8,
+    \\) !std.Io.Timestamp {
+    \\  const stat = try std.Io.Dir.cwd()
+    \\    .statFile(io, f, .{});
+    \\  return stat.mtime;
+    \\}
+  );
+}
+
 test "misc" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
