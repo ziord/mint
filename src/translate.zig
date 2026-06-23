@@ -398,7 +398,11 @@ pub const Translate = struct {
   }
 
   /// add the trailing lines associated with an rbrace's `}` comments
-  fn _tBlockRbraceLines(self: *Self, sb: *SeqBuilder, term_tkn: Ast.TokenIndex) void {
+  fn _tBlockRbraceLines(
+    self: *Self,
+    sb: *SeqBuilder,
+    term_tkn: Ast.TokenIndex,
+  ) void {
     const start = self.tree.tokenStart(term_tkn) + @as(usize, 1);
     const end = self.tree.tokenStart(term_tkn + 1);
     var idx = start;
@@ -415,7 +419,7 @@ pub const Translate = struct {
     }
     if (idx != start) {
       const lines = std.mem.countScalar(u8, self.tree.source[idx..end], '\n');
-      const newlines = if (lines >= 2) 2 else lines + 1; 
+      const newlines = if (lines >= 2) 2 else lines + 1;
       for (0..newlines) |_| {
         sb.declline()._();
       }
@@ -1741,7 +1745,9 @@ pub const Translate = struct {
           term_tkn = tkn - 1;
           if (i != members.len) {
             // handle `}`'s trailing line if it has a trailing comment
-            if (self.tree.tokenTag(term_tkn) == .r_brace and self.tknHasTC(term_tkn)) {
+            if (
+              self.tree.tokenTag(term_tkn) == .r_brace and self.tknHasTC(term_tkn)
+            ) {
               self._tBlockRbraceLines(tmp, term_tkn);
             }
           }
