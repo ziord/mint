@@ -18709,7 +18709,7 @@ test "comments/mint-off-on 2" {
     \\ const T = struct {
     \\ /// the mem member
     \\  mem: u8, // abc
-    \\ // mint fmt: on
+    \\  // mint fmt: on
     \\  xyz: usize,
     \\
     \\  /// the x member
@@ -18744,7 +18744,7 @@ test "comments/mint-off-on 2" {
     \\ const T = struct {
     \\ /// the mem member
     \\  mem: u8, // abc
-    \\ // mint fmt: on
+    \\  // mint fmt: on
     \\  xyz: usize,
     \\
     \\  /// the x member
@@ -18765,6 +18765,464 @@ test "comments/mint-off-on 2" {
     \\
     \\/// my stuff y
     \\y: usize,
+  );
+}
+
+test "comments/mint-off-on 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub const Foo = struct {
+  \\
+  \\  // mint fmt: off
+  \\  pub const ptable = [_]ExprParseTable{
+  \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_plus
+  \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_minus
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_slash
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_star
+  \\    .{.bp = .bp_call_access, .prefix = Self.grouping, .infix = Self.call},    // tk_lbracket
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rbracket
+  \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_lsqr_bracket
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rsqr_bracket
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_semic
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_colon
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lthan
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gthan
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_equal
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_lcurly
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rcurly
+  \\    .{.bp = .bp_bitand, .prefix = null, .infix = Self.binary},                // tk_amp
+  \\    .{.bp = .bp_bitand, .prefix = null, .infix = null},                       // tk_qmark
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_perc
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = null},                       // tk_hash
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_comma
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_exmark
+  \\    .{.bp = .bp_bitxor, .prefix = null, .infix = Self.binary},                // tk_caret
+  \\    .{.bp = .bp_bitor, .prefix = null, .infix = Self.binary},                 // tk_pipe
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_tilde
+  \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_dot
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_2hash
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2plus
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2minus
+  \\    .{.bp = .bp_and, .prefix = null, .infix = Self.binary},                   // tk_2amp
+  \\    .{.bp = .bp_or, .prefix = null, .infix = Self.binary},                    // tk_2pipe
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lequal
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gequal
+  \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_2equal
+  \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_nequal
+  \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2lthan
+  \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2gthan
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_if
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_for
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_if
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_else
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_case
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_break
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_else
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_elif
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_while
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_extern
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifdef
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_endif
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_return
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_undef
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifndef
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_define
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_include
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_continue
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_sep
+  \\    .{.bp = .bp_none, .prefix = Self.integer, .infix = null},                 // tk_integer
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_decimal
+  \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_string
+  \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_esc_string
+  \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
+  \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_eof
+  \\  };
+  \\  // mint fmt: on
+  \\// TODO: see we if we can add a generic implementation of _parse() in here
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\pub const Foo = struct {
+    \\  // mint fmt: off
+    \\  pub const ptable = [_]ExprParseTable{
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_plus
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_minus
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_slash
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_star
+    \\    .{.bp = .bp_call_access, .prefix = Self.grouping, .infix = Self.call},    // tk_lbracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rbracket
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_lsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_semic
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_colon
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lthan
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_equal
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_lcurly
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rcurly
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = Self.binary},                // tk_amp
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = null},                       // tk_qmark
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_perc
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = null},                       // tk_hash
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_comma
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_exmark
+    \\    .{.bp = .bp_bitxor, .prefix = null, .infix = Self.binary},                // tk_caret
+    \\    .{.bp = .bp_bitor, .prefix = null, .infix = Self.binary},                 // tk_pipe
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_tilde
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_dot
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_2hash
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2plus
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2minus
+    \\    .{.bp = .bp_and, .prefix = null, .infix = Self.binary},                   // tk_2amp
+    \\    .{.bp = .bp_or, .prefix = null, .infix = Self.binary},                    // tk_2pipe
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lequal
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gequal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_2equal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_nequal
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2lthan
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_for
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_case
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_break
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_elif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_while
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_extern
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifdef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_endif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_return
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_undef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifndef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_define
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_include
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_continue
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_sep
+    \\    .{.bp = .bp_none, .prefix = Self.integer, .infix = null},                 // tk_integer
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_decimal
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_string
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_esc_string
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_eof
+    \\  };
+    \\  // mint fmt: on
+    \\  // TODO: see we if we can add a generic implementation of _parse() in here
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\pub const Foo = struct {
+    \\  // mint fmt: off
+    \\  pub const ptable = [_]ExprParseTable{
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_plus
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_minus
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_slash
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_star
+    \\    .{.bp = .bp_call_access, .prefix = Self.grouping, .infix = Self.call},    // tk_lbracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rbracket
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_lsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_semic
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_colon
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lthan
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_equal
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_lcurly
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rcurly
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = Self.binary},                // tk_amp
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = null},                       // tk_qmark
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_perc
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = null},                       // tk_hash
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_comma
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_exmark
+    \\    .{.bp = .bp_bitxor, .prefix = null, .infix = Self.binary},                // tk_caret
+    \\    .{.bp = .bp_bitor, .prefix = null, .infix = Self.binary},                 // tk_pipe
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_tilde
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_dot
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_2hash
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2plus
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2minus
+    \\    .{.bp = .bp_and, .prefix = null, .infix = Self.binary},                   // tk_2amp
+    \\    .{.bp = .bp_or, .prefix = null, .infix = Self.binary},                    // tk_2pipe
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lequal
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gequal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_2equal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_nequal
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2lthan
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_for
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_case
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_break
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_elif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_while
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_extern
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifdef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_endif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_return
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_undef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifndef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_define
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_include
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_continue
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_sep
+    \\    .{.bp = .bp_none, .prefix = Self.integer, .infix = null},                 // tk_integer
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_decimal
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_string
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_esc_string
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_eof
+    \\  };
+    \\  // mint fmt: on
+    \\  // TODO: see we if we can add a generic implementation of _parse() in here
+    \\};
+  );
+}
+
+test "comments/mint-off-on 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub const Foo = struct {
+  \\
+  \\  // mint fmt: off
+  \\  pub const ptable = [_]ExprParseTable{
+  \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_plus
+  \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_minus
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_slash
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_star
+  \\    .{.bp = .bp_call_access, .prefix = Self.grouping, .infix = Self.call},    // tk_lbracket
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rbracket
+  \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_lsqr_bracket
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rsqr_bracket
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_semic
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_colon
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lthan
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gthan
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_equal
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_lcurly
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rcurly
+  \\    .{.bp = .bp_bitand, .prefix = null, .infix = Self.binary},                // tk_amp
+  \\    .{.bp = .bp_bitand, .prefix = null, .infix = null},                       // tk_qmark
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_perc
+  \\    .{.bp = .bp_factor, .prefix = null, .infix = null},                       // tk_hash
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_comma
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_exmark
+  \\    .{.bp = .bp_bitxor, .prefix = null, .infix = Self.binary},                // tk_caret
+  \\    .{.bp = .bp_bitor, .prefix = null, .infix = Self.binary},                 // tk_pipe
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_tilde
+  \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_dot
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_2hash
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2plus
+  \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2minus
+  \\    .{.bp = .bp_and, .prefix = null, .infix = Self.binary},                   // tk_2amp
+  \\    .{.bp = .bp_or, .prefix = null, .infix = Self.binary},                    // tk_2pipe
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lequal
+  \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gequal
+  \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_2equal
+  \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_nequal
+  \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2lthan
+  \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2gthan
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_if
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_for
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_if
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_else
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_case
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_break
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_else
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_elif
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_while
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_extern
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifdef
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_endif
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_return
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_undef
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifndef
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_define
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_include
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_continue
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_sep
+  \\    .{.bp = .bp_none, .prefix = Self.integer, .infix = null},                 // tk_integer
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_decimal
+  \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_string
+  \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_esc_string
+  \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
+  \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
+  \\  // mint fmt: on
+  \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_eof
+  \\  };
+  \\// TODO: see we if we can add a generic implementation of _parse() in here
+  \\};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\pub const Foo = struct {
+    \\  // mint fmt: off
+    \\  pub const ptable = [_]ExprParseTable{
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_plus
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_minus
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_slash
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_star
+    \\    .{.bp = .bp_call_access, .prefix = Self.grouping, .infix = Self.call},    // tk_lbracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rbracket
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_lsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_semic
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_colon
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lthan
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_equal
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_lcurly
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rcurly
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = Self.binary},                // tk_amp
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = null},                       // tk_qmark
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_perc
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = null},                       // tk_hash
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_comma
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_exmark
+    \\    .{.bp = .bp_bitxor, .prefix = null, .infix = Self.binary},                // tk_caret
+    \\    .{.bp = .bp_bitor, .prefix = null, .infix = Self.binary},                 // tk_pipe
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_tilde
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_dot
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_2hash
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2plus
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2minus
+    \\    .{.bp = .bp_and, .prefix = null, .infix = Self.binary},                   // tk_2amp
+    \\    .{.bp = .bp_or, .prefix = null, .infix = Self.binary},                    // tk_2pipe
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lequal
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gequal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_2equal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_nequal
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2lthan
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_for
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_case
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_break
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_elif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_while
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_extern
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifdef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_endif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_return
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_undef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifndef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_define
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_include
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_continue
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_sep
+    \\    .{.bp = .bp_none, .prefix = Self.integer, .infix = null},                 // tk_integer
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_decimal
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_string
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_esc_string
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
+    \\    // mint fmt: on
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null}, // tk_eof
+    \\  };
+    \\  // TODO: see we if we can add a generic implementation of _parse() in here
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\pub const Foo = struct {
+    \\  // mint fmt: off
+    \\  pub const ptable = [_]ExprParseTable{
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_plus
+    \\    .{.bp = .bp_term, .prefix = Self.unary, .infix = Self.binary},            // tk_minus
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_slash
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_star
+    \\    .{.bp = .bp_call_access, .prefix = Self.grouping, .infix = Self.call},    // tk_lbracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rbracket
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_lsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rsqr_bracket
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_semic
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_colon
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lthan
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_equal
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_lcurly
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_rcurly
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = Self.binary},                // tk_amp
+    \\    .{.bp = .bp_bitand, .prefix = null, .infix = null},                       // tk_qmark
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = Self.binary},                // tk_perc
+    \\    .{.bp = .bp_factor, .prefix = null, .infix = null},                       // tk_hash
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_comma
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_exmark
+    \\    .{.bp = .bp_bitxor, .prefix = null, .infix = Self.binary},                // tk_caret
+    \\    .{.bp = .bp_bitor, .prefix = null, .infix = Self.binary},                 // tk_pipe
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_tilde
+    \\    .{.bp = .bp_call_access, .prefix = null, .infix = null},                  // tk_dot
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_2hash
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2plus
+    \\    .{.bp = .bp_unary, .prefix = Self.unary, .infix = null},                  // tk_2minus
+    \\    .{.bp = .bp_and, .prefix = null, .infix = Self.binary},                   // tk_2amp
+    \\    .{.bp = .bp_or, .prefix = null, .infix = Self.binary},                    // tk_2pipe
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_lequal
+    \\    .{.bp = .bp_comparison, .prefix = null, .infix = Self.binary},            // tk_gequal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_2equal
+    \\    .{.bp = .bp_equality, .prefix = null, .infix = Self.binary},              // tk_nequal
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2lthan
+    \\    .{.bp = .bp_shift, .prefix = null, .infix = Self.binary},                 // tk_2gthan
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_for
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_if
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_case
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_break
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_else
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_elif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_while
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_extern
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifdef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_endif
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_return
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_undef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_ifndef
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_define
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_include
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_continue
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_p_sep
+    \\    .{.bp = .bp_none, .prefix = Self.integer, .infix = null},                 // tk_integer
+    \\    .{.bp = .bp_none, .prefix = null, .infix = null},                         // tk_decimal
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_string
+    \\    .{.bp = .bp_none, .prefix = Self.string, .infix = null},                  // tk_esc_string
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
+    \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
+    \\    // mint fmt: on
+    \\    .{
+    \\      .bp = .bp_none,
+    \\      .prefix = null,
+    \\      .infix = null,
+    \\    }, // tk_eof
+    \\  };
+    \\  // TODO: see we if we can add a generic implementation of _parse() in here
+    \\};
   );
 }
 

@@ -4,7 +4,13 @@ const util = @import("util.zig");
 const Allocator = std.mem.Allocator;
 pub const DocList = std.ArrayList(*Doc);
 
-pub const Text = struct { s: []const u8 };
+pub const Text = struct {
+  s: []const u8,
+  /// if not null this text is a meta comment.
+  /// In that case, true indicates formatting is
+  /// on while false indicates formatting is off
+  comment: ?bool = null,
+};
 
 pub const Seq = struct { docs: []*Doc };
 
@@ -102,20 +108,12 @@ pub const SeqBuilder = struct {
   }
 
   pub fn text(self: *@This(), s: []const u8) *@This() {
-    if (self.db.disable_writes) {
-      self.append(self.db.empty());
-      return self;
-    }
     const t = Doc.new(.{.text = Text{.s = s}}, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
   }
 
   pub fn space(self: *@This()) *@This() {
-    if (self.db.disable_writes) {
-      self.append(self.db.empty());
-      return self;
-    }
     const t = Doc.new(.{.text = Text{.s = " "}}, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
@@ -126,10 +124,6 @@ pub const SeqBuilder = struct {
   }
 
   pub inline fn line(self: *@This(), ty: Line.Ty) *@This() {
-    if (self.db.disable_writes) {
-      self.append(self.db.empty());
-      return self;
-    }
     const l = Doc.new(.{.line = Line{.ty = ty}}, self.al);
     util.listAppend(l, &self.docs, self.al);
     return self;
@@ -312,9 +306,6 @@ pub const DocBuilder = struct {
   /// builders stored on the heap
   heap_builders: std.ArrayList(*SeqBuilder) = .empty,
   len: usize = 0,
-  // FIXME: need to handle this in a better/more efficient way
-  /// skip all write operations on a SeqBuilder
-  disable_writes: bool = false,
 
   const BUILDERS_LEN = 4096;
 

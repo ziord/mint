@@ -331,6 +331,7 @@ pub const Translate = struct {
         }
       }
       idx = (newline orelse end - 1) + 1;
+      var enable_writes: ?bool = null;
       const comment_content = std.mem.trimStart(
         u8,
         trimmed_comment["//".len..],
@@ -342,9 +343,17 @@ pub const Translate = struct {
       ) {
         // formatting was disabled but we're now at the point where it's re-enabled
         // first, enable writing to a seqbuilder
-        self.db.disable_writes = false;
         const raw = self.tree.source[self.fmt_disabled_pos.?..comment_start];
-        sb.text(raw)._();
+        if (comments > 0) {
+          // if there are multiple comments, trim the trailing line from this raw
+          // text (and consequentially from the previous comment before `mint fmt: on`),
+          // since we handle comment separation below with declline()
+          const trimmed_raw = std.mem.trimEnd(u8, raw, &std.ascii.whitespace);
+          sb.text(trimmed_raw)._();
+        } else {
+          sb.text(raw)._();
+        }
+        sb.docs.getLast().text.comment = true; // fmt is on
         self.fmt_disabled_pos = null;
         fmt_comment = "// mint fmt: on";
       } else if (
@@ -354,43 +363,39 @@ pub const Translate = struct {
         // disable formatting
         self.fmt_disabled_pos = idx;
         fmt_comment = "// mint fmt: off";
+        enable_writes = false; // fmt is off
       }
-      // it is still our responsibility to separate multiline
-      // comments even if add_trailing_line_for_comment is unset
-      if (comments > 0 and !cfg.add_trailing_line_for_comment) {
+      // it is still our responsibility to separate multiline comments
+      if (comments > 0) {
         sb.declline()._();
       }
       if (fmt_comment) |cmt| {
         sb.text(cmt)._();
+        sb.docs.getLast().text.comment = enable_writes;
         fmt_comment = null;
+        enable_writes = null;
       } else {
         sb.text(trimmed_comment)._();
       }
       comments += 1;
-      if (cfg.add_trailing_line_for_comment) {
-        sb.declline()._();
-      }
-      if (self.fmt_disabled_pos != null) {
-        // we're in no fmt mode, so disable writing to a seqbuilder
-        self.db.disable_writes = true;
-      }
-      if (cfg.add_only_trailing_comment) return;
-    }
-    if (idx != start) {
-      if (cfg.add_only_next_line_comments and !cfg.add_trailing_line_for_comment) {
-        // trim off the last line
-        const len = sb.len();
-        if (len > 0 and sb.docs.items[len - 1].is(.line)) {
-          sb.docs.items = sb.docs.items[0..len - 1];
-        }
-      } else if (cfg.add_trailing_line_for_comment and end != self.tree.source.len) {
-        const newlines = @min(
-          @as(usize, 1),
-          std.mem.countScalar(u8, self.tree.source[idx..end], '\n'),
-        );
-        for (0..newlines) |_| {
+      if (cfg.add_only_trailing_comment) {
+        if (cfg.add_trailing_line_for_comment) {
           sb.declline()._();
         }
+        return;
+      }
+    }
+    if (idx != start and comments > 0) {
+      if (cfg.add_trailing_line_for_comment) {
+        if (end != self.tree.source.len) {
+          const lines = std.mem.countScalar(u8, self.tree.source[idx..end], '\n');
+          const newlines = if (lines >= 2) 2 else lines + 1;
+          for (0..newlines) |_| {
+            sb.declline()._();
+          }
+        }
+      } else if (cfg.add_only_next_line_comments) {
+        assert(sb.isEmpty() or !sb.docs.getLast().is(.line));
       }
     } else if (cfg.add_only_lines_if_no_comment) {
       self._tline(sb, start, end, false);
@@ -501,12 +506,26 @@ pub const Translate = struct {
       .add_trailing_line_for_comment = add_line_at_comment_end,
     };
     self._tcomment(sb, start, end, cfg);
+    // trim leading lines
     for (sb.docs.items, 0..) |doc, i| {
       if (doc.is(.line)) {
         sb.docs.items[i] = self.db.empty();
       } else {
         break;
       }
+    }
+    if (sb.isNotEmpty()) {
+      // trim trailing lines if there are more than 1. keep the last trailing
+      // line for separation of the comment and any following document
+      var idx = sb.len();
+      while (idx > 0) {
+        if (sb.docs.items[idx - 1].is(.line)) {
+          idx -= 1;
+        } else {
+          break;
+        }
+      }
+      sb.docs.items = sb.docs.items[0..if (idx < sb.len()) idx + 1 else sb.len()];
     }
     const docs = sb.finish();
     return if (docs.len != 0) self.db.group(docs) else null;
@@ -1881,10 +1900,9 @@ pub const Translate = struct {
     self.tBlockMembers(sb, members, true);
     // if we're still in no-fmt mode, write the source from where it was last disabled
     if (self.fmt_disabled_pos) |pos| {
-      assert(self.db.disable_writes);
-      self.db.disable_writes = false;
-      sb.text(self.tree.source[pos..])._();
       self.fmt_disabled_pos = null;
+      sb.text(self.tree.source[pos..])._();
+      sb.docs.getLast().text.comment = true;
       if (self.tree.source[self.tree.source.len - 1] != '\n') {
         sb.declline()._();
       }

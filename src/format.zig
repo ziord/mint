@@ -12,6 +12,7 @@ pub const Format = struct {
   cfg: FmtConfig,
   split_groups: IDSet = .empty,
   al: Allocator,
+  disable_writes: bool = false,
   mem_writer: std.Io.Writer.Allocating,
   out_writer: std.Io.File.Writer,
   file_writer: std.Io.File.Writer,
@@ -150,10 +151,12 @@ pub const Format = struct {
   }
 
   fn print(self: *Self, t: []const u8) void {
+    if (self.disable_writes) return;
     _ = self.writer.writeAll(t) catch unreachable;
   }
 
   fn printn(self: *Self, t: []const u8, n: usize) void {
+    if (self.disable_writes) return;
     for (0..n) |_| {
       _ = self.writer.writeAll(t) catch unreachable;
     }
@@ -186,6 +189,22 @@ pub const Format = struct {
       const sm = stack.pop().?;
       switch (sm.doc.*) {
         .text => |*_d| {
+          if (_d.comment) |enable| {
+            const disable = !enable;
+            if (disable) {
+              // print the comment before disabling
+              std.debug.assert(std.mem.endsWith(u8, _d.s, ": off"));
+              self.print(_d.s);
+              self.print("\n");
+              self.disable_writes = disable;
+            } else {
+              // it is important to update `disable_writes` here first
+              self.disable_writes = disable;
+              self.print(_d.s);
+            }
+            column += @intCast(_d.s.len);
+            continue;
+          }
           self.print(_d.s);
           column += @intCast(_d.s.len);
         },
