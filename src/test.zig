@@ -11,7 +11,8 @@ fn check(got: []const u8, expected: []const u8) !void {
 }
 
 fn translate(src: [:0]const u8, al: Allocator) !*fmt.Doc {
-  var t = try ts.Translate.init(al, std.testing.io);
+  var error_set = ts.Translate.ErrorSet.init(al);
+  var t = try ts.Translate.init(al, std.testing.io, &error_set);
   return t.translate("test.zig", src, .zig);
 }
 

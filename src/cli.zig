@@ -12,7 +12,7 @@ const ExtensionFilters = glue.ExtensionFilters;
 const IgnoreList = glue.IgnoreList;
 const Project = glue.Project;
 
-const log = std.log.scoped(.cli);
+const log = std.log.scoped(util.getLoggerEnum(.cli));
 
 pub const Cli = struct {
   al: Allocator,
@@ -135,10 +135,10 @@ pub const Cli = struct {
         for (proj.files) |p| {
           if (cfg_was_modified) {
             if (!p.is_config) {
-              g.formatWatch(p, proj, self.al) catch continue;
+              const formatted = g.formatWatch(p, proj, self.al) catch continue;
               const mtime_b = try util.getStatMTime(self.io, p.path);
               try simple_hash.put(self.al, p.path, mtime_b);
-              log.debug("{s} (changed)", .{p.path});
+              if (formatted) log.info("{s} (changed)", .{p.path});
             } else {
               try g.loadConfig(proj, false, self.al);
             }
@@ -148,22 +148,22 @@ pub const Cli = struct {
               var curr_time = try util.getStatMTime(self.io, p.path);
               if (curr_time.toNanoseconds() == time.toNanoseconds()) continue;
               mtime_a = time;
-              g.formatWatch(p, proj, self.al) catch continue;
+              _ = g.formatWatch(p, proj, self.al) catch continue;
               curr_time = try util.getStatMTime(self.io, p.path);
-              log.debug("watching {s}", .{p.path});
+              log.info("watching {s}", .{p.path});
               if (curr_time.toNanoseconds() != mtime_a.toNanoseconds()) {
-                log.debug("{s} (changed)", .{p.path});
+                log.info("{s} (changed)", .{p.path});
                 try simple_hash.put(self.al, p.path, curr_time);
               }
             } else {
               mtime_a = try util.getStatMTime(self.io, p.path);
-              g.formatWatch(p, proj, self.al) catch continue;
+              const formatted = g.formatWatch(p, proj, self.al) catch continue;
               try simple_hash.put(
                 self.al,
                 p.path,
                 try util.getStatMTime(self.io, p.path),
               );
-              log.debug("{s} (new)", .{p.path});
+              if (formatted) log.info("{s} (new)", .{p.path});
             }
           }
         }
@@ -186,7 +186,7 @@ pub const Cli = struct {
     \\.{.width = 85, .indent = 2, .ignore = .{}}
     \\
     ;
-    var g = try Glue.init(self.io);
+    var g = try Glue.init(self.io, self.al);
     try g.writeFileCwd(CfgFilename, template);
     std.debug.print("created {s}.\n", .{CfgFilename});
   }
@@ -196,7 +196,7 @@ pub const Cli = struct {
       .help => return,
       .init => return self.doInit(),
       else => {
-        var g = try Glue.init(self.io);
+        var g = try Glue.init(self.io, self.al);
         self.discoverConfigs() catch return;
         if (self.mode == .watch) {
           try self.formatWatch(&g);

@@ -5,20 +5,19 @@ const ts = @import("translate.zig");
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
-const log = std.log.scoped(.glue);
+const log = std.log.scoped(util.getLoggerEnum(.glue));
 
 pub const FileType = std.zig.Ast.Mode;
 pub const Mode = enum { imm, watch, help, init };
 pub const Path = struct {
   path: []const u8,
   ty: FileType,
-  ignore: bool = false,
   is_config: bool = false,
 };
 // NOTE: keep `FileTypes` in sync with `ExtensionFilters`
 pub const FileTypes = [_]FileType{.zig, .zon};
 pub const ExtensionFilters = [_][]const u8{"zig", "zon"};
-pub const IgnoreList = [_][]const u8{".zig-", "zig-"};
+pub const IgnoreList = [_][]const u8{"zig-"};
 
 pub const MintConfig = struct {
   width: u32,
@@ -50,11 +49,16 @@ pub const Glue = struct {
   io: std.Io,
   /// arena for managing formatting allocations
   arena: ArenaAllocator,
+  ignore_set_loaded: bool = false,
+  ignore_set: std.StringHashMapUnmanaged(void) = .empty,
+  /// track the errors found during translation to prevent
+  /// repetition of display of errors
+  error_set: ts.Translate.ErrorSet,
 
   var WriteBuf: [2048]u8 = undefined;
 
-  pub fn init(io: std.Io) !Glue {
-    return .{.io = io, .arena = undefined};
+  pub fn init(io: std.Io, top_al: Allocator) !Glue {
+    return .{.io = io, .arena = undefined, .error_set = ts.Translate.ErrorSet.init(top_al)};
   }
 
   inline fn allocator(self: *Glue) Allocator {
@@ -70,7 +74,7 @@ pub const Glue = struct {
     // have to do it intrusively. This can easily break if we add
     // new fields to `t` or `f` or both. For now, simply creating
     // a fresh translator and formatter objects would suffice.
-    return .{try ts.Translate.init(al, self.io), fmt.Format.init(self.io, al, cfg)};
+    return .{try ts.Translate.init(al, self.io, &self.error_set), fmt.Format.init(self.io, al, cfg)};
   }
 
   fn readFile(
@@ -113,10 +117,30 @@ pub const Glue = struct {
     return std.zon.parse.fromSliceAlloc(MintConfig, al, src, &diag, .{});
   }
 
+  fn loadIgnoreList(self: *Glue, mcfg: MintConfig, al: Allocator) !void {
+    // because ignore from config file is dynamic and maybe changed, we need to reload
+    self.ignore_set.clearRetainingCapacity();
+    for (mcfg.ignore) |ign| {
+      try self.ignore_set.put(al, ign, {});
+    }
+    // useful for the first initial load
+    self.ignore_set_loaded = true;
+  }
+
+  fn shouldIgnore(self: *Glue, p: Path) bool {
+    if (self.ignore_set.contains(p.path)) return true;
+    for (IgnoreList) |ign| {
+      if (std.mem.containsAtLeast(u8, p.path, 1, ign)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   pub fn loadConfig(self: *Glue, proj: *Project, is_imm: bool, al: Allocator) !void {
     if (proj.config) |*cfg| {
       const mtime = try util.getStatMTime(self.io, cfg.p.path);
-      if (is_imm or mtime.toNanoseconds() != cfg.mtime.toNanoseconds()) {
+      if (is_imm or mtime.toNanoseconds() != cfg.mtime.toNanoseconds() or !self.ignore_set_loaded) {
         cfg.mtime = mtime;
         const m_cfg = self.loadMintConfig(cfg.p, al) catch |e| {
           if (e == error.ParseZon) {
@@ -128,27 +152,13 @@ pub const Glue = struct {
         };
         cfg.fmt_cfg = m_cfg.toFmtConfig();
         // TODO: integrate .gitignore
-        l: for (proj.files) |*_p| {
-          // FIXME: inefficient, rework this.
-          for (m_cfg.ignore) |ign| {
-            if (std.mem.containsAtLeast(u8, _p.path, 1, ign)) {
-              _p.ignore = true;
-              continue :l;
-            }
-          }
-          for (IgnoreList) |ign| {
-            if (std.mem.containsAtLeast(u8, _p.path, 1, ign)) {
-              _p.ignore = true;
-              continue :l;
-            }
-          }
-        }
+        try self.loadIgnoreList(m_cfg, al);
       }
     }
   }
 
   pub fn formatImm(self: *Glue, p: Path, cfg: fmt.FmtConfig) !void {
-    if (p.ignore) return;
+    if (self.shouldIgnore(p)) return;
     self.arena = ArenaAllocator.init(std.heap.page_allocator);
     defer self.arena.deinit();
     var file, const src = try self.readFile(p.path, .read_write, self.allocator());
@@ -161,9 +171,9 @@ pub const Glue = struct {
     std.debug.print("successfully formated {s}\n", .{p.path});
   }
 
-  pub fn formatWatch(self: *Glue, p: Path, proj: *Project, al: Allocator) !void {
+  pub fn formatWatch(self: *Glue, p: Path, proj: *Project, al: Allocator) !bool {
     try self.loadConfig(proj, false, al);
-    if (p.is_config) return;
+    if (p.is_config or self.shouldIgnore(p)) return false;
     const cfg = proj.getFmtConfig();
     self.arena = ArenaAllocator.init(std.heap.page_allocator);
     defer self.arena.deinit();
@@ -185,5 +195,6 @@ pub const Glue = struct {
     } else {
       log.debug("empty, skipping.", .{});
     }
+    return true;
   }
 };

@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const Allocator = std.mem.Allocator;
 
@@ -55,6 +56,10 @@ pub inline fn listAppendSlice(
 pub inline fn getStatMTime(io: std.Io, f: []const u8) !std.Io.Timestamp {
   const stat = try std.Io.Dir.cwd().statFile(io, f, .{});
   return stat.mtime;
+}
+
+pub inline fn getLoggerEnum(lit: @EnumLiteral()) @EnumLiteral() {
+  return if (builtin.mode == .Debug) lit else .mint;
 }
 
 pub fn todo(comptime s: []const u8) noreturn {

@@ -29,12 +29,14 @@ pub const Translate = struct {
   /// other metadata trackers
   _in_call_args: u16 = 0,
   _comments: u32 = 0,
+  error_set: *ErrorSet,
 
   const Self = @This();
   const TokenCache = struct { tkn: Ast.TokenIndex, has_trailing_comment: bool };
+  pub const ErrorSet = std.StringHashMap(void);
 
-  pub fn init(al: Allocator, io: std.Io) !Self {
-    return .{.al = al, .tree = undefined, .io = io, .db = DocBuilder.init(al)};
+  pub fn init(al: Allocator, io: std.Io, error_set: *ErrorSet) !Self {
+    return .{.al = al, .tree = undefined, .io = io, .db = DocBuilder.init(al), .error_set = error_set};
   }
 
   inline fn isVarDecl(tag: Node.Tag) bool {
@@ -3586,6 +3588,7 @@ pub const Translate = struct {
   const MaxSnippetLength = 30;
 
   fn writeErrors(self: *Self, filename: []const u8) !void {
+    if (self.error_set.contains(filename)) return;
     var buf: [2048]u8 = undefined;
     var writer = std.Io.File.stdout().writer(self.io, &buf);
     for (self.tree.errors) |err| {
@@ -3611,6 +3614,7 @@ pub const Translate = struct {
       _ = try writer.interface.splatByte(' ', loc.column + indent);
       try writer.interface.writeAll("^\n");
       defer writer.flush() catch {};
+      try self.error_set.put(filename, {});
     }
   }
 
@@ -3626,6 +3630,9 @@ pub const Translate = struct {
       return error.ParseError;
     }
     const doc = self.tOpenContainerDecl(self.tree.rootDecls());
+    if (self.error_set.contains(filename)) {
+      _ = self.error_set.remove(filename);
+    }
     // verify that all builders are successfully consumed
     self.db.verify();
     self.db.resetBuilders();
