@@ -19709,11 +19709,10 @@ test "error-value" {
   try check(
     res,
     \\var x = error // 1
-    \\  . // 2
-    \\  FooIsInvalid // 3
+    \\. // 2
+    \\FooIsInvalid // 3
     \\;
-    \\var x = error
-    \\  .FooIsInvalid;
+    \\var x = error.FooIsInvalid;
   );
 }
 
@@ -20300,6 +20299,155 @@ test "rbrace-trailing-comment 5" {
     \\  // my trail
     \\
     \\  fn foo() void {}
+    \\};
+  );
+}
+
+test "field termination 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const ConcreteTypes = struct {
+  \\  const num = tir.Concrete.init(.ck_num_literal, Token.getDefaultToken());
+  \\  const str = tir.Concrete.init(.ck_str_literal, Token.getDefaultToken());
+  \\  const void_ = tir.Concrete.init(.ck_void, scratchIdentToken(ks.VoidVar));
+  \\  const unit = tir.Concrete.init(.ck_unit, scratchIdentToken(ks.UnitVar));
+  \\  const never = tir.Concrete.init(.ck_never, scratchIdentToken(ks.NeverVar));
+  \\
+  \\  var ty_number: Type = Type.init(.{.ty_concrete = num});
+  \\  var ty_string: Type = Type.init(.{.ty_concrete = str});
+  \\  var ty_void: Type = Type.init(.{.ty_concrete = void_});
+  \\  var ty_unit: Type = Type.init(.{.ty_concrete = unit});
+  \\  var ty_never: Type = Type.init(.{.ty_concrete = never});
+  \\};
+  \\
+  \\ const Ty = union(enum) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\ abc: []const u8,
+  \\ x: usize,
+  \\ comptime {const x = 5;}
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 120}, al);
+  try check(
+    res,
+    \\const ConcreteTypes = struct {
+    \\  const num = tir.Concrete.init(.ck_num_literal, Token.getDefaultToken());
+    \\  const str = tir.Concrete.init(.ck_str_literal, Token.getDefaultToken());
+    \\  const void_ = tir.Concrete.init(.ck_void, scratchIdentToken(ks.VoidVar));
+    \\  const unit = tir.Concrete.init(.ck_unit, scratchIdentToken(ks.UnitVar));
+    \\  const never = tir.Concrete.init(.ck_never, scratchIdentToken(ks.NeverVar));
+    \\
+    \\  var ty_number: Type = Type.init(.{.ty_concrete = num});
+    \\  var ty_string: Type = Type.init(.{.ty_concrete = str});
+    \\  var ty_void: Type = Type.init(.{.ty_concrete = void_});
+    \\  var ty_unit: Type = Type.init(.{.ty_concrete = unit});
+    \\  var ty_never: Type = Type.init(.{.ty_concrete = never});
+    \\};
+    \\
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\  comptime {
+    \\    const x = 5;
+    \\  }
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const ConcreteTypes = struct {
+    \\  const num = tir.Concrete.init(
+    \\    .ck_num_literal,
+    \\    Token.getDefaultToken(),
+    \\  );
+    \\  const str = tir.Concrete.init(
+    \\    .ck_str_literal,
+    \\    Token.getDefaultToken(),
+    \\  );
+    \\  const void_ = tir.Concrete.init(
+    \\    .ck_void,
+    \\    scratchIdentToken(
+    \\      ks.VoidVar,
+    \\    ),
+    \\  );
+    \\  const unit = tir.Concrete.init(
+    \\    .ck_unit,
+    \\    scratchIdentToken(
+    \\      ks.UnitVar,
+    \\    ),
+    \\  );
+    \\  const never = tir.Concrete.init(
+    \\    .ck_never,
+    \\    scratchIdentToken(
+    \\      ks.NeverVar,
+    \\    ),
+    \\  );
+    \\
+    \\  var ty_number: Type = Type.init(
+    \\    .{.ty_concrete = num},
+    \\  );
+    \\  var ty_string: Type = Type.init(
+    \\    .{.ty_concrete = str},
+    \\  );
+    \\  var ty_void: Type = Type.init(
+    \\    .{.ty_concrete = void_},
+    \\  );
+    \\  var ty_unit: Type = Type.init(
+    \\    .{.ty_concrete = unit},
+    \\  );
+    \\  var ty_never: Type = Type.init(
+    \\    .{.ty_concrete = never},
+    \\  );
+    \\};
+    \\
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\  comptime {
+    \\    const x = 5;
+    \\  }
+    \\};
+  );
+}
+
+test "field termination 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Ty = union(enum) {
+  \\  x: []const u8,
+  \\  y: u32,
+  \\ abc: []const u8,
+  \\ x: usize,
+  \\ comptime  x = 5,
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{.width = 120}, al);
+  try check(
+    res,
+    \\const Ty = union(enum) { x: []const u8, y: u32, abc: []const u8, x: usize, comptime x = 5 };
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const Ty = union(enum) {
+    \\  x: []const u8,
+    \\  y: u32,
+    \\  abc: []const u8,
+    \\  x: usize,
+    \\  comptime x = 5,
     \\};
   );
 }
