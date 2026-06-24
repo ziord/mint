@@ -9,11 +9,7 @@ const log = std.log.scoped(util.getLoggerEnum(.glue));
 
 pub const FileType = std.zig.Ast.Mode;
 pub const Mode = enum { imm, watch, help, init };
-pub const Path = struct {
-  path: []const u8,
-  ty: FileType,
-  is_config: bool = false,
-};
+pub const Path = struct { path: []const u8, ty: FileType, is_config: bool = false };
 // NOTE: keep `FileTypes` in sync with `ExtensionFilters`
 pub const FileTypes = [_]FileType{.zig, .zon};
 pub const ExtensionFilters = [_][]const u8{"zig", "zon"};
@@ -50,7 +46,7 @@ pub const Glue = struct {
   /// arena for managing formatting allocations
   arena: ArenaAllocator,
   ignore_set_loaded: bool = false,
-  ignore_set: std.StringHashMapUnmanaged(void) = .empty,
+  ignore_set: std.StringArrayHashMapUnmanaged(void) = .empty,
   /// track the errors found during translation to prevent
   /// repetition of display of errors
   error_set: ts.Translate.ErrorSet,
@@ -58,7 +54,11 @@ pub const Glue = struct {
   var WriteBuf: [2048]u8 = undefined;
 
   pub fn init(io: std.Io, top_al: Allocator) !Glue {
-    return .{.io = io, .arena = undefined, .error_set = ts.Translate.ErrorSet.init(top_al)};
+    return .{
+      .io = io,
+      .arena = undefined,
+      .error_set = ts.Translate.ErrorSet.init(top_al),
+    };
   }
 
   inline fn allocator(self: *Glue) Allocator {
@@ -74,7 +74,10 @@ pub const Glue = struct {
     // have to do it intrusively. This can easily break if we add
     // new fields to `t` or `f` or both. For now, simply creating
     // a fresh translator and formatter objects would suffice.
-    return .{try ts.Translate.init(al, self.io, &self.error_set), fmt.Format.init(self.io, al, cfg)};
+    return .{
+      try ts.Translate.init(al, self.io, &self.error_set),
+      fmt.Format.init(self.io, al, cfg),
+    };
   }
 
   fn readFile(
@@ -128,7 +131,11 @@ pub const Glue = struct {
   }
 
   fn shouldIgnore(self: *Glue, p: Path) bool {
-    if (self.ignore_set.contains(p.path)) return true;
+    for (self.ignore_set.keys()) |ign| {
+      if (std.mem.containsAtLeast(u8, p.path, 1, ign)) {
+        return true;
+      }
+    }
     for (IgnoreList) |ign| {
       if (std.mem.containsAtLeast(u8, p.path, 1, ign)) {
         return true;
@@ -140,7 +147,11 @@ pub const Glue = struct {
   pub fn loadConfig(self: *Glue, proj: *Project, is_imm: bool, al: Allocator) !void {
     if (proj.config) |*cfg| {
       const mtime = try util.getStatMTime(self.io, cfg.p.path);
-      if (is_imm or mtime.toNanoseconds() != cfg.mtime.toNanoseconds() or !self.ignore_set_loaded) {
+      if (
+        is_imm
+          or mtime.toNanoseconds() != cfg.mtime.toNanoseconds()
+          or !self.ignore_set_loaded
+      ) {
         cfg.mtime = mtime;
         const m_cfg = self.loadMintConfig(cfg.p, al) catch |e| {
           if (e == error.ParseZon) {

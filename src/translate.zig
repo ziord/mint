@@ -36,7 +36,13 @@ pub const Translate = struct {
   pub const ErrorSet = std.StringHashMap(void);
 
   pub fn init(al: Allocator, io: std.Io, error_set: *ErrorSet) !Self {
-    return .{.al = al, .tree = undefined, .io = io, .db = DocBuilder.init(al), .error_set = error_set};
+    return .{
+      .al = al,
+      .tree = undefined,
+      .io = io,
+      .db = DocBuilder.init(al),
+      .error_set = error_set,
+    };
   }
 
   inline fn isVarDecl(tag: Node.Tag) bool {
