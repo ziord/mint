@@ -1061,27 +1061,46 @@ pub const Translate = struct {
     const tkn = self.tree.nodeMainToken(n);
     var sb = self.db.seqb().appends(lhs_d);
     var tmp = self.db.seqb();
+    var split = self.db.seqb().appends(lhs_d);
+    var rest = self.db.seqb();
     const rhs_isnt_block = !self.nodeIsBlock(rhs);
     if (rhs_isnt_block) {
       tmp.decllineOrNormline(self.tknHasTC(self.tree.lastToken(lhs)));
+      rest.declline()._();
     } else {
       tmp.decllineOrSpace(self.tknHasTC(self.tree.lastToken(lhs)));
     }
-    tmp.appends(self.ttknWithSTL(tkn)).spaceIf(self.tknHasNoTC(tkn))._();
+    const doc = self.ttknWithSTL(tkn);
+    tmp.append(doc);
+    rest.append(doc);
+    if (self.tknHasNoTC(tkn)) {
+      tmp.space()._();
+      rest.space()._();
+    }
     tmp = self.db.seqb().group(tmp.finish());
     if (self.tree.tokenTag(tkn + 1) == .pipe) {
       const l_pipe = self.ttknWithSTL(tkn + 1); // |
       const ident = self.ttknWithSTL(tkn + 2); // IDENT
       const r_pipe = self.ttknWithSTL(tkn + 3); // |
       tmp.appends(l_pipe).appends(ident).append(r_pipe);
-      tmp.spaceIf(self.tknHasNoTC(tkn + 3))._();
+      rest.appends(l_pipe).appends(ident).append(r_pipe);
+      if (self.tknHasNoTC(tkn + 3)) {
+        tmp.space()._();
+        rest.space()._();
+      }
       tmp = self.db.seqb().group(tmp.finish());
     }
+    const id = d.genGroupID();
     if (rhs_isnt_block) {
       const rhs_d = self.t(rhs);
       tmp.append(rhs_d);
       sb.indent(tmp.finish())._();
+      rest.append(rhs_d);
+      split.indent(rest.finish())._();
+      sb = self.db.seqb().ifsplit(id, split.finishSeq(), sb.finishSeq());
     } else {
+      _ = split.finish();
+      _ = rest.finish();
       // NOTE: we specialize the formatting for `rhs` when it's a block
       const lbrace = self.tree.nodeMainToken(rhs);
       const rbrace = self.tree.lastToken(rhs);
@@ -1121,7 +1140,7 @@ pub const Translate = struct {
         sb.indent(b.seq.docs)._();
       }
     }
-    return self.db.group(sb.finish());
+    return self.db.groupi(id, sb.finish());
   }
 
   fn tCall(

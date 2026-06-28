@@ -19664,6 +19664,54 @@ test "catch-orelse 2" {
   );
 }
 
+test "catch-orelse 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const foxybar_len = std.unicode.utf8CountCodepoints(foxybar.text) orelse foxybar.text.len;
+  \\const foxybarr_len = std.unicode.utf8CountCodepoints(foxybar.text) catch error.ThisIsSoLongICantBreak;
+  \\
+  \\ fn foo() void {
+  \\writer.flush() catch {};
+  \\writer.flush() orelse {};
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const foxybar_len = std.unicode.utf8CountCodepoints(foxybar.text)
+    \\  orelse foxybar.text.len;
+    \\const foxybarr_len = std.unicode.utf8CountCodepoints(foxybar.text)
+    \\  catch error.ThisIsSoLongICantBreak;
+    \\
+    \\fn foo() void {
+    \\  writer.flush() catch {};
+    \\  writer.flush() orelse {};
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30 }, al);
+  try check(
+    res,
+    \\const foxybar_len = std.unicode.utf8CountCodepoints(
+    \\  foxybar.text,
+    \\)
+    \\  orelse foxybar.text.len;
+    \\const foxybarr_len = std.unicode.utf8CountCodepoints(
+    \\  foxybar.text,
+    \\)
+    \\  catch error.ThisIsSoLongICantBreak;
+    \\
+    \\fn foo() void {
+    \\  writer.flush() catch {};
+    \\  writer.flush() orelse {};
+    \\}
+  );
+}
+
 test "array-access" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
