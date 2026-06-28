@@ -31,6 +31,7 @@ pub const Line = struct {
     /// acts like `soft` when fitting and like
     /// `hard` when printing, good for decl braces {}
     decl,
+
     pub fn str(self: Ty) []const u8 {
       return switch (self) {
         .soft => "<soft>",
