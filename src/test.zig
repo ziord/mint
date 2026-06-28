@@ -19227,6 +19227,51 @@ test "comments/mint-off-on 4" {
   );
 }
 
+test "comments/mint-off-on 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn tAsmIO() *Doc {
+  \\  if (true) {
+  \\    foo();
+  \\  } else { // tests bug of disappearing else token
+  \\    sb.text("  ")._();
+  \\  }
+  \\  // mint fmt: off
+  \\  sb.append(self.ttknWithSTL(a - 1));       // `[`
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\fn tAsmIO() *Doc {
+    \\  if (true) {
+    \\    foo();
+    \\  } else { // tests bug of disappearing else token
+    \\    sb.text("  ")._();
+    \\  }
+    \\  // mint fmt: off
+    \\  sb.append(self.ttknWithSTL(a - 1));       // `[`
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\fn tAsmIO() *Doc {
+    \\  if (true) {
+    \\    foo();
+    \\  } else { // tests bug of disappearing else token
+    \\    sb.text("  ")._();
+    \\  }
+    \\  // mint fmt: off
+    \\  sb.append(self.ttknWithSTL(a - 1));       // `[`
+    \\}
+  );
+}
+
 test "slice" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -20449,6 +20494,407 @@ test "field termination 2" {
     \\  x: usize,
     \\  comptime x = 5,
     \\};
+  );
+}
+
+test "asm 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  // from ziglang's Assembly page:
+  \\ comptime {
+  \\const t = asm volatile ("syscall"
+  \\        : [ret] "={rax}" (-> usize),
+  \\        : [number] "{rax}" (number),
+  \\          [arg1] "{rdi}" (arg1),
+  \\        : .{ .rcx = true, .r11 = true });
+  \\
+  \\asm (
+  \\        \\.global my_func;
+  \\        \\.type my_func, @function;
+  \\        \\my_func:
+  \\        \\  lea (%rdi,%rsi,1),%eax
+  \\        \\  retq
+  \\    );
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  const t = asm volatile(
+    \\    "syscall"
+    \\    : [ret] "={rax}" (->usize),
+    \\    : [number] "{rax}" (number),
+    \\      [arg1] "{rdi}" (arg1),
+    \\    : .{.rcx = true, .r11 = true}
+    \\  );
+    \\
+    \\  asm(
+    \\    \\.global my_func;
+    \\    \\.type my_func, @function;
+    \\    \\my_func:
+    \\    \\  lea (%rdi,%rsi,1),%eax
+    \\    \\  retq
+    \\  );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  const t = asm volatile(
+    \\    "syscall"
+    \\    : [ret] "={rax}" (->usize),
+    \\    : [number] "{rax}" (number),
+    \\      [arg1] "{rdi}" (arg1),
+    \\    : .{
+    \\      .rcx = true,
+    \\      .r11 = true,
+    \\    }
+    \\  );
+    \\
+    \\  asm(
+    \\    \\.global my_func;
+    \\    \\.type my_func, @function;
+    \\    \\my_func:
+    \\    \\  lea (%rdi,%rsi,1),%eax
+    \\    \\  retq
+    \\  );
+    \\}
+  );
+}
+
+test "asm 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  // from ziglang's Assembly page:
+  \\ pub fn syscall3(number: usize, arg1: usize, arg2: usize, arg3: usize) usize {
+  \\    return asm volatile ("syscall"
+  \\        : [ret] "={rax}" (-> usize),
+  \\        : [number] "{rax}" (number),
+  \\          [arg1] "{rdi}" (arg1),
+  \\          [arg2] "{rsi}" (arg2),
+  \\          [arg3] "{rdx}" (arg3),
+  \\        : .{ .rcx = true, .r11 = true });
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\pub fn syscall3(number: usize, arg1: usize, arg2: usize, arg3: usize) usize {
+    \\  return asm volatile(
+    \\    "syscall"
+    \\    : [ret] "={rax}" (->usize),
+    \\    : [number] "{rax}" (number),
+    \\      [arg1] "{rdi}" (arg1),
+    \\      [arg2] "{rsi}" (arg2),
+    \\      [arg3] "{rdx}" (arg3),
+    \\    : .{.rcx = true, .r11 = true}
+    \\  );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\pub fn syscall3(
+    \\  number: usize,
+    \\  arg1: usize,
+    \\  arg2: usize,
+    \\  arg3: usize,
+    \\) usize {
+    \\  return asm volatile(
+    \\    "syscall"
+    \\    : [ret] "={rax}" (->usize),
+    \\    : [number] "{rax}" (number),
+    \\      [arg1] "{rdi}" (arg1),
+    \\      [arg2] "{rsi}" (arg2),
+    \\      [arg3] "{rdx}" (arg3),
+    \\    : .{
+    \\      .rcx = true,
+    \\      .r11 = true,
+    \\    }
+    \\  );
+    \\}
+  );
+}
+
+test "asm 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  // from ziglang's Assembly page:
+  \\ comptime {
+  \\const t = asm volatile ("syscall" // 1
+  \\        : // 1b
+  \\ [ret] "={rax}" (-> usize), // 2
+  \\        : // 2b
+  \\ [number] "{rax}" (number), // 3
+  \\          [arg1] "{rdi}" (arg1) // 4
+  \\ ,
+  \\        : // 4b
+  \\ .{ .rcx = true, .r11 = true } // 5
+  \\ );
+  \\
+  \\asm ( // 1
+  \\      // I'm top
+  \\        \\.global my_func;
+  \\        \\.type my_func, @function; // 2
+  \\        \\my_func:
+  \\        \\  lea (%rdi,%rsi,1),%eax
+  \\        \\  retq
+  \\      // I'm bottom
+  \\    ); // 3
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  const t = asm volatile(
+    \\    "syscall" // 1
+    \\    : // 1b
+    \\    [ret] "={rax}" (->usize), // 2
+    \\    : // 2b
+    \\    [number] "{rax}" (number), // 3
+    \\      [arg1] "{rdi}" (arg1) // 4
+    \\    ,
+    \\    : // 4b
+    \\    .{.rcx = true, .r11 = true} // 5
+    \\  );
+    \\
+    \\  asm( // 1
+    \\    // I'm top
+    \\    \\.global my_func;
+    \\    \\.type my_func, @function; // 2
+    \\    \\my_func:
+    \\    \\  lea (%rdi,%rsi,1),%eax
+    \\    \\  retq
+    \\    // I'm bottom
+    \\  ); // 3
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  const t = asm volatile(
+    \\    "syscall" // 1
+    \\    : // 1b
+    \\    [ret] "={rax}" (->usize), // 2
+    \\    : // 2b
+    \\    [number] "{rax}" (number), // 3
+    \\      [arg1] "{rdi}" (arg1) // 4
+    \\    ,
+    \\    : // 4b
+    \\    .{
+    \\      .rcx = true,
+    \\      .r11 = true,
+    \\    } // 5
+    \\  );
+    \\
+    \\  asm( // 1
+    \\    // I'm top
+    \\    \\.global my_func;
+    \\    \\.type my_func, @function; // 2
+    \\    \\my_func:
+    \\    \\  lea (%rdi,%rsi,1),%eax
+    \\    \\  retq
+    \\    // I'm bottom
+    \\  ); // 3
+    \\}
+  );
+}
+
+test "asm 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  // from ziglang's Assembly page:
+  \\ comptime {
+  \\const t = asm // -2 
+  \\ volatile // -1
+  \\ ( // 0
+  \\ "syscall" // 1
+  \\        : // 1b
+  \\ [ret] "={rax}" (-> usize), // 2
+  \\        : // 2b
+  \\ [number] "{rax}" (number), // 3
+  \\          [arg1] "{rdi}" (arg1) // 4
+  \\ , //4x
+  \\        : // 4b
+  \\ .{ .rcx = true, .r11 = true } // 5
+  \\ );
+  \\
+  \\asm // 0
+  \\ ( // 1
+  \\      // I'm top
+  \\        \\.global my_func;
+  \\        \\.type my_func, @function; // 2
+  \\        \\my_func:
+  \\        \\  lea (%rdi,%rsi,1),%eax
+  \\        \\  retq
+  \\      // I'm bottom
+  \\    ) // 3
+  \\;
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  const t = asm // -2
+    \\  volatile // -1
+    \\  ( // 0
+    \\    "syscall" // 1
+    \\    : // 1b
+    \\    [ret] "={rax}" (->usize), // 2
+    \\    : // 2b
+    \\    [number] "{rax}" (number), // 3
+    \\      [arg1] "{rdi}" (arg1) // 4
+    \\    , //4x
+    \\    : // 4b
+    \\    .{.rcx = true, .r11 = true} // 5
+    \\  );
+    \\
+    \\  asm // 0
+    \\  ( // 1
+    \\    // I'm top
+    \\    \\.global my_func;
+    \\    \\.type my_func, @function; // 2
+    \\    \\my_func:
+    \\    \\  lea (%rdi,%rsi,1),%eax
+    \\    \\  retq
+    \\    // I'm bottom
+    \\  ) // 3
+    \\  ;
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  const t = asm // -2
+    \\  volatile // -1
+    \\  ( // 0
+    \\    "syscall" // 1
+    \\    : // 1b
+    \\    [ret] "={rax}" (->usize), // 2
+    \\    : // 2b
+    \\    [number] "{rax}" (number), // 3
+    \\      [arg1] "{rdi}" (arg1) // 4
+    \\    , //4x
+    \\    : // 4b
+    \\    .{
+    \\      .rcx = true,
+    \\      .r11 = true,
+    \\    } // 5
+    \\  );
+    \\
+    \\  asm // 0
+    \\  ( // 1
+    \\    // I'm top
+    \\    \\.global my_func;
+    \\    \\.type my_func, @function; // 2
+    \\    \\my_func:
+    \\    \\  lea (%rdi,%rsi,1),%eax
+    \\    \\  retq
+    \\    // I'm bottom
+    \\  ) // 3
+    \\  ;
+    \\}
+  );
+}
+
+test "asm 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  // from ziglang's Assembly page:
+  \\ pub fn syscall3(number: usize, arg1: usize, arg2: usize, arg3: usize) usize {
+  \\    return asm volatile ("syscall" // 1
+  \\        : [ret] "={rax}" (-> usize), // 2
+  \\        : [number] "{rax}" (number), // 3
+  \\          [ // 1
+  \\ arg1 // 2
+  \\ ] // 3
+  \\ "{rdi}" // 4
+  \\ ( // 1
+  \\ arg1 // 2
+  \\ ) // 3
+  \\ ,
+  \\          [arg2] "{rsi}" (arg2),
+  \\          [arg3] "{rdx}" (arg3), // 4
+  \\        : .{ .rcx = true, .r11 = true });
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\pub fn syscall3(number: usize, arg1: usize, arg2: usize, arg3: usize) usize {
+    \\  return asm volatile(
+    \\    "syscall" // 1
+    \\    : [ret] "={rax}" (->usize), // 2
+    \\    : [number] "{rax}" (number), // 3
+    \\      [ // 1
+    \\    arg1 // 2
+    \\    ] // 3
+    \\    "{rdi}" // 4
+    \\    ( // 1
+    \\    arg1 // 2
+    \\    ) // 3
+    \\    ,
+    \\      [arg2] "{rsi}" (arg2),
+    \\      [arg3] "{rdx}" (arg3), // 4
+    \\    : .{.rcx = true, .r11 = true}
+    \\  );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\pub fn syscall3(
+    \\  number: usize,
+    \\  arg1: usize,
+    \\  arg2: usize,
+    \\  arg3: usize,
+    \\) usize {
+    \\  return asm volatile(
+    \\    "syscall" // 1
+    \\    : [ret] "={rax}" (->usize), // 2
+    \\    : [number] "{rax}" (number), // 3
+    \\      [ // 1
+    \\    arg1 // 2
+    \\    ] // 3
+    \\    "{rdi}" // 4
+    \\    ( // 1
+    \\    arg1 // 2
+    \\    ) // 3
+    \\    ,
+    \\      [arg2] "{rsi}" (arg2),
+    \\      [arg3] "{rdx}" (arg3), // 4
+    \\    : .{
+    \\      .rcx = true,
+    \\      .r11 = true,
+    \\    }
+    \\  );
+    \\}
   );
 }
 

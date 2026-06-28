@@ -168,6 +168,17 @@ pub const Translate = struct {
     }
   }
 
+  fn inAsmClobber(self: *Self, tkn: Ast.TokenIndex) ?Ast.TokenIndex {
+    if (tkn >= 2 and self.tree.tokenTag(tkn - 1) == .colon) {
+      return switch (self.tree.tokenTag(tkn - 2)) {
+        // TODO: need to verify that these are the only possible preceding tokens
+        .comma, .colon, .string_literal => tkn - 1,
+        else => null,
+      };
+    }
+    return null;
+  }
+
   /// check if we can format a container's members inline
   fn canFormatMembersInline(
     self: *Self,
@@ -497,16 +508,12 @@ pub const Translate = struct {
   fn _ttkn(self: *Self, tkn: Ast.TokenIndex, cfg: TokenFmtConfig) *Doc {
     var sb = self.db.seqb();
     const lxm = self._token(tkn);
-    if (self.fmt_disabled_pos == null) {
-      if (self.tree.tokenTag(tkn) != .doc_comment) {
-        sb.text(lxm)._();
-      } else {
-        const trimmed_comment = std.mem.trimEnd(u8, lxm, &std.ascii.whitespace);
-        sb.text(trimmed_comment)._();
-        self._comments += 1;
-      }
+    if (self.tree.tokenTag(tkn) != .doc_comment) {
+      sb.text(lxm)._();
     } else {
-      sb.append(self.db.empty());
+      const trimmed_comment = std.mem.trimEnd(u8, lxm, &std.ascii.whitespace);
+      sb.text(trimmed_comment)._();
+      self._comments += 1;
     }
     const start = self.tree.tokenStart(tkn) + lxm.len;
     const end = self.tree.tokenStart(tkn + 1);
@@ -1215,10 +1222,21 @@ pub const Translate = struct {
       self._in_call_args += 1;
       for (params, 0..) |_n, i| {
         if (i > 0) {
-          const tkn = self.tree.firstToken(_n) - 1;
-          assert(self.tree.tokenTag(tkn) == .comma);
-          sb_args.decllineIf(self.tknHasTC(tkn - 1))._();
-          sb_args.append(self.ttkn(tkn));
+          var tkn = self.tree.firstToken(_n) - 1;
+          // NOTE: we handle asm input and out here:
+          // when a colon is preceded by a comma, it means we're
+          // translating an asm input/output node
+          if (
+            self.tree.tokenTag(tkn) == .colon
+              and self.tree.tokenTag(tkn - 1) == .comma
+          )
+            tkn = tkn - 1;
+          if (self.tree.tokenTag(tkn) == .comma) {
+            sb_args.decllineIf(self.tknHasTC(tkn - 1))._();
+            sb_args.append(self.ttkn(tkn));
+          } else {
+            assert(self.tree.tokenTag(tkn) == .colon);
+          }
           if (arg_has_comment) {
             sb_args.declline()._();
           } else if (self.tknHasTC(tkn)) {
@@ -2788,11 +2806,21 @@ pub const Translate = struct {
     var sb = self.db.seqb();
     var lbrace: Ast.TokenIndex = undefined;
     if (texpr) |te| {
+      if (self.inAsmClobber(self.tree.firstToken(te))) |colon| {
+        // append `:` if we're rendering an asm clobber expr
+        sb.append(self.ttknWithSTL(colon));
+        sb.spaceIf(self.tknHasNoTC(colon))._();
+      }
       sb.append(self.t(te));
       lbrace = self.tree.lastToken(te) + 1;
     } else {
       // main token is '{'
       lbrace = self.tree.nodeMainToken(n);
+      if (self.inAsmClobber(lbrace - 1)) |colon| {
+        // append `:` if we're rendering an asm clobber expr
+        sb.append(self.ttknWithSTL(colon));
+        sb.spaceIf(self.tknHasNoTC(colon))._();
+      }
       sb.append(self.ttkn(lbrace - 1));
     }
     const comments = self._comments;
@@ -2915,6 +2943,69 @@ pub const Translate = struct {
     assert(self.tree.tokenTag(tkn) == .r_bracket);
     sb.append(self.ttkn(tkn));
     return self.db.group(sb.finish());
+  }
+
+  fn tAsmIO(
+    self: *Self,
+    a: Ast.TokenIndex,
+    lhs: ?Node.Index,
+    rbrack: Ast.TokenIndex,
+    is_output: bool,
+  ) *Doc {
+    // render as is, no fancy breaks
+    var sb = self.db.seqb();
+    // check if there's a colon before `[`
+    const m_colon = a - 2;
+    if (self.tree.tokenTag(m_colon) == .colon) {
+      sb.append(self.ttknWithSTL(m_colon)); // `:`
+      sb.spaceIf(self.tknHasNoTC(m_colon))._();
+    } else {
+      // add two spaces to align with ": " for
+      // asm input/output with a trailing `:`
+      sb.text("  ")._();
+    }
+    // mint fmt: off
+    sb.append(self.ttknWithSTL(a - 1));       // `[`
+    sb.append(self.ttknWithSTL(a));           // `a`
+    sb.append(self.ttknWithSTL(a + 1));       // `]`
+    sb.spaceIf(self.tknHasNoTC(a + 1))._();
+    sb.append(self.ttknWithSTL(a + 2));       // `literal`
+    sb.spaceIf(self.tknHasNoTC(a + 2))._();
+    sb.append(self.ttknWithSTL(a + 3));       // `(`
+    if (lhs) |_n| {
+      if (is_output) {
+        sb.append(self.ttknWithSTL(a + 4));   // `->`
+      }
+      sb.append(self.t(_n));                  // `lhs`
+      sb.decllineIf(self.tknHasTC(self.tree.lastToken(_n)))._();
+    } else {
+      sb.append(self.ttknWithSTL(a + 4));     // `c`
+    }
+    sb.append(self.ttkn(rbrack));             // `)`
+    // mint fmt: on
+    return self.db.group(sb.finish());
+  }
+
+  fn tAsm(self: *Self, assem: Ast.full.Asm) *Doc {
+    var sb = self.db.seqb();
+    sb.append(self.ttknWithSTL(assem.ast.asm_token));
+    var lbrack: Ast.TokenIndex = undefined;
+    if (assem.volatile_token) |vt| {
+      sb.spaceIf(self.tknHasNoTC(assem.ast.asm_token))._();
+      sb.append(self.ttknWithSTL(vt));
+      lbrack = vt + 1;
+    } else {
+      lbrack = assem.ast.asm_token + 1;
+    }
+    const id = d.genGroupID();
+    var params = NodeIndexList.empty;
+    util.listAppend(assem.ast.template, &params, self.al);
+    util.listAppendSlice(Node.Index, &params, @constCast(assem.ast.items), self.al);
+    if (assem.ast.clobbers.unwrap()) |idx| {
+      util.listAppend(idx, &params, self.al);
+    }
+    self.tCall(sb, id, lbrack, assem.ast.rparen, params.items, null, null, false);
+    return self.db.groupi(id, sb.finish());
   }
 
   const TokenFmtConfig = struct {
@@ -3575,6 +3666,23 @@ pub const Translate = struct {
       .slice_open => {
         return self.tSlice(self.tree.sliceOpen(n));
       },
+      .asm_input => {
+        // `[a] "b" (lhs)`.
+        const nd, const rbrack = self.tree.nodeData(n).node_and_token;
+        return self.tAsmIO(self.tree.nodeMainToken(n), nd, rbrack, false);
+      },
+      .asm_output => {
+        // `[a] "b" (c)`.
+        // `[a] "b" (-> lhs)`.
+        const m_nd, const rbrack = self.tree.nodeData(n).opt_node_and_token;
+        return self.tAsmIO(self.tree.nodeMainToken(n), m_nd.unwrap(), rbrack, true);
+      },
+      .asm_simple => {
+        return self.tAsm(self.tree.asmSimple(n));
+      },
+      .@"asm" => {
+        return self.tAsm(self.tree.asmFull(n));
+      },
       //: Type Nodes
       .array_type_sentinel, .array_type => {
         const _n = (if (tag == .array_type)
@@ -3604,10 +3712,7 @@ pub const Translate = struct {
       .ptr_type => {
         return self.tPtrType(self.tree.ptrType(n));
       },
-      else => {
-        log.debug("found unhandled node: {}", .{tag});
-        unreachable;
-      },
+      .root => unreachable,
     }
   }
 
