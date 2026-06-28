@@ -3,6 +3,5 @@ zig-*
 .zed
 .vscode
 .mint
-*.txt
 *.DS_Store
 .stfolder
