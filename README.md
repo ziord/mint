@@ -9,6 +9,11 @@
 zig build -Doptimize=ReleaseSafe
 ```
 
+### Testing
+```
+zig build test --summary all
+```
+
 ### Usage
 ```
 ❯ ./zig-out/bin/mint
