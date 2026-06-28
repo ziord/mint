@@ -1496,6 +1496,7 @@ pub const Translate = struct {
         .keyword_export,
         .keyword_pub,
         .keyword_noinline,
+        .string_literal,
         .keyword_extern => {
           sb.spaceIf(self.tknHasNoTC(curr))._();
           sb.append(self.ttknWithSTL(curr));

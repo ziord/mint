@@ -20898,6 +20898,36 @@ test "asm 5" {
   );
 }
 
+test "extern-fn-with-string-lit" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  // from zigdown project
+  \\const W = struct {
+  \\    extern "kernel32" fn SetConsoleOutputCP(wCodePageID: c_uint) c_int;
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const W = struct {
+    \\  extern "kernel32" fn SetConsoleOutputCP(wCodePageID: c_uint) c_int;
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{.width = 30}, al);
+  try check(
+    res,
+    \\const W = struct {
+    \\  extern "kernel32" fn SetConsoleOutputCP(
+    \\    wCodePageID: c_uint,
+    \\  ) c_int;
+    \\};
+  );
+}
+
 test "misc" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
