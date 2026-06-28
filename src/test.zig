@@ -37,7 +37,7 @@ test "vardecl 1" {
     \\var x = foo(abc, bar, baz);
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\var x = foo(
@@ -85,7 +85,7 @@ test "vardecl 2" {
     \\const f: []Foo(Axe, Bxe, Cxe, Dxe, box()) = box(abc, bar, baz);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const y = box(abc, bar, baz);
@@ -188,7 +188,7 @@ test "vardecl 3" {
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const g: [*:Bar]Foo = box(abc, bar, baz);
@@ -210,7 +210,7 @@ test "vardecl 3" {
     \\const g: [:Bar]const Foo = box(abc, bar, baz);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const g: [*:Bar]Foo = box(
@@ -330,7 +330,7 @@ test "vardecl 4" {
     \\);
   );
   // using width: 100
-  res = try format(doc, .{.width = 100}, al);
+  res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var buffer: [1024]u8 align(64) addrspace(.generic) linksection(".my_custom_section") = undefined;
@@ -354,7 +354,7 @@ test "vardecl 4" {
     \\);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var buffer: [1024]u8
@@ -390,7 +390,7 @@ test "vardecl 4" {
     \\);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var buffer: [1024]u8
@@ -458,7 +458,7 @@ test "vardecl 5" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 80}, al);
+  var res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const buffer: [1024]u8
@@ -484,7 +484,7 @@ test "vardecl 5" {
     \\var a: b align(c) = d;
   );
   // using width: 100
-  res = try format(doc, .{.width = 100}, al);
+  res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const buffer: [1024]u8
@@ -502,7 +502,7 @@ test "vardecl 5" {
     \\var a: b align(c) = d;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const buffer: [1024]u8
@@ -528,7 +528,7 @@ test "vardecl 5" {
     \\var a: b align(c) = d;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const buffer: [1024]u8
@@ -572,7 +572,7 @@ test "vardecl 6" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  const res = try format(doc, .{.width = 80}, al);
+  const res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\threadlocal const x = expr;
@@ -605,7 +605,7 @@ test "vardecl.chains 1" {
     \\);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var xyz = foo.bar("ok").box();
@@ -627,7 +627,7 @@ test "vardecl.chains 1" {
     \\);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var xyz = foo.bar("ok").box();
@@ -674,7 +674,7 @@ test "vardecl.chains 2" {
     \\);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var ky = self.group(
@@ -695,7 +695,7 @@ test "vardecl.chains 2" {
     \\);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var ky = self.group(
@@ -777,7 +777,7 @@ test "vardecl.chains 3" {
     \\);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var ky = self.group(
@@ -812,7 +812,7 @@ test "vardecl.chains 3" {
     \\);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var ky = self.group(
@@ -882,7 +882,7 @@ test "vardecl.chains 4" {
     \\  ._();
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -904,7 +904,7 @@ test "vardecl.chains 4" {
     \\  ._();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -976,7 +976,7 @@ test "vardecl.chains 5" {
     \\);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var sb = self.db.seqb().appends(lhs);
@@ -1012,7 +1012,7 @@ test "vardecl.chains 5" {
     \\);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -1063,7 +1063,7 @@ test "vardecl.chains 6" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 80}, al);
+  var res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
@@ -1073,7 +1073,7 @@ test "vardecl.chains 6" {
     \\  .bar(compute_something(long_arg1, xlong_arg2));
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var q = fox()().hahah(a, b, "yes").bar(abc());
@@ -1085,7 +1085,7 @@ test "vardecl.chains 6" {
     \\  .bar(compute_something(long_arg1, xlong_arg2));
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var q = fox()()
@@ -1125,13 +1125,13 @@ test "vardecl.chains 7" {
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var sb = self.db.seqb().appends(compute_value(lhs, rhs));
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -1167,7 +1167,7 @@ test "vardecl.chains 8" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -1203,7 +1203,7 @@ test "vardecl.chains 8" {
     \\  ._();
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -1231,7 +1231,7 @@ test "vardecl.chains 8" {
     \\  ._();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var sb = self.db.seqb()
@@ -1282,7 +1282,7 @@ test "vardecl.chains 9" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   // using width: 100
   try check(
     res,
@@ -1296,7 +1296,7 @@ test "vardecl.chains 9" {
     \\  )
     \\  ._();
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1312,7 +1312,7 @@ test "vardecl.chains 9" {
     \\  ._();
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1335,7 +1335,7 @@ test "vardecl.chains 9" {
     \\  ._();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1379,7 +1379,7 @@ test "vardecl.chains 10" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   // using width: 100
   try check(
     res,
@@ -1396,7 +1396,7 @@ test "vardecl.chains 10" {
     \\  )
     \\  ._();
   );
-  res = try format(doc, .{.width = 90}, al);
+  res = try format(doc, .{ .width = 90 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1412,7 +1412,7 @@ test "vardecl.chains 10" {
     \\  )
     \\  ._();
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1431,7 +1431,7 @@ test "vardecl.chains 10" {
     \\  ._();
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1454,7 +1454,7 @@ test "vardecl.chains 10" {
     \\  ._();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var sb = self.db.xyz()
@@ -1488,7 +1488,7 @@ test "vardecl.chains 11" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  const res = try format(doc, .{.width = 80}, al);
+  const res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const y = text(
@@ -1515,7 +1515,7 @@ test "fundecl 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo(x: std.ArrayList(T), comptime x: i32, noalias y: u2, k: anytype, ...) A(T) {
@@ -1525,7 +1525,7 @@ test "fundecl 1" {
     \\  x = 5;
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo(
@@ -1542,7 +1542,7 @@ test "fundecl 1" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo(
@@ -1559,7 +1559,7 @@ test "fundecl 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo(
@@ -1589,7 +1589,7 @@ test "fundecl 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo2(
@@ -1603,7 +1603,7 @@ test "fundecl 2" {
     \\  ...,
     \\) A(T) {}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo2(
@@ -1618,7 +1618,7 @@ test "fundecl 2" {
     \\) A(T) {}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo2(
@@ -1644,18 +1644,18 @@ test "fundecl 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo3(comptime T: type, x: std.ArrayList(T), comptime x: i32, ...) A(T) {}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo3(
@@ -1677,7 +1677,7 @@ test "fundecl 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub fn foo4(
@@ -1688,7 +1688,7 @@ test "fundecl 4" {
     \\  k: anytype,
     \\) A(T) {}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub fn foo4(
@@ -1700,7 +1700,7 @@ test "fundecl 4" {
     \\) A(T) {}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub fn foo4(
@@ -1726,7 +1726,7 @@ test "fundecl 5" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\inline fn foo5(
@@ -1745,7 +1745,7 @@ test "fundecl 5" {
     \\  k: anytype,
     \\) A(T) {}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\inline fn foo5(
@@ -1765,7 +1765,7 @@ test "fundecl 5" {
     \\) A(T) {}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\inline fn foo5(
@@ -1799,7 +1799,7 @@ test "fundecl 6" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\export fn foo7(
@@ -1818,7 +1818,7 @@ test "fundecl 6" {
     \\  k: anytype,
     \\) A(T) {}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\export fn foo7(
@@ -1838,7 +1838,7 @@ test "fundecl 6" {
     \\) A(T) {}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\export fn foo7(
@@ -1870,7 +1870,7 @@ test "fundecl 7" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\extern fn foo9(
@@ -1889,7 +1889,7 @@ test "fundecl 7" {
     \\  k: anytype,
     \\) A(T);
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\extern fn foo9(
@@ -1909,7 +1909,7 @@ test "fundecl 7" {
     \\) A(T);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\extern fn foo9(
@@ -1943,7 +1943,7 @@ test "fundecl 8" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar(
@@ -1958,7 +1958,7 @@ test "fundecl 8" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar(
@@ -1979,7 +1979,7 @@ test "fundecl 8" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar(
@@ -2014,7 +2014,7 @@ test "fundecl 9" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar(
@@ -2029,7 +2029,7 @@ test "fundecl 9" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar(
@@ -2050,7 +2050,7 @@ test "fundecl 9" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar(
@@ -2085,7 +2085,7 @@ test "fundecl 10" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar()
@@ -2099,7 +2099,7 @@ test "fundecl 10" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar()
@@ -2114,7 +2114,7 @@ test "fundecl 10" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub fn fantasticFooBar()
@@ -2143,7 +2143,7 @@ test "fundecl 11" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub fn fan() align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
@@ -2152,7 +2152,7 @@ test "fundecl 11" {
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub fn fan()
@@ -2167,7 +2167,7 @@ test "fundecl 11" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub fn fan()
@@ -2195,7 +2195,7 @@ test "fundecl 12" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
@@ -2203,7 +2203,7 @@ test "fundecl 12" {
     \\const T = fn (a: anytype, comptime T: type, x: i32) void;
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
@@ -2212,7 +2212,7 @@ test "fundecl 12" {
     \\const T = fn abc(a: anytype, comptime T: type, x: i32) []const u8;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const T = fn (a: anytype, comptime T: type, x: i32) u32;
@@ -2225,7 +2225,7 @@ test "fundecl 12" {
     \\) []const u8;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const T = fn (
@@ -2263,7 +2263,7 @@ test "fundecl 13" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2271,7 +2271,7 @@ test "fundecl 13" {
     \\  comptime const x, const y = expr;
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2280,7 +2280,7 @@ test "fundecl 13" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2289,7 +2289,7 @@ test "fundecl 13" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2310,7 +2310,7 @@ test "fundecl 14" {
   const al = arena.allocator();
   // using width: 30
   const doc = try translate(src, al);
-  const res = try format(doc, .{.width = 30}, al);
+  const res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testing() Foo!A.B(
@@ -2333,7 +2333,7 @@ test "fundecl 15" {
   const al = arena.allocator();
   // using width: 30
   const doc = try translate(src, al);
-  const res = try format(doc, .{.width = 30}, al);
+  const res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testing(
@@ -2359,7 +2359,7 @@ test "fundecl 16" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn ship() b: {
@@ -2375,7 +2375,7 @@ test "fundecl 16" {
     \\  return voidExpr();
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn ship() b: {
@@ -2392,7 +2392,7 @@ test "fundecl 16" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn ship() b: {
@@ -2412,7 +2412,7 @@ test "fundecl 16" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn ship() b: {
@@ -2463,7 +2463,7 @@ test "fundecl 17" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo(
@@ -2486,14 +2486,14 @@ test "fundecl 17" {
     \\    }
     \\    tmp.append(doc);
     \\    const has_comment = top_comments != null or lb_has_trailing;
-    \\    break :blk CallResult{.sb = tmp, .has_comment = has_comment, .softline = true};
+    \\    break :blk CallResult{ .sb = tmp, .has_comment = has_comment, .softline = true };
     \\  } else if (fn_tkn) |ftkn|
     \\    try self.tFnParams(id, ftkn, params, lb_has_trailing, top_comments)
     \\  else
     \\    try self.tCallArgs(id, params, lb_has_trailing, top_comments, can_add_trailing_comma);
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo(
@@ -2534,7 +2534,7 @@ test "fundecl 17" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo(
@@ -2614,7 +2614,7 @@ test "fundecl 18" {
   const al = arena.allocator();
   // using width: 30
   const doc = try translate(src, al);
-  const res = try format(doc, .{.width = 30}, al);
+  const res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo(
@@ -2698,7 +2698,7 @@ test "expr 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2744,7 +2744,7 @@ test "expr 1" {
     \\}
   );
   // using width: 100, indent: 4
-  res = try format(doc, .{.width = 100, .indent = 4}, al);
+  res = try format(doc, .{ .width = 100, .indent = 4 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2789,7 +2789,7 @@ test "expr 1" {
     \\            + bar / boxB * foo);
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2844,7 +2844,7 @@ test "expr 1" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2899,7 +2899,7 @@ test "expr 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -2972,7 +2972,7 @@ test "expr 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3015,7 +3015,7 @@ test "expr 2" {
     \\    + bar / boxB * foo);
   );
   // using width: 100, indent: 4
-  res = try format(doc, .{.width = 100, .indent = 4}, al);
+  res = try format(doc, .{ .width = 100, .indent = 4 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3057,7 +3057,7 @@ test "expr 2" {
     \\        + bar / boxB * foo * foo
     \\        + bar / boxB * foo);
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3109,7 +3109,7 @@ test "expr 2" {
     \\    + bar / boxB * foo);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3161,7 +3161,7 @@ test "expr 2" {
     \\    + bar / boxB * foo);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3231,7 +3231,7 @@ test "expr 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3259,7 +3259,7 @@ test "expr 3" {
     \\    * foo);
   );
   // using width: 100, indent: 4
-  res = try format(doc, .{.width = 100, .indent = 4}, al);
+  res = try format(doc, .{ .width = 100, .indent = 4 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3286,7 +3286,7 @@ test "expr 3" {
     \\        / boxB
     \\        * foo);
   );
-  res = try format(doc, .{.width = 80, .indent = 4}, al);
+  res = try format(doc, .{ .width = 80, .indent = 4 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3328,7 +3328,7 @@ test "expr 3" {
     \\        * foo);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3385,7 +3385,7 @@ test "expr 3" {
     \\    * foo);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3484,7 +3484,7 @@ test "expr 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3515,7 +3515,7 @@ test "expr 4" {
     \\      * foo);
   );
   // using width: 100, indent: 4
-  res = try format(doc, .{.width = 100, .indent = 4}, al);
+  res = try format(doc, .{ .width = 100, .indent = 4 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3546,7 +3546,7 @@ test "expr 4" {
     \\            / boxB
     \\            * foo);
   );
-  res = try format(doc, .{.width = 80, .indent = 4}, al);
+  res = try format(doc, .{ .width = 80, .indent = 4 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3587,7 +3587,7 @@ test "expr 4" {
     \\            * foo);
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3639,7 +3639,7 @@ test "expr 4" {
     \\      * foo);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x: u3 = 5;
@@ -3735,7 +3735,7 @@ test "expr 5" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
@@ -3760,7 +3760,7 @@ test "expr 5" {
     \\  + someFunc(1, 2, 3) * expr();
   );
   // using width: 100, indent: 4
-  res = try format(doc, .{.width = 100, .indent = 4}, al);
+  res = try format(doc, .{ .width = 100, .indent = 4 }, al);
   try check(
     res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
@@ -3784,7 +3784,7 @@ test "expr 5" {
     \\    - 3
     \\    + someFunc(1, 2, 3) * expr();
   );
-  res = try format(doc, .{.width = 80, .indent = 4}, al);
+  res = try format(doc, .{ .width = 80, .indent = 4 }, al);
   try check(
     res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3) catch expr();
@@ -3809,7 +3809,7 @@ test "expr 5" {
     \\    + someFunc(1, 2, 3) * expr();
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + someFunc(1, 2, 3)
@@ -3845,7 +3845,7 @@ test "expr 5" {
     \\  + someFunc(1, 2, 3) * expr();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc = 5 * 4
@@ -3928,7 +3928,7 @@ test "containerdecl 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = struct { x: []const u8, y: u32 };
@@ -3938,7 +3938,7 @@ test "containerdecl 1" {
     \\const Ty = extern struct { x2: []const u8, y2: u32 };
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = struct { x: []const u8, y: u32 };
@@ -3949,7 +3949,7 @@ test "containerdecl 1" {
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = struct { x: []const u8, y: u32 };
@@ -3960,7 +3960,7 @@ test "containerdecl 1" {
     \\const Ty = extern struct(arg) { x2: []const u8, y2: u32 };
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = struct {
@@ -4019,7 +4019,7 @@ test "containerdecl 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = struct {
@@ -4027,12 +4027,12 @@ test "containerdecl 2" {
     \\  y123: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay"};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay" };
     \\  }
     \\
     \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
     \\    return .{
     \\      .al = al,
     \\      .cfg = cfg,
@@ -4053,11 +4053,11 @@ test "containerdecl 2" {
     \\      .y = 0xff,
     \\      .y = 0xff,
     \\    };
-    \\    return .{.x = "yay"};
+    \\    return .{ .x = "yay" };
     \\  }
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = struct {
@@ -4065,12 +4065,12 @@ test "containerdecl 2" {
     \\  y123: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay"};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay" };
     \\  }
     \\
     \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
     \\    return .{
     \\      .al = al,
     \\      .cfg = cfg,
@@ -4091,12 +4091,12 @@ test "containerdecl 2" {
     \\      .y = 0xff,
     \\      .y = 0xff,
     \\    };
-    \\    return .{.x = "yay"};
+    \\    return .{ .x = "yay" };
     \\  }
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = struct {
@@ -4104,12 +4104,12 @@ test "containerdecl 2" {
     \\  y123: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay"};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay" };
     \\  }
     \\
     \\  pub fn foo(self: @This()) !@This(a, b, c, d) {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
     \\    return .{
     \\      .al = al,
     \\      .cfg = cfg,
@@ -4133,12 +4133,12 @@ test "containerdecl 2" {
     \\      .y = 0xff,
     \\      .y = 0xff,
     \\    };
-    \\    return .{.x = "yay"};
+    \\    return .{ .x = "yay" };
     \\  }
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = struct {
@@ -4152,7 +4152,7 @@ test "containerdecl 2" {
     \\      .x = "yay",
     \\      .y = 0xff,
     \\    };
-    \\    return .{.x = "yay"};
+    \\    return .{ .x = "yay" };
     \\  }
     \\
     \\  pub fn foo(
@@ -4189,7 +4189,7 @@ test "containerdecl 2" {
     \\      .y = 0xff,
     \\      .y = 0xff,
     \\    };
-    \\    return .{.x = "yay"};
+    \\    return .{ .x = "yay" };
     \\  }
     \\};
   );
@@ -4213,7 +4213,7 @@ test "containerdecl 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -4223,7 +4223,7 @@ test "containerdecl 3" {
     \\  writer: enum(u3) { file, out, mem } = .mem,
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -4234,7 +4234,7 @@ test "containerdecl 3" {
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -4245,7 +4245,7 @@ test "containerdecl 3" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -4287,7 +4287,7 @@ test "containerdecl 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -4295,8 +4295,8 @@ test "containerdecl 4" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
     \\const Ty = union(Foo) {
@@ -4304,12 +4304,12 @@ test "containerdecl 4" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -4317,8 +4317,8 @@ test "containerdecl 4" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
     \\const Ty = union(Foo) {
@@ -4326,13 +4326,13 @@ test "containerdecl 4" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -4340,8 +4340,8 @@ test "containerdecl 4" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
     \\const Ty = union(Foo) {
@@ -4349,13 +4349,13 @@ test "containerdecl 4" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -4411,27 +4411,27 @@ test "containerdecl 5" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum) { x: []const u8, y: u32 };
     \\const Ty = union(Foo) { x: []const u8, y: u32 };
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -4469,7 +4469,7 @@ test "containerdecl 6" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
@@ -4478,12 +4478,12 @@ test "containerdecl 6" {
     \\  x: []const u8,
     \\  y: u32,
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
@@ -4492,13 +4492,13 @@ test "containerdecl 6" {
     \\  x: []const u8,
     \\  y: u32,
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo)) { x: []const u8, y: u32 };
@@ -4507,13 +4507,13 @@ test "containerdecl 6" {
     \\  x: []const u8,
     \\  y: u32,
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo)) {
@@ -4566,7 +4566,7 @@ test "containerdecl 7" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) { ab: []const u8, xyz: u32 };
@@ -4577,7 +4577,7 @@ test "containerdecl 7" {
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = struct(arg.foo(xyz, "ok").bar('y').yes(a, b, c, d)) {
@@ -4592,7 +4592,7 @@ test "containerdecl 7" {
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = struct(
@@ -4612,7 +4612,7 @@ test "containerdecl 7" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = struct(
@@ -4659,7 +4659,7 @@ test "containerdecl 8" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = opaque { x: []const u8, y: u32 };
@@ -4669,7 +4669,7 @@ test "containerdecl 8" {
     \\  z: u32 align(foo(bar(1, 'a'), yes("joe", xyz))) = box(11, "yes"),
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = opaque { x: []const u8, y: u32 };
@@ -4680,7 +4680,7 @@ test "containerdecl 8" {
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = opaque { x: []const u8, y: u32 };
@@ -4694,7 +4694,7 @@ test "containerdecl 8" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = opaque {
@@ -4736,7 +4736,7 @@ test "containerdecl 9" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4744,15 +4744,15 @@ test "containerdecl 9" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  const fox = 0xdeadbeef;
     \\  const fox = enum { a, b, c };
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4760,8 +4760,8 @@ test "containerdecl 9" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  const fox = 0xdeadbeef;
@@ -4769,7 +4769,7 @@ test "containerdecl 9" {
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4777,8 +4777,8 @@ test "containerdecl 9" {
     \\  y: u32,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  const fox = 0xdeadbeef;
@@ -4786,7 +4786,7 @@ test "containerdecl 9" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(
@@ -4841,7 +4841,7 @@ test "containerdecl 10" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4851,8 +4851,8 @@ test "containerdecl 10" {
     \\  x: usize,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  const fox1 = 0xdeadbeef;
@@ -4860,7 +4860,7 @@ test "containerdecl 10" {
     \\  const fox3 = union(big) { a, b, c };
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4870,8 +4870,8 @@ test "containerdecl 10" {
     \\  x: usize,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  const fox1 = 0xdeadbeef;
@@ -4880,7 +4880,7 @@ test "containerdecl 10" {
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum(Foo(a, b, c))) {
@@ -4890,8 +4890,8 @@ test "containerdecl 10" {
     \\  x: usize,
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  const fox1 = 0xdeadbeef;
@@ -4900,7 +4900,7 @@ test "containerdecl 10" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(
@@ -4958,54 +4958,54 @@ test "containerdecl 11" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -5057,7 +5057,7 @@ test "containerdecl 12" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -5066,13 +5066,13 @@ test "containerdecl 12" {
     \\  abc: []const u8,
     \\  x: usize,
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\  pub fn x() void {}
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -5081,14 +5081,14 @@ test "containerdecl 12" {
     \\  abc: []const u8,
     \\  x: usize,
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\  pub fn x() void {}
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -5097,14 +5097,14 @@ test "containerdecl 12" {
     \\  abc: []const u8,
     \\  x: usize,
     \\  pub fn foo(self: @This()) @This() {
-    \\    var j = Ty{.x = "yay", .y = 0xff};
-    \\    return .{.x = "yay", .y = 0xff};
+    \\    var j = Ty{ .x = "yay", .y = 0xff };
+    \\    return .{ .x = "yay", .y = 0xff };
     \\  }
     \\  pub fn x() void {}
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -5158,7 +5158,7 @@ test "containerdecl 13" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5183,7 +5183,7 @@ test "containerdecl 13" {
     \\const Ty = union(enum(Foo(a, b, c))) {};
     \\var x = 5;
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5209,7 +5209,7 @@ test "containerdecl 13" {
     \\var x = 5;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5235,7 +5235,7 @@ test "containerdecl 13" {
     \\var x = 5;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5289,7 +5289,7 @@ test "containerdecl 14" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5302,7 +5302,7 @@ test "containerdecl 14" {
     \\pub const Ty = 0xff;
     \\var x = 5;
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5316,7 +5316,7 @@ test "containerdecl 14" {
     \\var x = 5;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5330,7 +5330,7 @@ test "containerdecl 14" {
     \\var x = 5;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\y: []u8,
@@ -5365,7 +5365,7 @@ test "containerdecl 15" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -5377,7 +5377,7 @@ test "containerdecl 15" {
     \\const fox2 = enum { a, b, c };
     \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -5390,7 +5390,7 @@ test "containerdecl 15" {
     \\const fox3 = union(big) { a: A(abc, xyz), b: B, c: C(Type("Foo")) };
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -5411,7 +5411,7 @@ test "containerdecl 15" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub const FmtConfig = struct {
@@ -5455,7 +5455,7 @@ test "ptr types 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
@@ -5473,7 +5473,7 @@ test "ptr types 1" {
     \\var a: [:lhs]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
@@ -5492,7 +5492,7 @@ test "ptr types 1" {
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var j: [*]align(foo(bar.oop(0x12))) rhs = 0xff;
@@ -5511,7 +5511,7 @@ test "ptr types 1" {
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var j: [*]align(
@@ -5569,14 +5569,14 @@ test "ptr types 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
     \\var j: [lhs:Foo(T, K)]Foo(Bar.xyz(abc)) = 0xff;
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
@@ -5584,7 +5584,7 @@ test "ptr types 2" {
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var j: [lhs:Foo(T, K)]rhs = 0xff;
@@ -5592,7 +5592,7 @@ test "ptr types 2" {
     \\var j: [*c]align(foo(bar.oop(0x12))) rhs = 0xff;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var j: [
@@ -5623,7 +5623,7 @@ test "ptr types 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var x: *allowzero align(foo("ok")) Rhs
@@ -5637,7 +5637,7 @@ test "ptr types 3" {
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Rhs = 0xff;
     \\var x: *allowzero align(foo("ok")) addrspace(Foo(Bar())) const volatile Foo(Bar.xyz(abc)) = 0xff;
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var x: *allowzero align(foo("ok")) Rhs
@@ -5658,7 +5658,7 @@ test "ptr types 3" {
     \\  const volatile Foo(Bar.xyz(abc)) = 0xff;
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var x: *allowzero align(foo("ok")) Rhs
@@ -5685,7 +5685,7 @@ test "ptr types 3" {
     \\  const volatile Foo(Bar.xyz(abc)) = 0xff;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x: *allowzero
@@ -5743,7 +5743,7 @@ test "ptr types 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
@@ -5766,7 +5766,7 @@ test "ptr types 4" {
     \\  return 0;
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
@@ -5802,7 +5802,7 @@ test "ptr types 4" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn foo() *allowzero align(foo("ok")) Rhs {
@@ -5838,7 +5838,7 @@ test "ptr types 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() *allowzero
@@ -5896,7 +5896,7 @@ test "try/catch 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var abc = try someFunc(1, 2, 3);
@@ -5905,7 +5905,7 @@ test "try/catch 1" {
     \\var abc = someFunc(1, 2, 3) catch |e| 5;
     \\var abc = someFunc(1, 2, 3) catch expr();
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var abc = try someFunc(1, 2, 3);
@@ -5915,7 +5915,7 @@ test "try/catch 1" {
     \\var abc = someFunc(1, 2, 3) catch expr();
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var abc = try someFunc(1, 2, 3);
@@ -5928,7 +5928,7 @@ test "try/catch 1" {
     \\var abc = someFunc(1, 2, 3) catch expr();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc = try someFunc(
@@ -5973,7 +5973,7 @@ test "try/catch 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3) catch return;
@@ -5992,7 +5992,7 @@ test "try/catch 2" {
     \\  break :blk result("okay");
     \\};
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3) catch return;
@@ -6012,7 +6012,7 @@ test "try/catch 2" {
     \\};
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3) catch return;
@@ -6032,7 +6032,7 @@ test "try/catch 2" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3)
@@ -6100,7 +6100,7 @@ test "orelse 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3) orelse return;
@@ -6120,7 +6120,7 @@ test "orelse 1" {
     \\};
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3) orelse return;
@@ -6141,7 +6141,7 @@ test "orelse 1" {
     \\var abc = 5 * 4 + 3 - abc + 4 - 3 + (someFunc(1, 2, 3) orelse expr());
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3) orelse return;
@@ -6167,7 +6167,7 @@ test "orelse 1" {
     \\  + (someFunc(1, 2, 3) orelse expr());
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3)
@@ -6228,7 +6228,7 @@ test "if/else 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6240,7 +6240,7 @@ test "if/else 1" {
     \\  var z = if (a) b else d;
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6253,7 +6253,7 @@ test "if/else 1" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6266,7 +6266,7 @@ test "if/else 1" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6319,7 +6319,7 @@ test "if/else 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6345,7 +6345,7 @@ test "if/else 2" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6372,7 +6372,7 @@ test "if/else 2" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6399,7 +6399,7 @@ test "if/else 2" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6457,7 +6457,7 @@ test "if/else 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6477,7 +6477,7 @@ test "if/else 3" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6498,7 +6498,7 @@ test "if/else 3" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6519,7 +6519,7 @@ test "if/else 3" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6588,7 +6588,7 @@ test "if/else 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6630,12 +6630,12 @@ test "if/else 4" {
     \\      true,
     \\      open.lhs_name.toToken(),
     \\      "cannot open frozen type '{s}'",
-    \\      .{self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101)},
+    \\      .{ self.getTypename(lhs), self.book(0x101), self.book(0x101), self.book(0x101) },
     \\    );
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6688,7 +6688,7 @@ test "if/else 4" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6745,7 +6745,7 @@ test "if/else 4" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6845,7 +6845,7 @@ test "if/else 5" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6858,7 +6858,7 @@ test "if/else 5" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6872,7 +6872,7 @@ test "if/else 5" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6886,7 +6886,7 @@ test "if/else 5" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -6930,7 +6930,7 @@ test "if/else 6" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -6958,7 +6958,7 @@ test "if/else 6" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -6987,7 +6987,7 @@ test "if/else 6" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -7016,7 +7016,7 @@ test "if/else 6" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -7072,7 +7072,7 @@ test "if/else 7" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -7082,7 +7082,7 @@ test "if/else 7" {
     \\  if (someNiceCondition(a, b, c)) |x| someFancy(callExpr(), a, b);
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -7093,7 +7093,7 @@ test "if/else 7" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -7106,7 +7106,7 @@ test "if/else 7" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -7157,7 +7157,7 @@ test "if/else 8" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -7194,7 +7194,7 @@ test "if/else 9" {
     \\}
   );
   // using width: 50
-  res = try format(doc, .{.width = 50}, al);
+  res = try format(doc, .{ .width = 50 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -7219,7 +7219,7 @@ test "switch 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\label: switch (expr) {
@@ -7230,7 +7230,7 @@ test "switch 1" {
     \\},
     \\switch (someExpr(jk)) {}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\label: switch (expr) {
@@ -7242,7 +7242,7 @@ test "switch 1" {
     \\switch (someExpr(jk)) {}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\label: switch (expr) {
@@ -7254,7 +7254,7 @@ test "switch 1" {
     \\switch (someExpr(jk)) {}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\label: switch (
@@ -7310,7 +7310,7 @@ test "switch 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn fun(expr: Type) switch (@TypeOf(expr)) {
@@ -7352,7 +7352,7 @@ test "switch 2" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn fun(
@@ -7401,7 +7401,7 @@ test "switch 2" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn fun(
@@ -7450,7 +7450,7 @@ test "switch 2" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn fun(
@@ -7549,7 +7549,7 @@ test "switch 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\tag: switch (expr2) {
@@ -7607,7 +7607,7 @@ test "switch 3" {
     \\  else => f,
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\tag: switch (expr2) {
@@ -7666,7 +7666,7 @@ test "switch 3" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\tag: switch (expr2) {
@@ -7725,7 +7725,7 @@ test "switch 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\tag: switch (expr2) {
@@ -7850,7 +7850,7 @@ test "switch 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\tag: switch (expr2) { // one
@@ -7911,7 +7911,7 @@ test "switch 4" {
     \\  inline else => f,
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\tag: switch (expr2) { // one
@@ -7973,7 +7973,7 @@ test "switch 4" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\tag: switch (expr2) { // one
@@ -8035,7 +8035,7 @@ test "switch 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\tag: switch (expr2) { // one
@@ -8138,7 +8138,7 @@ test "for 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8151,7 +8151,7 @@ test "for 1" {
     \\  for (expr) |pl| something();
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8165,7 +8165,7 @@ test "for 1" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8179,7 +8179,7 @@ test "for 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8222,7 +8222,7 @@ test "for 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8241,7 +8241,7 @@ test "for 2" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8261,7 +8261,7 @@ test "for 2" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8281,7 +8281,7 @@ test "for 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8333,7 +8333,7 @@ test "for 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8356,7 +8356,7 @@ test "for 3" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8380,7 +8380,7 @@ test "for 3" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8405,7 +8405,7 @@ test "for 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8456,14 +8456,14 @@ test "for 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| print('yello world') else someCall();
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8471,7 +8471,7 @@ test "for 4" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8482,7 +8482,7 @@ test "for 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8510,14 +8510,14 @@ test "for 5" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
     \\  for (some, 0.., a..z) |*x, y, *z| {}
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8525,7 +8525,7 @@ test "for 5" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8533,7 +8533,7 @@ test "for 5" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8561,7 +8561,7 @@ test "for 6" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8572,7 +8572,7 @@ test "for 6" {
     \\  };
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8584,7 +8584,7 @@ test "for 6" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8599,7 +8599,7 @@ test "for 6" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8659,7 +8659,7 @@ test "while 1" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8684,7 +8684,7 @@ test "while 1" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8710,7 +8710,7 @@ test "while 1" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8737,7 +8737,7 @@ test "while 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8804,7 +8804,7 @@ test "while 2" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8824,7 +8824,7 @@ test "while 2" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8846,7 +8846,7 @@ test "while 2" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8868,7 +8868,7 @@ test "while 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8923,7 +8923,7 @@ test "while 3" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8936,7 +8936,7 @@ test "while 3" {
     \\  }
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8959,7 +8959,7 @@ test "while 3" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -8984,7 +8984,7 @@ test "while 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -9044,7 +9044,7 @@ test "while 4" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -9059,7 +9059,7 @@ test "while 4" {
     \\  };
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -9076,7 +9076,7 @@ test "while 4" {
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -9093,7 +9093,7 @@ test "while 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -9138,42 +9138,42 @@ test "zig 0.16.0" {
   const al = arena.allocator();
   // using width: 100
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 100}, al);
+  var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
     \\const U = packed union(u2) { a: i2, b: u2 };
     \\
-    \\const u: U = .{.a = -1};
+    \\const u: U = .{ .a = -1 };
     \\switch (u) {
-    \\  .{.b = 3} => {},
+    \\  .{ .b = 3 } => {},
     \\  else => unreachable,
     \\}
   );
-  res = try format(doc, .{.width = 80}, al);
+  res = try format(doc, .{ .width = 80 }, al);
   try check(
     res,
     \\const U = packed union(u2) { a: i2, b: u2 };
     \\
-    \\const u: U = .{.a = -1};
+    \\const u: U = .{ .a = -1 };
     \\switch (u) {
-    \\  .{.b = 3} => {},
+    \\  .{ .b = 3 } => {},
     \\  else => unreachable,
     \\}
   );
   // using width: 60
-  res = try format(doc, .{.width = 60}, al);
+  res = try format(doc, .{ .width = 60 }, al);
   try check(
     res,
     \\const U = packed union(u2) { a: i2, b: u2 };
     \\
-    \\const u: U = .{.a = -1};
+    \\const u: U = .{ .a = -1 };
     \\switch (u) {
-    \\  .{.b = 3} => {},
+    \\  .{ .b = 3 } => {},
     \\  else => unreachable,
     \\}
   );
   // using width: 15
-  res = try format(doc, .{.width = 15}, al);
+  res = try format(doc, .{ .width = 15 }, al);
   try check(
     res,
     \\const U = packed union(
@@ -9257,7 +9257,7 @@ test "comments/vardecl 1" {
     \\  linksection(".my_custom_section") = undefined;
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\const // start me
@@ -9365,7 +9365,7 @@ test "comments/vardecl 2" {
     \\foo(abc, bar, baz); // init
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\const // start me
@@ -9478,7 +9478,7 @@ test "comments/call 1" {
     \\),
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\// this is a line comment x
@@ -9614,7 +9614,7 @@ test "comments/call 2" {
     \\,
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\doCall( // opening
@@ -9742,7 +9742,7 @@ test "comments/call 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn fun(
@@ -9815,7 +9815,7 @@ test "comments/chains 1" {
     \\var sb = self_db_xyz(a, b());
   );
   // using width: 15
-  res = try format(doc, .{.width = 15}, al);
+  res = try format(doc, .{ .width = 15 }, al);
   try check(
     res,
     \\var sb = self.db.xyz(
@@ -9961,7 +9961,7 @@ test "comments/chains 2" {
     \\var z = foo.bar.bar(a, b, c()).car(); // end
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x = foo // yes
@@ -10117,7 +10117,7 @@ test "comments/chains 3" {
     \\  ._();
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\var ky = self.group(
@@ -10281,7 +10281,7 @@ test "comments/fundecl 1" {
     \\} // end aha!
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\fn // comment fn
@@ -10410,7 +10410,7 @@ test "comments/fundecl 2" {
     \\}
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\// last one!
@@ -10517,7 +10517,7 @@ test "comments/fundecl 3" {
     \\} // end aha!
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\pub // comment 1
@@ -10651,7 +10651,7 @@ test "comments/fundecl 4" {
     \\A(T);
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\extern // first one
@@ -10755,7 +10755,7 @@ test "comments/block 1" {
     \\; // semi
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc1 = blk: { // opening
@@ -10869,7 +10869,7 @@ test "comments/containerdecl 1" {
     \\; // semi
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const fox3 = extern // first?
@@ -10988,7 +10988,7 @@ test "comments/containerdecl 2" {
     \\; // semi
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const fox3 = union // test here
@@ -11082,7 +11082,7 @@ test "comments/containerdecl 3" {
     \\;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const fox3 = extern // first?
@@ -11228,7 +11228,7 @@ test "comments/containerdecl 4" {
     \\pub const FmtConfig = struct {};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const fox2 = enum {
@@ -11391,7 +11391,7 @@ test "comments/containerdecl 5" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\comptime // here here
@@ -11492,7 +11492,7 @@ test "comments/containerdecl 6" {
     \\{};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const fox3 = extern // first?
@@ -11535,7 +11535,7 @@ test "comments/containerdecl 7" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const T = struct {
@@ -11767,7 +11767,7 @@ test "comments/if/else 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -12058,7 +12058,7 @@ test "comments/if/else 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -12257,7 +12257,7 @@ test "comments/if/else 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testing() void {
@@ -12380,7 +12380,7 @@ test "comments/if/else 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -12498,7 +12498,7 @@ test "comments/if/else 5" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -12719,7 +12719,7 @@ test "comments/for 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -13023,7 +13023,7 @@ test "comments/for 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -13207,7 +13207,7 @@ test "comments/for 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -13329,7 +13329,7 @@ test "comments/for 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -13529,7 +13529,7 @@ test "comments/while 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -13665,7 +13665,7 @@ test "comments/while 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -13814,7 +13814,7 @@ test "comments/while 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testme() void {
@@ -13957,7 +13957,7 @@ test "comments/while 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -14069,7 +14069,7 @@ test "comments/block-label" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -14209,7 +14209,7 @@ test "comments/if-for-while 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -14421,7 +14421,7 @@ test "comments/if-for-while 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn testMe() void {
@@ -14529,7 +14529,7 @@ test "comments/if-for-while 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -14597,7 +14597,7 @@ test "comments/if-while 1" {
     \\  .none;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const final_qual: enum {
@@ -14701,7 +14701,7 @@ test "comments/if-while 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -14854,7 +14854,7 @@ test "comments/switch 1" {
     \\
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\label // 1
@@ -14956,7 +14956,7 @@ test "comments/switch 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\switch (someExpr(jk)) {},
@@ -15031,7 +15031,7 @@ test "comments/switch 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn fun(
@@ -15160,7 +15160,7 @@ test "comments/switch 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\tag: switch (expr2) { // one
@@ -15301,7 +15301,7 @@ test "comments/switch 5" {
     \\},
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\switch (
@@ -15409,7 +15409,7 @@ test "comments/error-union" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn fun(
@@ -15445,6 +15445,54 @@ test "comments/error-union" {
     \\  c,
     \\) { // 3
     \\}
+  );
+}
+
+test "struct-array-init" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const J = .{.abc = 12, .xyz = "ok", .oops = boy};
+  \\const J = .{.abc, "ok", 15};
+  \\const J = Foo{.abc = 12, .xyz = "ok", .oops = boy};
+  \\const J = .{};
+  \\const J = .{ .abc = 12 };
+  \\const J = .{.abc};
+  \\const J = &.{buf[0..size]};
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const J = .{ .abc = 12, .xyz = "ok", .oops = boy };
+    \\const J = .{ .abc, "ok", 15 };
+    \\const J = Foo{ .abc = 12, .xyz = "ok", .oops = boy };
+    \\const J = .{};
+    \\const J = .{ .abc = 12 };
+    \\const J = .{.abc};
+    \\const J = &.{buf[0..size]};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30 }, al);
+  try check(
+    res,
+    \\const J = .{
+    \\  .abc = 12,
+    \\  .xyz = "ok",
+    \\  .oops = boy,
+    \\};
+    \\const J = .{ .abc, "ok", 15 };
+    \\const J = Foo{
+    \\  .abc = 12,
+    \\  .xyz = "ok",
+    \\  .oops = boy,
+    \\};
+    \\const J = .{};
+    \\const J = .{ .abc = 12 };
+    \\const J = .{.abc};
+    \\const J = &.{buf[0..size]};
   );
 }
 
@@ -15650,9 +15698,9 @@ test "comments/struct-init" {
     \\} // 7
     \\; // last
     \\
-    \\var p = foo.bar(ab, cd()){.x = "yay", .y = 0xff};
+    \\var p = foo.bar(ab, cd()){ .x = "yay", .y = 0xff };
     \\var q = foo // ok
-    \\.bar(ab, cd()){.x = "yay", .y = 0xff};
+    \\.bar(ab, cd()){ .x = "yay", .y = 0xff };
     \\
     \\var d = . // 1
     \\{ // 2
@@ -15706,7 +15754,7 @@ test "comments/struct-init" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var a = Ty // 1
@@ -15973,7 +16021,7 @@ test "comments/array-init" {
     \\} // 4
     \\; // last
     \\
-    \\var p = foo.bar(ab, cd()){x("yay"), y(0xff)};
+    \\var p = foo.bar(ab, cd()){ x("yay"), y(0xff) };
     \\var q = foo // ok
     \\.bar(ab, cd()){
     \\  .x("yay"),
@@ -16007,7 +16055,7 @@ test "comments/array-init" {
     \\}; // last
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var a = Ty // 1
@@ -16207,7 +16255,7 @@ test "comments/break-return" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -16339,7 +16387,7 @@ test "comments/assign-destructure" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -16489,7 +16537,7 @@ test "comments/assign-add" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -16726,7 +16774,7 @@ test "comments/field-access" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -16984,7 +17032,7 @@ test "comments/binexpr" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo(bar: T) void {
@@ -17145,7 +17193,7 @@ test "comments/try-catch" {
     \\  expr();
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc = try // my try
@@ -17251,7 +17299,7 @@ test "comments/orelse" {
     \\      expr());
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var abc = someFunc(1, 2, 3)
@@ -17352,7 +17400,7 @@ test "comments/addressop-optional" {
     \\foo(1, 2, 3);
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x = & // a
@@ -17557,7 +17605,7 @@ test "comments/pointer-type 1" {
     \\= 0xff;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var j: [ // 1
@@ -17702,7 +17750,7 @@ test "comments/pointer-type 2" {
     \\= 0xff;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var j: [
@@ -17966,7 +18014,7 @@ test "comments/pointer-type 3" {
     \\= 0xff;
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var x: * // 1
@@ -18207,7 +18255,7 @@ test "comments/pointer-type 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\var j: [
@@ -18338,7 +18386,7 @@ test "comments/doc-comment 1" {
     \\y: usize,
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\/// This is a doc comment 1
@@ -18413,7 +18461,7 @@ test "comments/doc-comment 2" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\/// first T
@@ -18479,7 +18527,7 @@ test "comments/doc-comment 3" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\/// first T
@@ -18538,7 +18586,7 @@ test "comments/doc-comment 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo(
@@ -18628,7 +18676,7 @@ test "comments/mint-off-on 1" {
     \\ y: usize,
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\// mint fmt: off
@@ -18733,7 +18781,7 @@ test "comments/mint-off-on 2" {
     \\y: usize,
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\// mint fmt: off
@@ -18921,7 +18969,7 @@ test "comments/mint-off-on 3" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub const Foo = struct {
@@ -19142,13 +19190,13 @@ test "comments/mint-off-on 4" {
     \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_ident
     \\    .{.bp = .bp_none, .prefix = Self.variable, .infix = null},                // tk_unknown
     \\    // mint fmt: on
-    \\    .{.bp = .bp_none, .prefix = null, .infix = null}, // tk_eof
+    \\    .{ .bp = .bp_none, .prefix = null, .infix = null }, // tk_eof
     \\  };
     \\  // TODO: see we if we can add a generic implementation of _parse() in here
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub const Foo = struct {
@@ -19257,7 +19305,7 @@ test "comments/mint-off-on 5" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn tAsmIO() *Doc {
@@ -19389,7 +19437,7 @@ test "slice" {
     \\var j = foo()[bar()..:bar()];
   );
   // using width: 10
-  res = try format(doc, .{.width = 10}, al);
+  res = try format(doc, .{ .width = 10 }, al);
   try check(
     res,
     \\foo() // 1
@@ -19531,7 +19579,7 @@ test "catch-orelse 1" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const p = paths orelse blk: {
@@ -19606,7 +19654,7 @@ test "catch-orelse 2" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -19687,7 +19735,7 @@ test "array-access" {
     \\buf[size] = 0,
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\_ = buf // 1
@@ -19750,7 +19798,7 @@ test "error-value" {
     \\var x = error.FooIsInvalid;
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\var x = error // 1
@@ -19899,7 +19947,7 @@ test "multiline-string 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn MyFoo() void {
@@ -20007,7 +20055,7 @@ test "multiline-string 2" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub const ArgParse = struct {
@@ -20044,7 +20092,7 @@ test "bang-return" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub inline fn getStatMTime(
@@ -20123,7 +20171,7 @@ test "rbrace-trailing-comment 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\fn foo() void {
@@ -20209,7 +20257,7 @@ test "rbrace-trailing-comment 2" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const J = struct {
@@ -20250,7 +20298,7 @@ test "rbrace-trailing-comment 3" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const J = struct {
@@ -20290,7 +20338,7 @@ test "rbrace-trailing-comment 4" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const J = struct {
@@ -20334,7 +20382,7 @@ test "rbrace-trailing-comment 5" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const J = struct {
@@ -20376,7 +20424,7 @@ test "field termination 1" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 120}, al);
+  var res = try format(doc, .{ .width = 120 }, al);
   try check(
     res,
     \\const ConcreteTypes = struct {
@@ -20386,11 +20434,11 @@ test "field termination 1" {
     \\  const unit = tir.Concrete.init(.ck_unit, scratchIdentToken(ks.UnitVar));
     \\  const never = tir.Concrete.init(.ck_never, scratchIdentToken(ks.NeverVar));
     \\
-    \\  var ty_number: Type = Type.init(.{.ty_concrete = num});
-    \\  var ty_string: Type = Type.init(.{.ty_concrete = str});
-    \\  var ty_void: Type = Type.init(.{.ty_concrete = void_});
-    \\  var ty_unit: Type = Type.init(.{.ty_concrete = unit});
-    \\  var ty_never: Type = Type.init(.{.ty_concrete = never});
+    \\  var ty_number: Type = Type.init(.{ .ty_concrete = num });
+    \\  var ty_string: Type = Type.init(.{ .ty_concrete = str });
+    \\  var ty_void: Type = Type.init(.{ .ty_concrete = void_ });
+    \\  var ty_unit: Type = Type.init(.{ .ty_concrete = unit });
+    \\  var ty_never: Type = Type.init(.{ .ty_concrete = never });
     \\};
     \\
     \\const Ty = union(enum) {
@@ -20404,7 +20452,7 @@ test "field termination 1" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const ConcreteTypes = struct {
@@ -20436,19 +20484,19 @@ test "field termination 1" {
     \\  );
     \\
     \\  var ty_number: Type = Type.init(
-    \\    .{.ty_concrete = num},
+    \\    .{ .ty_concrete = num },
     \\  );
     \\  var ty_string: Type = Type.init(
-    \\    .{.ty_concrete = str},
+    \\    .{ .ty_concrete = str },
     \\  );
     \\  var ty_void: Type = Type.init(
-    \\    .{.ty_concrete = void_},
+    \\    .{ .ty_concrete = void_ },
     \\  );
     \\  var ty_unit: Type = Type.init(
-    \\    .{.ty_concrete = unit},
+    \\    .{ .ty_concrete = unit },
     \\  );
     \\  var ty_never: Type = Type.init(
-    \\    .{.ty_concrete = never},
+    \\    .{ .ty_concrete = never },
     \\  );
     \\};
     \\
@@ -20478,13 +20526,13 @@ test "field termination 2" {
   ;
   const al = arena.allocator();
   const doc = try translate(src, al);
-  var res = try format(doc, .{.width = 120}, al);
+  var res = try format(doc, .{ .width = 120 }, al);
   try check(
     res,
     \\const Ty = union(enum) { x: []const u8, y: u32, abc: []const u8, x: usize, comptime x = 5 };
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const Ty = union(enum) {
@@ -20529,7 +20577,7 @@ test "asm 1" {
     \\    : [ret] "={rax}" (->usize),
     \\    : [number] "{rax}" (number),
     \\      [arg1] "{rdi}" (arg1),
-    \\    : .{.rcx = true, .r11 = true}
+    \\    : .{ .rcx = true, .r11 = true }
     \\  );
     \\
     \\  asm(
@@ -20542,7 +20590,7 @@ test "asm 1" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\comptime {
@@ -20596,12 +20644,12 @@ test "asm 2" {
     \\      [arg1] "{rdi}" (arg1),
     \\      [arg2] "{rsi}" (arg2),
     \\      [arg3] "{rdx}" (arg3),
-    \\    : .{.rcx = true, .r11 = true}
+    \\    : .{ .rcx = true, .r11 = true }
     \\  );
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub fn syscall3(
@@ -20669,7 +20717,7 @@ test "asm 3" {
     \\      [arg1] "{rdi}" (arg1) // 4
     \\    ,
     \\    : // 4b
-    \\    .{.rcx = true, .r11 = true} // 5
+    \\    .{ .rcx = true, .r11 = true } // 5
     \\  );
     \\
     \\  asm( // 1
@@ -20684,7 +20732,7 @@ test "asm 3" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\comptime {
@@ -20766,7 +20814,7 @@ test "asm 4" {
     \\      [arg1] "{rdi}" (arg1) // 4
     \\    , //4x
     \\    : // 4b
-    \\    .{.rcx = true, .r11 = true} // 5
+    \\    .{ .rcx = true, .r11 = true } // 5
     \\  );
     \\
     \\  asm // 0
@@ -20783,7 +20831,7 @@ test "asm 4" {
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\comptime {
@@ -20861,12 +20909,12 @@ test "asm 5" {
     \\    ,
     \\      [arg2] "{rsi}" (arg2),
     \\      [arg3] "{rdx}" (arg3), // 4
-    \\    : .{.rcx = true, .r11 = true}
+    \\    : .{ .rcx = true, .r11 = true }
     \\  );
     \\}
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\pub fn syscall3(
@@ -20917,7 +20965,7 @@ test "extern-fn-with-string-lit" {
     \\};
   );
   // using width: 30
-  res = try format(doc, .{.width = 30}, al);
+  res = try format(doc, .{ .width = 30 }, al);
   try check(
     res,
     \\const W = struct {
@@ -21113,7 +21161,7 @@ test "misc" {
     \\}
   );
   // using width: 20
-  res = try format(doc, .{.width = 20}, al);
+  res = try format(doc, .{ .width = 20 }, al);
   try check(
     res,
     \\fn foo() void {

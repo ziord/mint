@@ -30,7 +30,7 @@ pub const Cli = struct {
     paths: ?[]const []const u8,
     mode: Mode,
   ) !Cli {
-    var self = Cli{.al = parent_al, .io = io, .mode = mode};
+    var self = Cli{ .al = parent_al, .io = io, .mode = mode };
     if (mode == .help or mode == .init) return self;
     const p = paths orelse &.{@as([]const u8, ".")};
     try self.findFilePaths(p);
@@ -41,11 +41,11 @@ pub const Cli = struct {
     m: for (paths) |path| {
       var files: std.ArrayList(Path) = .empty;
       _ = std.Io.Dir.cwd()
-        .openFile(self.io, path, .{.allow_directory = false}) catch |e| {
+        .openFile(self.io, path, .{ .allow_directory = false }) catch |e| {
         switch (e) {
           error.IsDir => {
             var dir = try std.Io.Dir.cwd()
-              .openDir(self.io, path, .{.iterate = true});
+              .openDir(self.io, path, .{ .iterate = true });
             var walker = try dir.walk(self.al);
             l: while (try walker.next(self.io)) |entry| {
               switch (entry.kind) {
@@ -60,15 +60,15 @@ pub const Cli = struct {
                     continue :l;
                   }
                   const tmp = try self.al.dupe(u8, entry.path);
-                  const p = try std.fs.path.join(self.al, &.{path, tmp});
-                  try files.append(self.al, .{.path = p, .ty = FileTypes[idx]});
+                  const p = try std.fs.path.join(self.al, &.{ path, tmp });
+                  try files.append(self.al, .{ .path = p, .ty = FileTypes[idx] });
                 },
                 else => {},
               }
             }
             // save for rescan later
             if (files.items.len > 0) {
-              try self.projects.put(self.al, path, .{.files = files.items});
+              try self.projects.put(self.al, path, .{ .files = files.items });
               files = .empty;
             }
             continue :m;
@@ -85,8 +85,8 @@ pub const Cli = struct {
       } else {
         return error.InvalidPath;
       }
-      tmp[0] = .{.path = path, .ty = ty};
-      try self.projects.put(self.al, path, .{.files = tmp});
+      tmp[0] = .{ .path = path, .ty = ty };
+      try self.projects.put(self.al, path, .{ .files = tmp });
     }
   }
 
@@ -114,13 +114,13 @@ pub const Cli = struct {
               // validate that there's only one `mint.zon` file per project
             } else {
               std.debug.print("error: found multiple `mint.zon` files:\n", .{});
-              std.debug.print("  {s} and {s}\n", .{cfg.?.path, f.path});
+              std.debug.print("  {s} and {s}\n", .{ cfg.?.path, f.path });
               return error.MultipleConfigFiles;
             }
           }
         }
         if (cfg) |p| {
-          proj.config = .{.p = p, .mtime = try util.getStatMTime(self.io, p.path)};
+          proj.config = .{ .p = p, .mtime = try util.getStatMTime(self.io, p.path) };
         }
       }
     }

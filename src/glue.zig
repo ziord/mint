@@ -11,8 +11,8 @@ pub const FileType = std.zig.Ast.Mode;
 pub const Mode = enum { imm, watch, help, init };
 pub const Path = struct { path: []const u8, ty: FileType, is_config: bool = false };
 // NOTE: keep `FileTypes` in sync with `ExtensionFilters`
-pub const FileTypes = [_]FileType{.zig, .zon};
-pub const ExtensionFilters = [_][]const u8{"zig", "zon"};
+pub const FileTypes = [_]FileType{ .zig, .zon };
+pub const ExtensionFilters = [_][]const u8{ "zig", "zon" };
 pub const IgnoreList = [_][]const u8{"zig-"};
 
 pub const MintConfig = struct {
@@ -21,7 +21,7 @@ pub const MintConfig = struct {
   ignore: [][]const u8,
 
   pub fn toFmtConfig(self: MintConfig) fmt.FmtConfig {
-    return .{.width = self.width, .indent = self.indent, .write_mode = .file};
+    return .{ .width = self.width, .indent = self.indent, .write_mode = .file };
   }
 };
 
@@ -29,7 +29,7 @@ pub const Project = struct {
   config: ?struct {
     p: Path,
     mtime: std.Io.Timestamp,
-    fmt_cfg: fmt.FmtConfig = .{.write_mode = .file},
+    fmt_cfg: fmt.FmtConfig = .{ .write_mode = .file },
   } = null,
   files: []Path,
 
@@ -37,7 +37,7 @@ pub const Project = struct {
     if (self.config) |cfg| {
       return cfg.fmt_cfg;
     }
-    return .{.write_mode = .file};
+    return .{ .write_mode = .file };
   }
 };
 
@@ -86,18 +86,18 @@ pub const Glue = struct {
     mode: std.Io.File.OpenFlags.Mode,
     al: Allocator,
   ) !struct { std.Io.File, [:0]const u8 } {
-    var file = try std.Io.Dir.cwd().openFile(self.io, filename, .{.mode = mode});
+    var file = try std.Io.Dir.cwd().openFile(self.io, filename, .{ .mode = mode });
     const size = try file.length(self.io);
     var buf = util.allocSlice(u8, size + 1, al);
     const r_size = try file.readPositionalAll(self.io, buf, 0);
     if (r_size != size) return error.FileChanged;
     buf[size] = 0;
-    return .{file, buf[0..size:0]};
+    return .{ file, buf[0..size:0] };
   }
 
   fn writeFile(self: *Glue, filename: []const u8, content: []const u8) !void {
     var file = try std.Io.Dir.cwd()
-      .openFile(self.io, filename, .{.mode = .write_only});
+      .openFile(self.io, filename, .{ .mode = .write_only });
     defer file.close(self.io);
     try file.setLength(self.io, 0);
     try file.writePositionalAll(self.io, content, 0);

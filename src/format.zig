@@ -32,7 +32,7 @@ pub const Format = struct {
     doc: *Doc,
 
     pub inline fn init(indent: u8, mode: FitMode, d: *Doc) @This() {
-      return .{.indent = indent, .mode = mode, .doc = d};
+      return .{ .indent = indent, .mode = mode, .doc = d };
     }
   };
 
@@ -183,7 +183,7 @@ pub const Format = struct {
     self.setWriter();
     defer self.writer.flush() catch {};
     var stack = Stack.initCapacity(self.al, 1) catch unreachable;
-    self.stackPush(&stack, .{.indent = 0, .mode = .split, .doc = d});
+    self.stackPush(&stack, .{ .indent = 0, .mode = .split, .doc = d });
     var column = @as(u32, 0);
     while (stack.items.len != 0) {
       const sm = stack.pop().?;

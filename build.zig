@@ -132,7 +132,7 @@ pub fn build(b: *std.Build) void {
   // Creates an executable that will run `test` blocks from the executable's
   // root module. Note that test executables only test one module at a time,
   // hence why we have to create two separate ones.
-  const exe_tests = b.addTest(.{.root_module = exe.root_module});
+  const exe_tests = b.addTest(.{ .root_module = exe.root_module });
 
   // A run step that will run the second test executable.
   const run_exe_tests = b.addRunArtifact(exe_tests);

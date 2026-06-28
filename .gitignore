@@ -5,3 +5,5 @@ zig-*
 .mint
 *.DS_Store
 .stfolder
+out.txt
+out2.txt

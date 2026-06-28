@@ -83,7 +83,7 @@ pub const SeqBuilder = struct {
   done: bool = false,
 
   pub fn init(al: Allocator, db: *DocBuilder) @This() {
-    return .{.al = al, .db = db};
+    return .{ .al = al, .db = db };
   }
 
   pub inline fn _(self: *@This()) void {
@@ -105,17 +105,17 @@ pub const SeqBuilder = struct {
   pub fn copy(self: *@This()) @This() {
     var cpy = DocList.initCapacity(self.al, self.docs.items.len) catch unreachable;
     cpy.appendSliceAssumeCapacity(self.docs.items);
-    return .{.al = self.al, .docs = cpy, .db = self.db, .done = self.done};
+    return .{ .al = self.al, .docs = cpy, .db = self.db, .done = self.done };
   }
 
   pub fn text(self: *@This(), s: []const u8) *@This() {
-    const t = Doc.new(.{.text = Text{.s = s}}, self.al);
+    const t = Doc.new(.{ .text = Text{ .s = s } }, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
   }
 
   pub fn space(self: *@This()) *@This() {
-    const t = Doc.new(.{.text = Text{.s = " "}}, self.al);
+    const t = Doc.new(.{ .text = Text{ .s = " " } }, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
   }
@@ -125,7 +125,7 @@ pub const SeqBuilder = struct {
   }
 
   pub inline fn line(self: *@This(), ty: Line.Ty) *@This() {
-    const l = Doc.new(.{.line = Line{.ty = ty}}, self.al);
+    const l = Doc.new(.{ .line = Line{ .ty = ty } }, self.al);
     util.listAppend(l, &self.docs, self.al);
     return self;
   }
@@ -202,13 +202,13 @@ pub const SeqBuilder = struct {
   }
 
   pub fn group(self: *@This(), docs: []*Doc) *@This() {
-    const g = Doc.new(.{.group = Group{.id = getID(), .docs = docs}}, self.al);
+    const g = Doc.new(.{ .group = Group{ .id = getID(), .docs = docs } }, self.al);
     util.listAppend(g, &self.docs, self.al);
     return self;
   }
 
   pub fn groupi(self: *@This(), id: u32, docs: []*Doc) *@This() {
-    const g = Doc.new(.{.group = Group{.id = id, .docs = docs}}, self.al);
+    const g = Doc.new(.{ .group = Group{ .id = id, .docs = docs } }, self.al);
     util.listAppend(g, &self.docs, self.al);
     return self;
   }
@@ -216,20 +216,20 @@ pub const SeqBuilder = struct {
   pub fn indentOne(self: *@This(), doc: *Doc) *@This() {
     var docs = util.allocSlice(*Doc, 1, self.db.al);
     docs[0] = doc;
-    const i = Doc.new(.{.indent = Seq{.docs = docs}}, self.al);
+    const i = Doc.new(.{ .indent = Seq{ .docs = docs } }, self.al);
     util.listAppend(i, &self.docs, self.al);
     return self;
   }
 
   pub fn indent(self: *@This(), docs: []*Doc) *@This() {
-    const i = Doc.new(.{.indent = Seq{.docs = docs}}, self.al);
+    const i = Doc.new(.{ .indent = Seq{ .docs = docs } }, self.al);
     util.listAppend(i, &self.docs, self.al);
     return self;
   }
 
   pub fn ifsplit(self: *@This(), g: u32, split: *Doc, flat: *Doc) *@This() {
     const i = Doc.new(
-      .{.ifsplit = IfSplit{.group = g, .split = split, .flat = flat}},
+      .{ .ifsplit = IfSplit{ .group = g, .split = split, .flat = flat } },
       self.al,
     );
     util.listAppend(i, &self.docs, self.al);
@@ -271,7 +271,7 @@ pub const SeqBuilder = struct {
     defer {
       self.done = true;
     }
-    return Doc.new(.{.seq = Seq{.docs = self.docs.items}}, self.al);
+    return Doc.new(.{ .seq = Seq{ .docs = self.docs.items } }, self.al);
   }
 
   pub fn reset(self: *@This()) void {
@@ -311,7 +311,7 @@ pub const DocBuilder = struct {
   const BUILDERS_LEN = 4096;
 
   pub fn init(al: Allocator) @This() {
-    return .{.al = al};
+    return .{ .al = al };
   }
 
   pub inline fn seqb(self: *@This()) *SeqBuilder {
@@ -341,15 +341,15 @@ pub const DocBuilder = struct {
   }
 
   pub fn text(self: *@This(), s: []const u8) *Doc {
-    return Doc.new(.{.text = Text{.s = s}}, self.al);
+    return Doc.new(.{ .text = Text{ .s = s } }, self.al);
   }
 
   pub fn space(self: *@This()) *Doc {
-    return Doc.new(.{.text = Text{.s = " "}}, self.al);
+    return Doc.new(.{ .text = Text{ .s = " " } }, self.al);
   }
 
   pub fn line(self: *@This(), ty: Line.Ty) *Doc {
-    return Doc.new(.{.line = Line{.ty = ty}}, self.al);
+    return Doc.new(.{ .line = Line{ .ty = ty } }, self.al);
   }
 
   pub fn softline(self: *@This()) *Doc {
@@ -369,28 +369,28 @@ pub const DocBuilder = struct {
   }
 
   pub fn seq(self: *@This(), docs: []*Doc) *Doc {
-    return Doc.new(.{.seq = Seq{.docs = docs}}, self.al);
+    return Doc.new(.{ .seq = Seq{ .docs = docs } }, self.al);
   }
 
   pub fn empty(self: *@This()) *Doc {
-    return Doc.new(.{.seq = Seq{.docs = &.{}}}, self.al);
+    return Doc.new(.{ .seq = Seq{ .docs = &.{} } }, self.al);
   }
 
   pub fn group(self: *@This(), docs: []*Doc) *Doc {
-    return Doc.new(.{.group = Group{.id = getID(), .docs = docs}}, self.al);
+    return Doc.new(.{ .group = Group{ .id = getID(), .docs = docs } }, self.al);
   }
 
   pub fn groupi(self: *@This(), id: u32, docs: []*Doc) *Doc {
-    return Doc.new(.{.group = Group{.id = id, .docs = docs}}, self.al);
+    return Doc.new(.{ .group = Group{ .id = id, .docs = docs } }, self.al);
   }
 
   pub fn indent(self: *@This(), docs: []*Doc) *Doc {
-    return Doc.new(.{.indent = Seq{.docs = docs}}, self.al);
+    return Doc.new(.{ .indent = Seq{ .docs = docs } }, self.al);
   }
 
   pub fn ifsplit(self: *@This(), g: u32, split: *Doc, flat: *Doc) *Doc {
     return Doc.new(
-      .{.ifsplit = IfSplit{.group = g, .split = split, .flat = flat}},
+      .{ .ifsplit = IfSplit{ .group = g, .split = split, .flat = flat } },
       self.al,
     );
   }
