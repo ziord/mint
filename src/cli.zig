@@ -180,7 +180,10 @@ pub const Cli = struct {
         try g.formatImm(p, proj.getFmtConfig(), &files);
       }
     }
-    std.debug.print("formatted {} file(s) across {} project(s).\n", .{files, self.projects.count()});
+    std.debug.print(
+      "formatted {} file(s) across {} project(s).\n",
+      .{ files, self.projects.count() },
+    );
   }
 
   fn doInit(self: *Cli) !void {
