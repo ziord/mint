@@ -181,7 +181,7 @@ pub const Cli = struct {
       }
     }
     std.debug.print(
-      "formatted {} file(s) across {} project(s).\n",
+      "Formatted {} file(s) across {} project(s).\n",
       .{ files, self.projects.count() },
     );
   }
