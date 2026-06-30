@@ -168,7 +168,7 @@ pub const Glue = struct {
     }
   }
 
-  pub fn formatImm(self: *Glue, p: Path, cfg: fmt.FmtConfig) !void {
+  pub fn formatImm(self: *Glue, p: Path, cfg: fmt.FmtConfig, counter: *usize) !void {
     if (self.shouldIgnore(p)) return;
     self.arena = ArenaAllocator.init(std.heap.page_allocator);
     defer self.arena.deinit();
@@ -179,6 +179,7 @@ pub const Glue = struct {
     try file.setLength(self.io, 0);
     f.setFileWriter(file.writer(self.io, &WriteBuf));
     f.fmt(doc);
+    counter.* += 1;
     std.debug.print("successfully formated {s}\n", .{p.path});
   }
 

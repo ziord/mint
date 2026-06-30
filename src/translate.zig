@@ -2270,10 +2270,11 @@ pub const Translate = struct {
     tmp.append(self.ttknWithSTL(fl.ast.for_token));
     tmp.spaceIf(self.tknHasNoTC(fl.ast.for_token))._();
     const lbrack = fl.ast.for_token + 1;
-    const rbrack = self.tree.lastToken(fl.ast.inputs[fl.ast.inputs.len - 1]) + 1;
-    const id = d.genGroupID();
-    self.tCall(tmp, id, lbrack, rbrack, fl.ast.inputs, null, null, false);
+    var rbrack = self.tree.lastToken(fl.ast.inputs[fl.ast.inputs.len - 1]) + 1;
+    if (self.tree.tokenTag(rbrack) != .r_paren) rbrack += 1;
+    self.tCall(tmp, d.genGroupID(), lbrack, rbrack, fl.ast.inputs, null, null, true);
     sb.group(tmp.finish())._();
+    const id = d.genGroupID();
     var fl_top_has_tc = false;
     var last_tkn: Ast.TokenIndex = undefined;
     {

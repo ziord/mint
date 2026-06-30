@@ -173,12 +173,14 @@ pub const Cli = struct {
   }
 
   fn formatImm(self: *Cli, g: *Glue) !void {
+    var files: usize = 0;
     for (self.projects.values()) |*proj| {
       try g.loadConfig(proj, true, self.al);
       for (proj.files) |p| {
-        try g.formatImm(p, proj.getFmtConfig());
+        try g.formatImm(p, proj.getFmtConfig(), &files);
       }
     }
+    std.debug.print("formatted {} file(s) across {} project(s).\n", .{files, self.projects.count()});
   }
 
   fn doInit(self: *Cli) !void {

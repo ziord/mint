@@ -37,7 +37,18 @@ By default, `mint` uses a maximum print width of 85 characters and an indentatio
   .ignore = .{} // directories/files to ignore
 }
 ```
+#### Initialization
 Create a ready-to-use `mint.zon` file with: `mint init`.
+
+#### Inline Commands
+Disable formatting for succeeding lines of code with:
+```zig
+// mint fmt: off
+```
+Re-enable formatting with:
+```zig
+// mint fmt: on
+```
 
 ### Contributing
 All of `mint`'s code is purely hand-written, nothing is AI-generated, and I'd like to keep it that way. Please do not submit vibe-coded or AI-generated patches. Contributions are welcome, provided they adhere to this guideline.

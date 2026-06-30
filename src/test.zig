@@ -8186,14 +8186,14 @@ test "for 1" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| lbl: {
     \\    print('yello world');
     \\  }
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| {
     \\    print('yello world');
     \\  }
@@ -8292,14 +8292,14 @@ test "for 2" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| lbl: {
     \\    print('yello world');
     \\  } else someStuff();
     \\  inline for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| lbl: {
     \\    print('yello world');
     \\  } else {
@@ -8412,7 +8412,7 @@ test "for 3" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| {
     \\    print('yello world');
     \\  } else {
@@ -8489,7 +8489,7 @@ test "for 4" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z|
     \\    print('yello world')
     \\  else
@@ -8540,7 +8540,7 @@ test "for 5" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| {}
     \\}
   );
@@ -8604,7 +8604,11 @@ test "for 6" {
     res,
     \\fn testMe() void {
     \\  lbl: for (
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) |x|
     \\    someFancy(
     \\      callExpr(),
@@ -8612,7 +8616,11 @@ test "for 6" {
     \\      b,
     \\    );
     \\  for (
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) |x|
     \\    someFancy(
     \\      callExpr(),
@@ -8620,7 +8628,11 @@ test "for 6" {
     \\      b,
     \\    );
     \\  for (
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) |x|
     \\    _ = blk: {
     \\      print('yello world');
@@ -12963,7 +12975,7 @@ test "comments/for 2" {
     \\  for (
     \\    some, //
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) //
     \\  |*x, y, *z| //
     \\  lbl: {
@@ -13069,7 +13081,7 @@ test "comments/for 2" {
     \\  for (
     \\    some, //
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) //
     \\  |*x, y, *z| //
     \\  lbl: {
@@ -13175,7 +13187,7 @@ test "comments/for 3" {
     \\  ( //
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) //
     \\  |*x, y, *z| { //
     \\    print('yello world');
@@ -13215,7 +13227,7 @@ test "comments/for 3" {
     \\  ( //
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) //
     \\  |*x, y, *z| { //
     \\    print('yello world');
@@ -13315,7 +13327,7 @@ test "comments/for 4" {
     \\    someFancy(callExpr(), a, b);
     \\  for //
     \\  ( //
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(a, b, c),
     \\  ) //
     \\  | //
     \\  x //
@@ -13336,7 +13348,7 @@ test "comments/for 4" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| //
     \\    print('yello world')
     \\  else //
@@ -13345,7 +13357,7 @@ test "comments/for 4" {
     \\  for (
     \\    some,
     \\    0..,
-    \\    a..z
+    \\    a..z,
     \\  ) |*x, y, *z| //
     \\  {}
     \\}
@@ -13353,7 +13365,11 @@ test "comments/for 4" {
     \\fn testMe() void {
     \\  lbl: //
     \\  for (
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) |x| //
     \\    someFancy(
     \\      callExpr(),
@@ -13361,7 +13377,11 @@ test "comments/for 4" {
     \\      b,
     \\    );
     \\  for (
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) //
     \\  |x| //
     \\    someFancy(
@@ -13371,7 +13391,11 @@ test "comments/for 4" {
     \\    );
     \\  for //
     \\  ( //
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) //
     \\  | //
     \\  x //
@@ -13382,7 +13406,11 @@ test "comments/for 4" {
     \\      b,
     \\    );
     \\  for (
-    \\    someNiceCondition(a, b, c)
+    \\    someNiceCondition(
+    \\      a,
+    \\      b,
+    \\      c,
+    \\    ),
     \\  ) //
     \\  |x|
     \\    _ = blk: {
@@ -14262,11 +14290,11 @@ test "comments/if-for-while 1" {
     \\  else |x|
     \\    tryMe();
     \\  for (
-    \\    someCondition()
+    \\    someCondition(),
     \\  ) |f| // a
     \\    myExpr();
     \\  for (
-    \\    someCondition()
+    \\    someCondition(),
     \\  ) |f| // a
     \\    myExpr()
     \\  else
@@ -21021,6 +21049,45 @@ test "extern-fn-with-string-lit" {
     \\    wCodePageID: c_uint,
     \\  ) c_int;
     \\};
+  );
+}
+
+test "for-trailing-comma" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\comptime {
+  \\for (
+  \\    some_foo.bar(123),
+  \\    some_foo.bar(123),
+  \\) |*abc, *efg| {
+  \\  doSomeWork();
+  \\}
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\comptime {
+    \\  for (some_foo.bar(123), some_foo.bar(123)) |*abc, *efg| {
+    \\    doSomeWork();
+    \\  }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\  for (
+    \\    some_foo.bar(123),
+    \\    some_foo.bar(123),
+    \\  ) |*abc, *efg| {
+    \\    doSomeWork();
+    \\  }
+    \\}
   );
 }
 
