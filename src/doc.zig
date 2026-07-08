@@ -109,12 +109,14 @@ pub const SeqBuilder = struct {
   }
 
   pub fn text(self: *@This(), s: []const u8) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const t = Doc.new(.{ .text = Text{ .s = s } }, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
   }
 
   pub fn space(self: *@This()) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const t = Doc.new(.{ .text = Text{ .s = " " } }, self.al);
     util.listAppend(t, &self.docs, self.al);
     return self;
@@ -125,6 +127,7 @@ pub const SeqBuilder = struct {
   }
 
   pub inline fn line(self: *@This(), ty: Line.Ty) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const l = Doc.new(.{ .line = Line{ .ty = ty } }, self.al);
     util.listAppend(l, &self.docs, self.al);
     return self;
@@ -202,18 +205,21 @@ pub const SeqBuilder = struct {
   }
 
   pub fn group(self: *@This(), docs: []*Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const g = Doc.new(.{ .group = Group{ .id = getID(), .docs = docs } }, self.al);
     util.listAppend(g, &self.docs, self.al);
     return self;
   }
 
   pub fn groupi(self: *@This(), id: u32, docs: []*Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const g = Doc.new(.{ .group = Group{ .id = id, .docs = docs } }, self.al);
     util.listAppend(g, &self.docs, self.al);
     return self;
   }
 
   pub fn indentOne(self: *@This(), doc: *Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     var docs = util.allocSlice(*Doc, 1, self.db.al);
     docs[0] = doc;
     const i = Doc.new(.{ .indent = Seq{ .docs = docs } }, self.al);
@@ -222,12 +228,14 @@ pub const SeqBuilder = struct {
   }
 
   pub fn indent(self: *@This(), docs: []*Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const i = Doc.new(.{ .indent = Seq{ .docs = docs } }, self.al);
     util.listAppend(i, &self.docs, self.al);
     return self;
   }
 
   pub fn ifsplit(self: *@This(), g: u32, split: *Doc, flat: *Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     const i = Doc.new(
       .{ .ifsplit = IfSplit{ .group = g, .split = split, .flat = flat } },
       self.al,
@@ -237,19 +245,23 @@ pub const SeqBuilder = struct {
   }
 
   pub fn append(self: *@This(), d: *Doc) void {
+    if (self.done) @panic("reusing a consumed builder!");
     util.listAppend(d, &self.docs, self.al);
   }
 
   pub fn extend(self: *@This(), docs: []*Doc) void {
+    if (self.done) @panic("reusing a consumed builder!");
     util.listAppendSlice(*Doc, &self.docs, docs, self.al);
   }
 
   pub fn extends(self: *@This(), docs: []*Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     util.listAppendSlice(*Doc, &self.docs, docs, self.al);
     return self;
   }
 
   pub fn appends(self: *@This(), d: *Doc) *@This() {
+    if (self.done) @panic("reusing a consumed builder!");
     util.listAppend(d, &self.docs, self.al);
     return self;
   }

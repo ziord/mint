@@ -1952,7 +1952,7 @@ test "fundecl 8" {
     \\  comptime x: i32,
     \\  noalias y: u2,
     \\  k: anytype,
-    \\) align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
+    \\) align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
@@ -1970,8 +1970,8 @@ test "fundecl 8" {
     \\)
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -1991,8 +1991,8 @@ test "fundecl 8" {
     \\)
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2023,7 +2023,7 @@ test "fundecl 9" {
     \\  comptime x: anytype,
     \\  noalias y: anytype,
     \\  k: anytype,
-    \\) align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
+    \\) align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
@@ -2041,8 +2041,8 @@ test "fundecl 9" {
     \\)
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2062,8 +2062,8 @@ test "fundecl 9" {
     \\)
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2091,8 +2091,8 @@ test "fundecl 10" {
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2105,8 +2105,8 @@ test "fundecl 10" {
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2120,8 +2120,8 @@ test "fundecl 10" {
     \\pub fn fantasticFooBar()
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2146,7 +2146,7 @@ test "fundecl 11" {
   var res = try format(doc, .{ .width = 100 }, al);
   try check(
     res,
-    \\pub fn fan() align(64) addrspace(.generic) callconv(.c) linksection(".my_custom_section") A(T) {
+    \\pub fn fan() align(64) addrspace(.generic) linksection(".my_custom_section") callconv(.c) A(T) {
     \\  var x = 5;
     \\  print("just testing!");
     \\  var x: i32, const y: u32 = foo_(bar(1, 2));
@@ -2158,8 +2158,8 @@ test "fundecl 11" {
     \\pub fn fan()
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2173,8 +2173,8 @@ test "fundecl 11" {
     \\pub fn fan()
     \\align(64)
     \\addrspace(.generic)
-    \\callconv(.c)
     \\linksection(".my_custom_section")
+    \\callconv(.c)
     \\A(T) {
     \\  var x = 5;
     \\  print("just testing!");
@@ -2650,8 +2650,7 @@ test "fundecl 18" {
     \\      tmp.softline()._();
     \\    }
     \\    tmp.append(doc);
-    \\    const has_comment = top_comments
-    \\      != null
+    \\    const has_comment = top_comments != null
     \\      or lb_has_trailing;
     \\    break :blk CallResult{
     \\      .sb = tmp,
@@ -3509,7 +3508,13 @@ test "expr 4" {
     \\  * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
     \\var x = 1 * foo * bar * car
     \\  + booh / dah / boxB
-    \\  - foo * bar * foo * bar * foo * bar * foo
+    \\  - foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
     \\      / boxB
     \\      * foo);
@@ -3541,7 +3546,13 @@ test "expr 4" {
     \\    * (bar * foo * bar * foo * bar * foo * bar * foo * bar * foo * bar / boxB * foo);
     \\var x = 1 * foo * bar * car
     \\    + booh / dah / boxB
-    \\    - foo * bar * foo * bar * foo * bar * foo
+    \\    - foo
+    \\        * bar
+    \\        * foo
+    \\        * bar
+    \\        * foo
+    \\        * bar
+    \\        * foo
     \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar / boxB * foo * foo * bar
     \\            / boxB
     \\            * foo);
@@ -3577,7 +3588,13 @@ test "expr 4" {
     \\        * foo);
     \\var x = 1 * foo * bar * car
     \\    + booh / dah / boxB
-    \\    - foo * bar * foo * bar * foo * bar * foo
+    \\    - foo
+    \\        * bar
+    \\        * foo
+    \\        * bar
+    \\        * foo
+    \\        * bar
+    \\        * foo
     \\        * (bar * foo * bar * foo * bar * foo * bar / boxB * foo * foo * bar
     \\            / boxB
     \\            * foo
@@ -3627,7 +3644,13 @@ test "expr 4" {
     \\    * foo);
     \\var x = 1 * foo * bar * car
     \\  + booh / dah / boxB
-    \\  - foo * bar * foo * bar * foo * bar * foo
+    \\  - foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
+    \\    * foo
     \\    * (bar * foo * bar * foo * bar * foo * bar / boxB * foo
     \\      * foo
     \\      * bar
@@ -3697,7 +3720,10 @@ test "expr 4" {
     \\    * foo);
     \\var x = 1 * foo * bar * car
     \\  + booh / dah / boxB
-    \\  - foo * bar * foo * bar
+    \\  - foo
+    \\    * bar
+    \\    * foo
+    \\    * bar
     \\    * foo
     \\    * bar
     \\    * foo
@@ -3866,7 +3892,11 @@ test "expr 5" {
     \\var xyz = a + b * c - d;
     \\var xyz = a * b * c - d;
     \\var xyz = a * b * c / d * e;
-    \\var xyz = a * b * c * d * e
+    \\var xyz = a
+    \\  * b
+    \\  * c
+    \\  * d
+    \\  * e
     \\  * ga
     \\  * b
     \\  * c
@@ -3893,6 +3923,88 @@ test "expr 5" {
     \\  - 3
     \\  + someFunc(1, 2, 3)
     \\    * expr();
+  );
+}
+
+test "expr 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ comptime {
+  \\const define_the_mystery = synch.abc.destroyAllIfAvailable(
+  \\    abc.DestroyTheInitAndGo(
+  \\        abc.ArenaAllocator_ArenaAllocator_1 | abc.ArenaAllocator_ArenaAllocator_2
+  \\            | abc.ArenaAllocator_ArenaAllocator_3
+  \\            | abc.ArenaAllocator_ArenaAllocator_4,
+  \\        okay,
+  \\        away,
+  \\    ),
+  \\    riskyDeviceCompilation(),
+  \\);
+  \\if (
+  \\        (args.len == y and args[x][x] != 'y' and args[y][y] != 'y') or abc_1234_okay_abc
+  \\    ) {
+  \\        const target_path = args[1];
+  \\      }
+  \\}
+  ;
+  const al = arena.allocator();
+  // using width: 100
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\    const define_the_mystery = synch.abc.destroyAllIfAvailable(
+    \\        abc.DestroyTheInitAndGo(
+    \\            abc.ArenaAllocator_ArenaAllocator_1
+    \\                | abc.ArenaAllocator_ArenaAllocator_2
+    \\                | abc.ArenaAllocator_ArenaAllocator_3
+    \\                | abc.ArenaAllocator_ArenaAllocator_4,
+    \\            okay,
+    \\            away,
+    \\        ),
+    \\        riskyDeviceCompilation(),
+    \\    );
+    \\    if (
+    \\        (args.len == y and args[x][x] != 'y' and args[y][y] != 'y')
+    \\            or abc_1234_okay_abc
+    \\    ) {
+    \\        const target_path = args[1];
+    \\    }
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\    const define_the_mystery = synch.abc.destroyAllIfAvailable(
+    \\        abc.DestroyTheInitAndGo(
+    \\            abc.ArenaAllocator_ArenaAllocator_1
+    \\                | abc.ArenaAllocator_ArenaAllocator_2
+    \\                | abc.ArenaAllocator_ArenaAllocator_3
+    \\                | abc.ArenaAllocator_ArenaAllocator_4,
+    \\            okay,
+    \\            away,
+    \\        ),
+    \\        riskyDeviceCompilation(),
+    \\    );
+    \\    if (
+    \\        (args.len == y
+    \\            and args[x][
+    \\                x
+    \\            ] != 'y'
+    \\            and args[y][
+    \\                y
+    \\            ] != 'y')
+    \\            or abc_1234_okay_abc
+    \\    ) {
+    \\        const target_path = args[
+    \\            1
+    \\        ];
+    \\    }
+    \\}
   );
 }
 
@@ -5429,6 +5541,150 @@ test "containerdecl 15" {
     \\  a: A(abc, xyz),
     \\  b: B,
     \\  c: C(Type("Foo")),
+    \\};
+  );
+}
+
+test "containerdecl 16" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ const Foo = struct { x: "//" };
+  \\ const Foo = struct { comptime x: "//" = 5 };
+  \\
+  \\const Ty = union(enum) {enum { x = 5 } };
+  \\
+  \\const Ty = union(enum) {enum { x = 5 }, fn fox() void {} };
+  ;
+  const al = arena.allocator();
+  // using width: 90
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\const Foo = struct { x: "//" };
+    \\const Foo = struct { comptime x: "//" = 5 };
+    \\
+    \\const Ty = union(enum) { enum { x = 5 } };
+    \\
+    \\const Ty = union(enum) {
+    \\    enum { x = 5 },
+    \\    fn fox() void {}
+    \\};
+  );
+  res = try format(doc, .{ .width = 80, .indent = 4 }, al);
+  try check(
+    res,
+    \\const Foo = struct { x: "//" };
+    \\const Foo = struct { comptime x: "//" = 5 };
+    \\
+    \\const Ty = union(enum) { enum { x = 5 } };
+    \\
+    \\const Ty = union(enum) {
+    \\    enum { x = 5 },
+    \\    fn fox() void {}
+    \\};
+  );
+  // using width: 60
+  res = try format(doc, .{ .width = 60, .indent = 4 }, al);
+  try check(
+    res,
+    \\const Foo = struct { x: "//" };
+    \\const Foo = struct { comptime x: "//" = 5 };
+    \\
+    \\const Ty = union(enum) { enum { x = 5 } };
+    \\
+    \\const Ty = union(enum) {
+    \\    enum { x = 5 },
+    \\    fn fox() void {}
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\const Foo = struct {
+    \\    x: "//",
+    \\};
+    \\const Foo = struct {
+    \\    comptime x: "//" = 5,
+    \\};
+    \\
+    \\const Ty = union(enum) {
+    \\    enum { x = 5 },
+    \\};
+    \\
+    \\const Ty = union(enum) {
+    \\    enum { x = 5 },
+    \\    fn fox() void {}
+    \\};
+  );
+}
+
+test "containerdecl 17" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub const Text = struct {
+  \\  s: []const u8,
+  \\
+  \\  /// if not null this text is a meta comment.
+  \\  /// In that case, true indicates formatting is
+  \\  /// on while false indicates formatting is off
+  \\  comment: ?bool = null,
+  \\};
+  ;
+  const al = arena.allocator();
+  // using width: 90
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub const Text = struct {
+    \\    s: []const u8,
+    \\
+    \\    /// if not null this text is a meta comment.
+    \\    /// In that case, true indicates formatting is
+    \\    /// on while false indicates formatting is off
+    \\    comment: ?bool = null,
+    \\};
+  );
+  res = try format(doc, .{ .width = 80, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub const Text = struct {
+    \\    s: []const u8,
+    \\
+    \\    /// if not null this text is a meta comment.
+    \\    /// In that case, true indicates formatting is
+    \\    /// on while false indicates formatting is off
+    \\    comment: ?bool = null,
+    \\};
+  );
+  // using width: 60
+  res = try format(doc, .{ .width = 60, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub const Text = struct {
+    \\    s: []const u8,
+    \\
+    \\    /// if not null this text is a meta comment.
+    \\    /// In that case, true indicates formatting is
+    \\    /// on while false indicates formatting is off
+    \\    comment: ?bool = null,
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub const Text = struct {
+    \\    s: []const u8,
+    \\
+    \\    /// if not null this text is a meta comment.
+    \\    /// In that case, true indicates formatting is
+    \\    /// on while false indicates formatting is off
+    \\    comment: ?bool = null,
     \\};
   );
 }
@@ -14636,8 +14892,7 @@ test "comments/if-while 1" {
     \\  @"allowzero",
     \\  none,
     \\} = if (
-    \\  ptr_type.volatile_token
-    \\    != null
+    \\  ptr_type.volatile_token != null
     \\)
     \\  .@"volatile"
     \\else if (
@@ -14645,18 +14900,19 @@ test "comments/if-while 1" {
     \\)
     \\  .@"const"
     \\else if (
-    \\  ptr_type.ast.addrspace_node
-    \\    != .none
+    \\  ptr_type
+    \\    .ast
+    \\    .addrspace_node != .none
     \\)
     \\  .@"addrspace"
     \\else if (
-    \\  ptr_type.ast.align_node
-    \\    != .none
+    \\  ptr_type
+    \\    .ast
+    \\    .align_node != .none
     \\)
     \\  .@"align"
     \\else if (
-    \\  ptr_type.allowzero_token
-    \\    != null
+    \\  ptr_type.allowzero_token != null
     \\)
     \\  .@"allowzero"
     \\else
@@ -17156,7 +17412,8 @@ test "comments/binexpr" {
     \\      1,
     \\      2,
     \\      3,
-    \\    ) * expr()
+    \\    )
+    \\      * expr()
     \\    + 5 * 4
     \\    + 3
     \\    - abc
@@ -17166,7 +17423,8 @@ test "comments/binexpr" {
     \\      1,
     \\      2,
     \\      3 // b
-    \\    ) * expr();
+    \\    )
+    \\      * expr();
     \\}
   );
 }
@@ -17444,6 +17702,76 @@ test "comments/addressop-optional" {
     \\var x = // abc
     \\? // def
     \\foo(1, 2, 3);
+  );
+}
+
+test "pointer-type 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const PetMeadowDescriptionInfluence: *const fn (fives.fickleplex.send, *const minckleplex_bags) callconv(.sevens) u22 = @ptrCast(four);
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\const PetMeadowDescriptionInfluence: *const fn (
+    \\  fives.fickleplex.send,
+    \\  *const minckleplex_bags,
+    \\) callconv(.sevens) u22 = @ptrCast(four);
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30 }, al);
+  try check(
+    res,
+    \\const PetMeadowDescriptionInfluence: *const fn (
+    \\  fives.fickleplex.send,
+    \\  *const minckleplex_bags,
+    \\)
+    \\callconv(.sevens)
+    \\u22 = @ptrCast(four);
+  );
+}
+
+test "pointer-type 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\fn findBug(
+  \\    compile: *abc.XYZ.Bug.Zen,
+  \\    find: [:0]const u8,
+  \\    placer: *abc.XYZ.BugZen,
+  \\) void {
+  \\    print("bug found");
+  \\}
+  ;
+  const al = arena.allocator();
+  // default width: 85
+  const doc = try translate(src, al);
+  var res = try format(doc, .{}, al);
+  try check(
+    res,
+    \\fn findBug(
+    \\  compile: *abc.XYZ.Bug.Zen,
+    \\  find: [:0]const u8,
+    \\  placer: *abc.XYZ.BugZen,
+    \\) void {
+    \\  print("bug found");
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30 }, al);
+  try check(
+    res,
+    \\fn findBug(
+    \\  compile: *abc.XYZ.Bug.Zen,
+    \\  find: [:0]const u8,
+    \\  placer: *abc.XYZ.BugZen,
+    \\) void {
+    \\  print("bug found");
+    \\}
   );
 }
 
@@ -18633,6 +18961,231 @@ test "comments/doc-comment 4" {
     \\    )
     \\      ._();
     \\}
+  );
+}
+
+test "comments/doc-comment 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\//! another dumb doc comment form 1
+  \\//! another dumb doc comment form 2
+  \\pub const dumb = @import("dumb.zig");
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\};
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  x: abc,
+  \\};
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  /// another stupid form of a doc comment
+  \\  x: abc,
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\//! another dumb doc comment form 1
+    \\//! another dumb doc comment form 2
+    \\pub const dumb = @import("dumb.zig");
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    /// another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\//! another dumb doc comment form 1
+    \\//! another dumb doc comment form 2
+    \\pub const dumb = @import(
+    \\    "dumb.zig",
+    \\);
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    /// another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+  );
+}
+
+test "comments/doc-comment 6" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\
+  \\//! another dumb doc comment form 1
+  \\//! another dumb doc comment form 2
+  \\
+  \\
+  \\
+  \\
+  \\pub const dumb = @import("dumb.zig");
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\};
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\
+  \\  //! another stupid form of a doc comment
+  \\
+  \\  //! another stupid form of a doc comment
+  \\  x: abc,
+  \\};
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\
+  \\
+  \\
+  \\
+  \\};
+  \\
+  \\ const Foo = struct {
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\  //! another stupid form of a doc comment
+  \\
+  \\
+  \\
+  \\
+  \\  /// another stupid form of a doc comment
+  \\
+  \\  /// another stupid form of a doc comment
+  \\  x: abc,
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\//! another dumb doc comment form 1
+    \\//! another dumb doc comment form 2
+    \\
+    \\pub const dumb = @import("dumb.zig");
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\
+    \\    /// another stupid form of a doc comment
+    \\    /// another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\//! another dumb doc comment form 1
+    \\//! another dumb doc comment form 2
+    \\
+    \\pub const dumb = @import(
+    \\    "dumb.zig",
+    \\);
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    x: abc,
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\};
+    \\
+    \\const Foo = struct {
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\    //! another stupid form of a doc comment
+    \\
+    \\    /// another stupid form of a doc comment
+    \\    /// another stupid form of a doc comment
+    \\    x: abc,
+    \\};
   );
 }
 
@@ -20147,6 +20700,81 @@ test "multiline-string 2" {
   );
 }
 
+test "multiline-string 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const T = .{
+  \\    .xy = abc,
+  \\    .jk =
+  \\    \\test me
+  \\    \\
+  \\ ,
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\const T = .{
+    \\    .xy = abc,
+    \\    .jk =
+    \\    \\test me
+    \\    \\
+    \\    ,
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\const T = .{
+    \\    .xy = abc,
+    \\    .jk =
+    \\    \\test me
+    \\    \\
+    \\    ,
+    \\};
+  );
+}
+
+test "multiline-string 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const T = .{
+  \\    .xy = abc,
+  \\    .jk =
+  \\    \\test me
+  \\    \\
+  \\};
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\const T = .{
+    \\    .xy = abc,
+    \\    .jk =
+    \\    \\test me
+    \\    \\
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\const T = .{
+    \\    .xy = abc,
+    \\    .jk =
+    \\    \\test me
+    \\    \\
+    \\};
+  );
+}
+
 test "bang-return" {
   var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
   defer arena.deinit();
@@ -21087,6 +21715,530 @@ test "for-trailing-comma" {
     \\  ) |*abc, *efg| {
     \\    doSomeWork();
     \\  }
+    \\}
+  );
+}
+
+test "rbrace-trailing-comment" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\const Fox = struct {
+  \\  a: A,
+  \\  b: B = b(),
+  \\
+  \\  fn foo() void {
+  \\    print("yes");
+  \\  }
+  \\    // abc
+  \\ };
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\const Fox = struct {
+    \\    a: A,
+    \\    b: B = b(),
+    \\
+    \\    fn foo() void {
+    \\        print("yes");
+    \\    }
+    \\    // abc
+    \\};
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\const Fox = struct {
+    \\    a: A,
+    \\    b: B = b(),
+    \\
+    \\    fn foo() void {
+    \\        print("yes");
+    \\    }
+    \\    // abc
+    \\};
+  );
+}
+
+test "empty-asm-IO 1" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub fn stupidEmptyAsm() void {
+  \\    asm volatile ("mehmehmehmeh"
+  \\        :
+  \\        : [sbz] "r" (0),
+  \\    );
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub fn stupidEmptyAsm() void {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        :
+    \\        : [sbz] "r" (0),
+    \\    );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub fn stupidEmptyAsm() void {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        :
+    \\        : [sbz] "r" (0),
+    \\    );
+    \\}
+  );
+}
+
+test "empty-asm-IO 2" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub fn stupidEmptyAsm() void {
+  \\    asm volatile ("mehmehmehmeh" // piece
+  \\        : // xys
+  \\        : [sbz] "r" (0),
+  \\    );
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub fn stupidEmptyAsm() void {
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // piece
+    \\        : // xys
+    \\        : [sbz] "r" (0),
+    \\    );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub fn stupidEmptyAsm() void {
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // piece
+    \\        : // xys
+    \\        : [sbz] "r" (0),
+    \\    );
+    \\}
+  );
+}
+
+test "empty-asm-IO 3" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\pub fn stupidEmptyAsm() void {
+  \\    asm volatile ("mehmehmehmeh"
+  \\        : // xys
+  \\        : [sbz] "r" (0),
+  \\    );
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub fn stupidEmptyAsm() void {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        : // xys
+    \\        : [sbz] "r" (0),
+    \\    );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\pub fn stupidEmptyAsm() void {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        : // xys
+    \\        : [sbz] "r" (0),
+    \\    );
+    \\}
+  );
+}
+
+test "empty-asm-IO 4" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\comptime {
+  \\    asm volatile ("mehmehmehmeh"
+  \\        :  //a 
+  \\        : //b
+  \\    );
+  \\    asm volatile ("mehmehmehmeh"
+  \\        : 
+  \\        : //b
+  \\    );
+  \\    asm volatile ("mehmehmehmeh"
+  \\        : //b
+  \\        : 
+  \\    );
+  \\    asm volatile ("mehmehmehmeh"
+  \\        :
+  \\        : 
+  \\    );
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        : //a
+    \\        : //b
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        :
+    \\        : //b
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        : //b
+    \\    );
+    \\    asm volatile("mehmehmehmeh");
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        : //a
+    \\        : //b
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        :
+    \\        : //b
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        : //b
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\    );
+    \\}
+  );
+}
+
+test "empty-asm-IO 5" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\comptime {
+  \\    asm volatile ("mehmehmehmeh"
+  \\        ::: .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\        ::: // b
+  \\    .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\        : // a2
+  \\  :: // b
+  \\    .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\  :: // b
+  \\        : // a2
+  \\    .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\  : // b
+  \\ : // c
+  \\        : // d
+  \\    .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\  : // b
+  \\ : // c
+  \\        :
+  \\    .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\  : // b
+  \\  :
+  \\        :
+  \\    .{foo}
+  \\    );
+  \\    asm volatile ("mehmehmehmeh" // a
+  \\  : 
+  \\  :
+  \\        :
+  \\    .{foo}
+  \\    );
+  \\}
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 90, .indent = 4 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\    asm volatile("mehmehmehmeh" ::: .{foo});
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        ::: // b
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // a2
+    \\        :: // b
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        :: // b
+    \\        : // a2
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // b
+    \\        : // c
+    \\        : // d
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // b
+    \\        : // c
+    \\        :
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // b
+    \\        ::
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        :::
+    \\        .{foo}
+    \\    );
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 4 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\    asm volatile(
+    \\        "mehmehmehmeh"
+    \\        :::
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        ::: // b
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // a2
+    \\        :: // b
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        :: // b
+    \\        : // a2
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // b
+    \\        : // c
+    \\        : // d
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // b
+    \\        : // c
+    \\        :
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        : // b
+    \\        ::
+    \\        .{foo}
+    \\    );
+    \\    asm volatile(
+    \\        "mehmehmehmeh" // a
+    \\        :::
+    \\        .{foo}
+    \\    );
+    \\}
+  );
+}
+
+test "binary-expr-wrapping" {
+  var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+  defer arena.deinit();
+  const src =
+  \\ comptime {
+  \\if (
+  \\  self.fits(
+  \\    @as(i32, @intCast(self.cfg.width)) - @as(i32, @intCast(column)),
+  \\    &clone,
+  \\  )
+  \\) {
+  \\  self.pushDocsToStack(_d.docs, &stack, sm.indent, .flat);
+  \\} else {
+  \\  self.pushDocsToStack(_d.docs, &stack, sm.indent, .split);
+  \\  self.split_groups.put(self.al, _d.id, {}) catch unreachable;
+  \\}
+  \\ const F = struct {
+  \\ pub fn fmt(self: *Self, d: *Doc) void {
+  \\ while (stack.items.len != 0) {
+  \\ switch (sm.doc.*) {
+  \\.indent => |*_d| {
+  \\  self.pushDocsToStack(
+  \\    _d.docs,
+  \\    &stack,
+  \\    sm.indent
+  \\      + self.cfg.indent,
+  \\    sm.mode,
+  \\  );
+  \\ }
+  \\ }
+  \\ }
+  \\ }
+  \\ };
+  \\ }
+  ;
+  const al = arena.allocator();
+  const doc = try translate(src, al);
+  var res = try format(doc, .{ .width = 85, .indent = 2 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\  if (
+    \\    self.fits(
+    \\      @as(i32, @intCast(self.cfg.width)) - @as(i32, @intCast(column)),
+    \\      &clone,
+    \\    )
+    \\  ) {
+    \\    self.pushDocsToStack(_d.docs, &stack, sm.indent, .flat);
+    \\  } else {
+    \\    self.pushDocsToStack(_d.docs, &stack, sm.indent, .split);
+    \\    self.split_groups.put(self.al, _d.id, {}) catch unreachable;
+    \\  }
+    \\  const F = struct {
+    \\    pub fn fmt(self: *Self, d: *Doc) void {
+    \\      while (stack.items.len != 0) {
+    \\        switch (sm.doc.*) {
+    \\          .indent => |*_d| {
+    \\            self.pushDocsToStack(
+    \\              _d.docs,
+    \\              &stack,
+    \\              sm.indent + self.cfg.indent,
+    \\              sm.mode,
+    \\            );
+    \\          },
+    \\        }
+    \\      }
+    \\    }
+    \\  };
+    \\}
+  );
+  // using width: 30
+  res = try format(doc, .{ .width = 30, .indent = 2 }, al);
+  try check(
+    res,
+    \\comptime {
+    \\  if (
+    \\    self.fits(
+    \\      @as(
+    \\        i32,
+    \\        @intCast(
+    \\          self.cfg.width,
+    \\        ),
+    \\      )
+    \\        - @as(
+    \\          i32,
+    \\          @intCast(column),
+    \\        ),
+    \\      &clone,
+    \\    )
+    \\  ) {
+    \\    self.pushDocsToStack(
+    \\      _d.docs,
+    \\      &stack,
+    \\      sm.indent,
+    \\      .flat,
+    \\    );
+    \\  } else {
+    \\    self.pushDocsToStack(
+    \\      _d.docs,
+    \\      &stack,
+    \\      sm.indent,
+    \\      .split,
+    \\    );
+    \\    self.split_groups.put(
+    \\      self.al,
+    \\      _d.id,
+    \\      {},
+    \\    )
+    \\      catch unreachable;
+    \\  }
+    \\  const F = struct {
+    \\    pub fn fmt(
+    \\      self: *Self,
+    \\      d: *Doc,
+    \\    ) void {
+    \\      while (
+    \\        stack.items.len != 0
+    \\      ) {
+    \\        switch (sm.doc.*) {
+    \\          .indent => |*_d| {
+    \\            self.pushDocsToStack(
+    \\              _d.docs,
+    \\              &stack,
+    \\              sm.indent
+    \\                + self
+    \\                  .cfg
+    \\                  .indent,
+    \\              sm.mode,
+    \\            );
+    \\          },
+    \\        }
+    \\      }
+    \\    }
+    \\  };
     \\}
   );
 }

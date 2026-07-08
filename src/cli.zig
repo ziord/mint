@@ -188,7 +188,7 @@ pub const Cli = struct {
 
   fn doInit(self: *Cli) !void {
     const template =
-    \\.{.width = 85, .indent = 2, .ignore = .{}}
+    \\.{ .width = 85, .indent = 2, .ignore = .{} }
     \\
     ;
     var g = try Glue.init(self.io, self.al);
