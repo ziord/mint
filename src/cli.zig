@@ -25,7 +25,7 @@ pub const Cli = struct {
   // maximum number of threads we can use
   const MAX_THREAD_COUNT = 16;
   // threshold for sequential file processing
-  const SEQ_THRESHOLD = 100;
+  const SEQ_THRESHOLD = 300;
 
   const CfgFilename = "mint.zon";
 
