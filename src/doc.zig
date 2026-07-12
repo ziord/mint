@@ -204,13 +204,6 @@ pub const SeqBuilder = struct {
     return if (cond) self.line(.decl) else self;
   }
 
-  pub fn group(self: *@This(), docs: []*Doc) *@This() {
-    if (self.done) @panic("reusing a consumed builder!");
-    const g = Doc.new(.{ .group = Group{ .id = getID(), .docs = docs } }, self.al);
-    util.listAppend(g, &self.docs, self.al);
-    return self;
-  }
-
   pub fn groupi(self: *@This(), id: u32, docs: []*Doc) *@This() {
     if (self.done) @panic("reusing a consumed builder!");
     const g = Doc.new(.{ .group = Group{ .id = id, .docs = docs } }, self.al);
@@ -292,26 +285,6 @@ pub const SeqBuilder = struct {
   }
 };
 
-var group_ids: u32 = 0;
-
-fn getID() u32 {
-  const id = group_ids;
-  group_ids += 1;
-  return id;
-}
-
-pub inline fn genGroupID() u32 {
-  return getID();
-}
-
-pub inline fn getNextGroupID() u32 {
-  return group_ids + 1;
-}
-
-pub inline fn getCurrentGroupID() u32 {
-  return group_ids;
-}
-
 pub const DocBuilder = struct {
   al: Allocator,
   /// stack allocated builders
@@ -386,10 +359,6 @@ pub const DocBuilder = struct {
 
   pub fn empty(self: *@This()) *Doc {
     return Doc.new(.{ .seq = Seq{ .docs = &.{} } }, self.al);
-  }
-
-  pub fn group(self: *@This(), docs: []*Doc) *Doc {
-    return Doc.new(.{ .group = Group{ .id = getID(), .docs = docs } }, self.al);
   }
 
   pub fn groupi(self: *@This(), id: u32, docs: []*Doc) *Doc {

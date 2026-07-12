@@ -31,6 +31,7 @@ pub const Translate = struct {
   _in_call_args: u16 = 0,
   _bin_exprs: u16 = 0,
   _comments: u32 = 0,
+  group_id: u32 = 0,
   error_set: *ErrorSet,
 
   const Self = @This();
@@ -45,6 +46,16 @@ pub const Translate = struct {
       .db = DocBuilder.init(al),
       .error_set = error_set,
     };
+  }
+
+  fn gid(self: *Self) u32 {
+    const id = self.group_id;
+    self.group_id += 1;
+    return id;
+  }
+
+  inline fn group(self: *Self, docs: []*Doc) *Doc {
+    return self.db.groupi(self.gid(), docs);
   }
 
   inline fn isVarDecl(tag: Node.Tag) bool {
@@ -594,7 +605,7 @@ pub const Translate = struct {
     self._tcomment(sb, start, end, cfg);
     if (sb.len() > 1) {
       self.tkn_cache.has_trailing_comment = true;
-      return self.db.group(sb.finish());
+      return self.group(sb.finish());
     }
     return sb.finish()[0];
   }
@@ -638,7 +649,7 @@ pub const Translate = struct {
       sb.docs.items = sb.docs.items[0..if (idx < sb.len()) idx + 1 else sb.len()];
     }
     const docs = sb.finish();
-    return if (docs.len != 0) self.db.group(docs) else null;
+    return if (docs.len != 0) self.group(docs) else null;
   }
 
   fn ttkn(self: *Self, tkn: Ast.TokenIndex) *Doc {
@@ -935,7 +946,7 @@ pub const Translate = struct {
           },
         }
         assert(self.tree.tokenTag(lbrack) == .l_paren);
-        const id = d.genGroupID();
+        const id = self.gid();
         const rbrack = self.getRBrackTkn(lbrack);
         sb.decllineIf(self.tknHasTC(lbrack - 1))._();
         self.tCall(sb, id, lbrack, rbrack, c.params, null, null, true);
@@ -951,7 +962,7 @@ pub const Translate = struct {
         const doc = self.tChain(chain);
         util.listAppend(doc, &sbs, self.al);
       }
-      const id = d.genGroupID();
+      const id = self.gid();
       var flat = self.db.seqb();
       var last_tkn: ?Ast.TokenIndex = null;
       for (sbs.items, 0..) |doc, i| {
@@ -990,7 +1001,7 @@ pub const Translate = struct {
       const doc = self.tChain(chain);
       util.listAppend(doc, &sbs, self.al);
     }
-    const id = d.genGroupID();
+    const id = self.gid();
     var flat = self.db.seqb();
     var last_tkn: ?Ast.TokenIndex = null;
     for (sbs.items, 0..) |doc, i| {
@@ -1006,7 +1017,7 @@ pub const Translate = struct {
     }
     // don't split if an access chain has only two parts
     if (sbs.items.len == 2) {
-      return self.db.group(flat.finish());
+      return self.group(flat.finish());
     }
     var split = self.db.seqb();
     split.append(sbs.items[0]);
@@ -1097,7 +1108,7 @@ pub const Translate = struct {
     var tmp = self.db.seqb();
     if (nodes.len > 1) {
       var last: ?*Doc = null;
-      const group = all_same_precs and nodes.len > 12;
+      const should_group = all_same_precs and nodes.len > 12;
       for (nodes[1..]) |bin| {
         const tkn = self.tree.nodeMainToken(bin.op.?);
         const op = self.ttkn(tkn);
@@ -1119,9 +1130,9 @@ pub const Translate = struct {
           tmp.append(op);
           tmp.decllineOrSpace(self.tknHasTC(tkn));
           tmp.append(doc);
-          last = self.db.group(tmp.finish());
+          last = self.group(tmp.finish());
           tmp.reset();
-        } else if (group) {
+        } else if (should_group) {
           if (is_equal_like) {
             tmp.decllineOrSpace(self.tknHasTC(tkn - 1));
           } else {
@@ -1130,7 +1141,7 @@ pub const Translate = struct {
           tmp.append(op);
           tmp.decllineOrSpace(self.tknHasTC(tkn));
           tmp.append(doc);
-          last = self.db.group(tmp.finish());
+          last = self.group(tmp.finish());
           tmp.reset();
         } else {
           if (is_equal_like) {
@@ -1152,9 +1163,9 @@ pub const Translate = struct {
     self._bin_exprs -= 1;
     if (self._in_condition) {
       // only group the inner (child) binary expressions
-      return if (self._bin_exprs > 0) self.db.group(sb.finish()) else sb.finishSeq();
+      return if (self._bin_exprs > 0) self.group(sb.finish()) else sb.finishSeq();
     }
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   fn tOrelseCatch(self: *Self, n: Node.Index) *Doc {
@@ -1179,7 +1190,7 @@ pub const Translate = struct {
       tmp.space()._();
       rest.space()._();
     }
-    tmp = self.db.seqb().group(tmp.finish());
+    tmp = self.db.seqb().groupi(self.gid(), tmp.finish());
     if (self.tree.tokenTag(tkn + 1) == .pipe) {
       const l_pipe = self.ttknWithSTL(tkn + 1); // |
       const ident = self.ttknWithSTL(tkn + 2); // IDENT
@@ -1190,9 +1201,9 @@ pub const Translate = struct {
         tmp.space()._();
         rest.space()._();
       }
-      tmp = self.db.seqb().group(tmp.finish());
+      tmp = self.db.seqb().groupi(self.gid(), tmp.finish());
     }
-    const id = d.genGroupID();
+    const id = self.gid();
     if (rhs_isnt_block) {
       const rhs_d = self.t(rhs);
       tmp.append(rhs_d);
@@ -1319,7 +1330,7 @@ pub const Translate = struct {
     }
     const lbrack = tkn + 1;
     const rbrack = self.tree.lastToken(n) + 1;
-    const id = d.genGroupID();
+    const id = self.gid();
     self.tCall(sb, id, lbrack, rbrack, &.{n}, null, null, false);
     return self.db.groupi(id, sb.finish());
   }
@@ -1627,7 +1638,7 @@ pub const Translate = struct {
       sb.spaceIf(self.tknHasNoTC(tkn))._();
       sb.append(self.t(_n));
     }
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   fn tFnProto(
@@ -1671,7 +1682,7 @@ pub const Translate = struct {
     if (self.tree.tokenTag(curr) == .identifier) {
       sb.append(self.ttknWithSTL(curr));
     }
-    const id = d.genGroupID();
+    const id = self.gid();
     var lbrack = curr;
     while (self.tree.tokenTag(lbrack) != .l_paren) lbrack += 1;
     const rbrack = self.getRBrackTkn(lbrack);
@@ -1697,7 +1708,7 @@ pub const Translate = struct {
         if (self.commentsChanged(comments)) {
           updateLinesToDecllines(tmp);
         }
-        sb.group(tmp.finish())._();
+        sb.groupi(self.gid(), tmp.finish())._();
         const tkn = self.tree.firstToken(_n) - 1;
         if (self.tree.tokenTag(tkn) == .bang) {
           sb.append(self.ttknWithSTL(tkn));
@@ -1714,7 +1725,7 @@ pub const Translate = struct {
       }
     } else {
       updateLinesToDecllines(tmp);
-      sb.group(tmp.finish())._();
+      sb.groupi(self.gid(), tmp.finish())._();
     }
     return self.db.groupi(id, sb.finish());
   }
@@ -1813,7 +1824,7 @@ pub const Translate = struct {
     } else {
       sb.extends(tmp.finish())._();
     }
-    return if (cfg.group) self.db.group(sb.finish()) else sb.finishSeq();
+    return if (cfg.group) self.group(sb.finish()) else sb.finishSeq();
   }
 
   fn tContainerDeclInline(
@@ -1863,8 +1874,8 @@ pub const Translate = struct {
         const rbrack = self.tree.lastToken(arg) + 1;
         assert(self.tree.tokenTag(rbrack) == .r_paren);
         const attr_doc = self.tAttribute(arg, self._token(tkn));
-        self.tCall(sb, d.genGroupID(), lbrack, rbrack, &.{}, null, attr_doc, false);
-        sb = self.db.seqb().group(sb.finish());
+        self.tCall(sb, self.gid(), lbrack, rbrack, &.{}, null, attr_doc, false);
+        sb = self.db.seqb().groupi(self.gid(), sb.finish());
         lbrace = rbrack + 1;
       } else {
         sb.append(self.ttknWithSTL(lbrack));
@@ -1893,7 +1904,7 @@ pub const Translate = struct {
     assert(self.tree.tokenTag(lbrace) == .l_brace);
     assert(self.tree.tokenTag(rbrace) == .r_brace);
     sb.spaceIf(self.tknHasNoTC(lbrace - 1))._();
-    const id = d.genGroupID();
+    const id = self.gid();
     const lb = self._ttkn(lbrace, .{ .add_only_trailing_comment = true });
     sb.decllineIf(self.tknHasTC(lbrace - 1))._();
     sb.append(lb);
@@ -2024,7 +2035,7 @@ pub const Translate = struct {
     sb.append(self.ttkn(container));
     assert(self.tree.tokenTag(lbrace) == .l_brace);
     assert(self.tree.tokenTag(rbrace) == .r_brace);
-    const id = d.genGroupID();
+    const id = self.gid();
     const lb = self._ttkn(lbrace, .{ .add_only_trailing_comment = true });
     sb.decllineIf(self.tknHasTC(lbrace - 1))._();
     sb.append(lb);
@@ -2147,7 +2158,7 @@ pub const Translate = struct {
       sb.spaceIf(self.tknHasNoTC(tkn - 1)).append(self.ttknWithSTL(tkn));
       sb.spaceIf(self.tknHasNoTC(tkn)).append(self.t(_n));
     }
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   fn tWhile(self: *Self, wl: Ast.full.While) *Doc {
@@ -2165,7 +2176,7 @@ pub const Translate = struct {
     tmp.spaceIf(self.tknHasNoTC(wl.ast.while_token))._();
     const lbrack = wl.ast.while_token + 1;
     const rbrack = self.tree.lastToken(wl.ast.cond_expr) + 1;
-    const cond_id = d.genGroupID();
+    const cond_id = self.gid();
     const in_cond = self._in_condition;
     self._in_condition = self.isBinaryExpr(wl.ast.cond_expr);
     self.tCall(
@@ -2196,24 +2207,22 @@ pub const Translate = struct {
       }
       wl_top_has_tc = wl_top_has_tc or self.tknHasTC(last_tkn);
     }
-    const id1 = d.genGroupID();
+    const id1 = self.gid();
     if (wl.ast.cont_expr.unwrap()) |cnt| {
       tmp = self.db.seqb();
       const lbrack_ = self.tree.firstToken(cnt) - 1;
       const rbrack_ = self.tree.lastToken(cnt) + 1;
       tmp.append(self.ttknWithSTL(lbrack_ - 1)); // ':'
       tmp.spaceIf(self.tknHasNoTC(lbrack_ - 1))._();
-      self.tCall(tmp, d.genGroupID(), lbrack_, rbrack_, &.{cnt}, null, null, false);
+      self.tCall(tmp, self.gid(), lbrack_, rbrack_, &.{cnt}, null, null, false);
       const cont_d = tmp.finish();
       var split = flat_b.copy();
       if (self.tknHasNoTC(lbrack_ - 2)) { // before ':'
-        flat_b.append(
-          self.db.group(self.db.seqb().space().extends(cont_d).finish()),
-        );
-        split.softline().group(cont_d)._();
+        flat_b.append(self.group(self.db.seqb().space().extends(cont_d).finish()));
+        split.softline().groupi(self.gid(), cont_d)._();
       } else {
-        flat_b.declline().group(cont_d)._();
-        split.declline().group(cont_d)._();
+        flat_b.declline().groupi(self.gid(), cont_d)._();
+        split.declline().groupi(self.gid(), cont_d)._();
       }
       const db = self.db.seqb().ifsplit(id1, split.finishSeq(), flat_b.finishSeq());
       sb.groupi(id1, db.finish())._();
@@ -2223,7 +2232,7 @@ pub const Translate = struct {
       sb.groupi(id1, flat_b.finish())._();
     }
     var then_is_block = false;
-    const id = d.genGroupID();
+    const id = self.gid();
     if (wl.ast.else_expr.unwrap()) |els| {
       const is_empty_block = self.isEmptyBlock(wl.ast.then_expr);
       if (is_empty_block) {
@@ -2323,7 +2332,7 @@ pub const Translate = struct {
           } else {
             els_sb.append(else_expr);
           }
-          sb.group(els_sb.finish())._();
+          sb.groupi(self.gid(), els_sb.finish())._();
         }
       } else {
         var flat = self.db.seqb();
@@ -2429,9 +2438,9 @@ pub const Translate = struct {
     const lbrack = fl.ast.for_token + 1;
     var rbrack = self.tree.lastToken(fl.ast.inputs[fl.ast.inputs.len - 1]) + 1;
     if (self.tree.tokenTag(rbrack) != .r_paren) rbrack += 1;
-    self.tCall(tmp, d.genGroupID(), lbrack, rbrack, fl.ast.inputs, null, null, true);
-    sb.group(tmp.finish())._();
-    const id = d.genGroupID();
+    self.tCall(tmp, self.gid(), lbrack, rbrack, fl.ast.inputs, null, null, true);
+    sb.groupi(self.gid(), tmp.finish())._();
+    const id = self.gid();
     var fl_top_has_tc = false;
     var last_tkn: Ast.TokenIndex = undefined;
     {
@@ -2449,7 +2458,7 @@ pub const Translate = struct {
         idx += 1;
       }
       tmp.append(self.ttkn(idx));
-      sb.group(tmp.finish())._();
+      sb.groupi(self.gid(), tmp.finish())._();
       last_tkn = idx;
       fl_top_has_tc = fl_top_has_tc or self.tknHasTC(last_tkn);
     }
@@ -2511,7 +2520,7 @@ pub const Translate = struct {
           els_sb.declline().append(else_doc);
           els_sb.spaceOrDeclline(else_tkn_has_no_tc);
           els_sb.append(else_expr);
-          sb.group(els_sb.finish())._();
+          sb.groupi(self.gid(), els_sb.finish())._();
         }
       } else {
         var flat = self.db.seqb();
@@ -2572,11 +2581,11 @@ pub const Translate = struct {
     }
     tmp.append(self.ttknWithSTL(sw.ast.switch_token));
     tmp.spaceIf(self.tknHasNoTC(sw.ast.switch_token))._();
-    const id = d.genGroupID();
+    const id = self.gid();
     const lbrack = sw.ast.switch_token + 1;
     const rbrack = self.tree.lastToken(sw.ast.condition) + 1;
     self.tCall(tmp, id, lbrack, rbrack, &.{sw.ast.condition}, null, null, false);
-    sb.group(tmp.finish())._();
+    sb.groupi(self.gid(), tmp.finish())._();
     sb.decllineOrSpace(self.tknHasTC(rbrack));
     const lbrace = rbrack + 1;
     const rbrace = blk: {
@@ -2617,7 +2626,7 @@ pub const Translate = struct {
       sb.decllineIf(self.tknHasTC(last_tkn))._();
     }
     sb.append(self.ttkn(rbrace));
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   fn tSwitchCase(self: *Self, sc: Ast.full.SwitchCase) *Doc {
@@ -2648,7 +2657,7 @@ pub const Translate = struct {
     if (sc.inline_token != null and sc.ast.values.len > 0) {
       sb.indent(tmp.finish())._();
     } else {
-      sb.group(tmp.finish())._();
+      sb.groupi(self.gid(), tmp.finish())._();
     }
     var last_tkn = sc.ast.arrow_token;
     if (sc.payload_token) |tkn| {
@@ -2672,7 +2681,7 @@ pub const Translate = struct {
     } else {
       sb.append(self.t(sc.ast.target_expr));
     }
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   const NodeOrToken = union(enum) {
@@ -2753,7 +2762,7 @@ pub const Translate = struct {
       };
       sb.decllineIf(self.tknHasTC(last_tkn)).append(ty);
     }
-    return .{ self.db.group(sb.finish()), last_tkn };
+    return .{ self.group(sb.finish()), last_tkn };
   }
 
   fn tPtrType(self: *Self, ty: Ast.full.PtrType) *Doc {
@@ -2838,7 +2847,7 @@ pub const Translate = struct {
         const colon_1_doc = self.ttknWithSTL(colon_1);
         const colon_2_doc = self.ttknWithSTL(colon_2);
 
-        const id = d.genGroupID();
+        const id = self.gid();
         const tkn_ = self.tree.firstToken(nd) - 2;
         const lbrack = tkn_ + 1;
         const rbrack = self.tree.lastToken(bre) + 1;
@@ -2932,7 +2941,7 @@ pub const Translate = struct {
         b.decllineOrSpace(const_has_cmt);
         b.appends(_n2).decllineOrNormline(vol_has_cmt);
         b.append(c);
-        const g = self.db.group(b.finish());
+        const g = self.group(b.finish());
         if (split.isNotEmpty()) {
           rest.decllineOrNormline(prev_has_tc);
           rest.append(g);
@@ -2943,7 +2952,7 @@ pub const Translate = struct {
         var tmp = self.db.seqb().appends(_n);
         tmp.decllineOrSpace(const_has_cmt);
         tmp.append(c);
-        const g = self.db.group(tmp.finish());
+        const g = self.group(tmp.finish());
         if (split.isNotEmpty()) {
           rest.decllineOrNormline(prev_has_tc);
           rest.append(g);
@@ -2977,7 +2986,7 @@ pub const Translate = struct {
     }
     flat.decllineIf(prev_has_tc).append(c);
     split.indent(rest.finish())._();
-    const id = d.genGroupID();
+    const id = self.gid();
     sb.ifsplit(id, split.finishSeq(), flat.finishSeq())._();
     return self.db.groupi(id, sb.finish());
   }
@@ -3040,7 +3049,7 @@ pub const Translate = struct {
         if (self.tknHasTC(tkn) or i < fields.len) {
           tmp.decllineIf(self.tknHasTC(tkn - 1))._();
           tmp.append(self.ttkn(tkn));
-          args.group(tmp.finish())._();
+          args.groupi(self.gid(), tmp.finish())._();
           if (self.tknHasNoTC(tkn)) {
             args.normline()._();
           } else if (i < fields.len) {
@@ -3050,7 +3059,7 @@ pub const Translate = struct {
         }
       }
       if (do_group) {
-        args.group(tmp.finish())._();
+        args.groupi(self.gid(), tmp.finish())._();
       }
       rbrace = tkn;
     }
@@ -3062,12 +3071,12 @@ pub const Translate = struct {
         _ = args.finish();
       }
       sb.append(rb);
-      return self.db.group(sb.finish());
+      return self.group(sb.finish());
     } else if (self.tree.tokenTag(rbrace) != .r_brace) {
       rbrace += 1;
     }
     assert(self.tree.tokenTag(rbrace) == .r_brace);
-    const id = d.genGroupID();
+    const id = self.gid();
     if (self.tknHasNoTC(rbrace - 1)) {
       var tkn = rbrace - 1;
       if (self.tree.tokenTag(tkn) == .comma) {
@@ -3135,7 +3144,7 @@ pub const Translate = struct {
     tkn += 1;
     assert(self.tree.tokenTag(tkn) == .r_bracket);
     sb.append(self.ttkn(tkn));
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   fn tAsmIO(
@@ -3176,7 +3185,7 @@ pub const Translate = struct {
     }
     sb.append(self.ttkn(rbrack));             // `)`
     // mint fmt: on
-    return self.db.group(sb.finish());
+    return self.group(sb.finish());
   }
 
   fn tAsm(self: *Self, assem: Ast.full.Asm) *Doc {
@@ -3190,7 +3199,7 @@ pub const Translate = struct {
     } else {
       lbrack = assem.ast.asm_token + 1;
     }
-    const id = d.genGroupID();
+    const id = self.gid();
     var params = NodeIndexList.empty;
     util.listAppend(assem.ast.template, &params, self.al);
     util.listAppendSlice(Node.Index, &params, @constCast(assem.ast.items), self.al);
@@ -3228,7 +3237,7 @@ pub const Translate = struct {
         sb.append(self.ttknWithSTL(tkn)); // anyframe
         sb.append(self.ttknWithSTL(tkn + 1)); // ->
         sb.append(self.t(node)); // rhs
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .multiline_string_literal => {
         var start, const end = self.tree.nodeData(n).token_and_token;
@@ -3246,7 +3255,7 @@ pub const Translate = struct {
         sb.decllineIf(tkns > 0).appends(self.ttkn(end))._();
         // increment since we treat multiline string literals like comments
         self._comments += 1;
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .error_set_decl => {
         const lbrace, const rbrace = self.tree.nodeData(n).token_and_token;
@@ -3269,7 +3278,7 @@ pub const Translate = struct {
         var sb = self.db.seqb();
         sb.appends(self.ttknWithSTL(self.tree.nodeMainToken(n)))
           .append(self.t(expr));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .simple_var_decl, .global_var_decl, .local_var_decl, .aligned_var_decl => {
         return self.tVarDecl(self.tree.fullVarDecl(n).?);
@@ -3283,7 +3292,7 @@ pub const Translate = struct {
       .call_one, .call_one_comma, .call, .call_comma => {
         const call = self.getCallInfo(n);
         if (self.tCallChain(call)) |doc| return doc;
-        const id = d.genGroupID();
+        const id = self.gid();
         var sb = self.db.seqb();
         const expr = self.t(call.ast.fn_expr);
         const tkn = self.tree.lastToken(call.ast.fn_expr) + 1;
@@ -3357,7 +3366,7 @@ pub const Translate = struct {
         sb.append(self.t(proto));
         sb.spaceOrDeclline(self.tknHasNoTC(self.tree.lastToken(proto)));
         sb.append(self.t(body));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .block_two, .block_two_semicolon => {
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
@@ -3524,7 +3533,7 @@ pub const Translate = struct {
         const tkn = self.tree.nodeMainToken(n);
         sb.decllineIf(self.tknHasTC(tkn - 1)).append(self.ttkn(tkn));
         sb.decllineIf(self.tknHasTC(tkn)).append(self.t(rhs));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .for_range => {
         const lhs, const rhs = self.tree.nodeData(n).node_and_opt_node;
@@ -3536,10 +3545,10 @@ pub const Translate = struct {
           sb.decllineIf(self.tknHasTC(tkn))._();
           sb.append(self.t(_n));
         }
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .builtin_call_two, .builtin_call_two_comma => {
-        const id = d.genGroupID();
+        const id = self.gid();
         var sb = self.db.seqb();
         const first, const second = self.tree.nodeData(n).opt_node_and_opt_node;
         const tkn = self.tree.nodeMainToken(n);
@@ -3558,7 +3567,7 @@ pub const Translate = struct {
         return self.db.groupi(id, sb.finish());
       },
       .builtin_call, .builtin_call_comma => {
-        const id = d.genGroupID();
+        const id = self.gid();
         var sb = self.db.seqb();
         const rng = self.tree.nodeData(n).extra_range;
         const prms = self.tree.extraDataSlice(rng, Node.Index);
@@ -3582,7 +3591,7 @@ pub const Translate = struct {
         const tkn = self.tree.lastToken(lhs);
         sb.decllineIf(self.tknHasTC(tkn)).append(self.ttknWithSTL(tkn + 1));
         sb.append(self.t(rhs));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .struct_init, .struct_init_comma => {
         const decl = self.tree.structInit(n);
@@ -3644,7 +3653,7 @@ pub const Translate = struct {
           sb.spaceOrDeclline(self.tknHasNoTC(tkn));
           sb.append(self.t(_n));
         }
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .@"break", .@"continue" => {
         // `break :label expr`, `break expr`, `break :label`, `break`.
@@ -3663,7 +3672,7 @@ pub const Translate = struct {
           sb.spaceOrDeclline(self.tknHasNoTC(last_tkn));
           sb.append(self.t(_n));
         }
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .assign_destructure => {
         const ad = self.tree.assignDestructure(n);
@@ -3683,7 +3692,7 @@ pub const Translate = struct {
         sb.append(self.ttknWithSTL(ad.ast.equal_token));
         sb.spaceIf(self.tknHasNoTC(ad.ast.equal_token))._();
         sb.append(self.t(ad.ast.value_expr));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .assign,
       .assign_add,
@@ -3712,7 +3721,7 @@ pub const Translate = struct {
         sb.append(self.ttknWithSTL(last_tkn));
         sb.spaceIf(self.tknHasNoTC(last_tkn))._();
         sb.append(self.t(rhs));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .field_access, .unwrap_optional => {
         // lhs.a lhs.? error.expr
@@ -3724,7 +3733,7 @@ pub const Translate = struct {
         sb.append(self.ttknWithSTL(tkn)); // error
         sb.append(self.ttknWithSTL(tkn + 1)); // .
         sb.append(self.ttkn(tkn + 2)); // IDENT
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .deref => {
         // expr.*
@@ -3733,7 +3742,7 @@ pub const Translate = struct {
         sb.append(self.t(expr));
         sb.decllineIf(self.tknHasTC(self.tree.lastToken(expr)))._();
         sb.append(self.ttkn(self.tree.nodeMainToken(n))); // .* token
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       // ops
       .add,
@@ -3773,7 +3782,7 @@ pub const Translate = struct {
         sb.append(self.ttknWithSTL(tkn));
         sb.spaceIf(self.tknHasNoTC(tkn))._();
         sb.append(self.t(_n));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .@"errdefer" => {
         const tkn = self.tree.nodeMainToken(n);
@@ -3788,7 +3797,7 @@ pub const Translate = struct {
           sb.spaceIf(self.tknHasNoTC(pl + 1))._();
         }
         sb.append(self.t(_n));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .test_decl => {
         const tkn = self.tree.nodeMainToken(n);
@@ -3801,7 +3810,7 @@ pub const Translate = struct {
           sb.spaceIf(self.tknHasNoTC(pl))._();
         }
         sb.append(self.t(_n));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .@"catch", .@"orelse" => {
         return self.tOrelseCatch(n);
@@ -3811,7 +3820,7 @@ pub const Translate = struct {
         const tkn = self.tree.nodeMainToken(n);
         var sb = self.db.seqb().appends(self.ttknWithSTL(tkn));
         sb.append(self.t(self.tree.nodeData(n).node));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .array_access => {
         const lhs, const rhs = self.tree.nodeData(n).node_and_node;
@@ -3822,7 +3831,7 @@ pub const Translate = struct {
         const lbrack = tkn + 1;
         const rest, _ = self.tArrayType(lbrack, .{ .node = rhs }, null, null);
         sb.append(rest);
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .grouped_expression => {
         // `(expr)`
@@ -3848,7 +3857,7 @@ pub const Translate = struct {
         }
         sb.decllineIf(self.tknHasTC(self.tree.lastToken(expr)))._();
         sb.append(self.ttkn(rbrack));
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .slice => {
         return self.tSlice(self.tree.slice(n));
@@ -3891,7 +3900,7 @@ pub const Translate = struct {
           .{ .node = _n.ast.elem_type },
         );
         sb.append(doc);
-        return self.db.group(sb.finish());
+        return self.group(sb.finish());
       },
       .ptr_type_aligned => {
         return self.tPtrType(self.tree.ptrTypeAligned(n));

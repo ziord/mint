@@ -2,6 +2,7 @@ const std = @import("std");
 const util = @import("util.zig");
 const glue = @import("glue.zig");
 const fmt = @import("format.zig");
+const work = @import("work.zig");
 const Allocator = std.mem.Allocator;
 const Glue = glue.Glue;
 const Path = glue.Path;
@@ -11,6 +12,7 @@ const FileTypes = glue.FileTypes;
 const ExtensionFilters = glue.ExtensionFilters;
 const IgnoreList = glue.IgnoreList;
 const Project = glue.Project;
+const JobQueue = work.JobQueue;
 
 const log = std.log.scoped(util.getLoggerEnum(.cli));
 
@@ -20,7 +22,10 @@ pub const Cli = struct {
   mode: Mode,
   projects: std.StringArrayHashMapUnmanaged(Project) = .empty,
 
-  var WriteBuf: [2048]u8 = undefined;
+  // maximum number of threads we can use
+  const MAX_THREAD_COUNT = 16;
+  // threshold for sequential file processing
+  const SEQ_THRESHOLD = 100;
 
   const CfgFilename = "mint.zon";
 
@@ -140,7 +145,7 @@ pub const Cli = struct {
               try simple_hash.put(self.al, p.path, mtime_b);
               if (formatted) log.info("{s} (changed)", .{p.path});
             } else {
-              try g.loadConfig(proj, false, self.al);
+              try proj.loadConfig(self.io, false, self.al);
             }
           } else {
             var mtime_a: std.Io.Timestamp = undefined;
@@ -172,12 +177,33 @@ pub const Cli = struct {
     }
   }
 
-  fn formatImm(self: *Cli, g: *Glue) !void {
+  fn formatImm(self: *Cli) !void {
     var files: usize = 0;
+    const num_cpus = try std.Thread.getCpuCount();
     for (self.projects.values()) |*proj| {
-      try g.loadConfig(proj, true, self.al);
-      for (proj.files) |p| {
-        try g.formatImm(p, proj.getFmtConfig(), &files);
+      // we only need to load the project's config once
+      try proj.loadConfig(self.io, true, self.al);
+      // TODO: finetune `SEQ_THRESHOLD`
+      if (proj.files.len > SEQ_THRESHOLD) {
+        // create workers for the files
+        var jq = JobQueue.init(self.io, self.al, proj);
+        const num_threads = @min(@min(num_cpus, proj.files.len), MAX_THREAD_COUNT);
+        log.debug("using {} cpus and {} workers", .{ num_cpus, num_threads });
+        var threads: [MAX_THREAD_COUNT]std.Thread = undefined;
+        for (0..num_threads) |i| {
+          threads[i] = try std.Thread.spawn(.{}, JobQueue.task, .{&jq});
+        }
+        for (threads[0..num_threads]) |thread| {
+          thread.join();
+        }
+        files += jq.getSuccessCount();
+      } else {
+        var g = try Glue.init(self.io, self.al);
+        for (proj.files) |f| {
+          if (try Glue.formatImm(&g, proj, f, proj.getFmtConfig(), true)) {
+            files += 1;
+          }
+        }
       }
     }
     std.debug.print(
@@ -201,12 +227,12 @@ pub const Cli = struct {
       .help => return,
       .init => return self.doInit(),
       else => {
-        var g = try Glue.init(self.io, self.al);
         self.discoverConfigs() catch return;
         if (self.mode == .watch) {
+          var g = try Glue.init(self.io, self.al);
           try self.formatWatch(&g);
         } else {
-          try self.formatImm(&g);
+          try self.formatImm();
         }
       },
     }

@@ -18,7 +18,7 @@ pub const Format = struct {
   file_writer: std.Io.File.Writer,
   writer: *std.Io.Writer = undefined,
 
-  var WriteBuf: [8192]u8 = undefined;
+  const WRITE_BUF_SIZE = 4096;
 
   const Self = @This();
 
@@ -39,11 +39,12 @@ pub const Format = struct {
   const Stack = std.ArrayList(StackData);
 
   pub fn init(io: std.Io, al: Allocator, cfg: FmtConfig) Self {
+    const buf = util.allocSlice(u8, WRITE_BUF_SIZE, al);
     return .{
       .al = al,
       .cfg = cfg,
       .mem_writer = std.Io.Writer.Allocating.init(al),
-      .out_writer = std.Io.File.stdout().writer(io, &WriteBuf),
+      .out_writer = std.Io.File.stdout().writer(io, buf),
       .file_writer = undefined,
     };
   }
