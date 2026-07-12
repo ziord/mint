@@ -1,3 +1,9 @@
+<p align="center">
+    <p align="center">
+        <img src="https://github.com/ziord/mint/blob/dev/assets/mint-logo.png" alt="mint-logo"> 
+    </p>
+</p>
+
 ### mint
 `mint` is a hand-written opinionated code formatter for Zig. It is inspired by formatters like [prettier](https://prettier.io/) and [rustfmt](https://github.com/rust-lang/rustfmt). 
 
@@ -7,6 +13,7 @@
 `mint` performs automatic line-wrapping when a document exceeds a specified print width without relying on syntactic hints (such as trailing commas) from the programmer. Additionally, it is possible to [configure](#configuration) the formatting print width and indentation size.
 
 ### Building
+You need to have Zig 0.16.0 installed. Build with:
 ```
 zig build -Doptimize=ReleaseSafe
 ```
