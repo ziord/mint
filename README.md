@@ -60,7 +60,7 @@ Re-enable formatting with:
 ### Contributing
 All of `mint`'s code is purely hand-written, nothing is AI-generated, and I'd like to keep it that way. Please do not submit vibe-coded or AI-generated patches. Contributions are welcome, provided they adhere to this guideline.
 
-### Other Zig formatters
+### Other Zig Formatters
 
 - [`zift`](https://git.sr.ht/~asibahi/zift), a fork of `zig fmt` with some configurartion options.
 
