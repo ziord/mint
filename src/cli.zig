@@ -150,7 +150,7 @@ pub const Cli = struct {
           } else {
             var mtime_a: std.Io.Timestamp = undefined;
             if (simple_hash.get(p.path)) |time| {
-              var curr_time = try util.getStatMTime(self.io, p.path);
+              var curr_time = util.getStatMTime(self.io, p.path) catch continue;
               if (curr_time.toNanoseconds() == time.toNanoseconds()) continue;
               mtime_a = time;
               _ = g.formatWatch(p, proj, self.al) catch continue;
