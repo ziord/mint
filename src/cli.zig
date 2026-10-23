@@ -1,4 +1,5 @@
 const std = @import("std");
+const versioning = @import("versioning");
 const util = @import("util.zig");
 const glue = @import("glue.zig");
 const fmt = @import("format.zig");
@@ -240,13 +241,16 @@ pub const Cli = struct {
 };
 
 pub const ArgParse = struct {
-  const info =
-  \\Usage:
-  \\  mint <command> [<args>]
-  \\    init                        -  create a `mint.zon` config file
-  \\    fmt [filename|directory]    -  format a file or directory of files
-  \\    watch [filename|directory]  -  format in watch mode
-  \\    help                        -  display usage information
+  const info = "        [mint "
+    ++ versioning.version
+    ++ "]\n"
+    ++
+    \\Usage:
+    \\  mint <command> [<args>]
+    \\    init                        -  create a `mint.zon` config file
+    \\    fmt [filename|directory]    -  format a file or directory of files
+    \\    watch [filename|directory]  -  format in watch mode
+    \\    help                        -  display usage information
   ;
 
   inline fn getHelp(al: Allocator, io: std.Io) !Cli {

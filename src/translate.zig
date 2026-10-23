@@ -94,7 +94,6 @@ pub const Translate = struct {
       .add_wrap,
       .add_sat,
       .array_cat,
-      .array_mult,
       .bang_equal,
       .bit_and,
       .bit_or,
@@ -178,7 +177,7 @@ pub const Translate = struct {
       .bit_or, .bit_xor, .bit_and, .@"orelse", .@"catch" => 4,
       .shl_sat, .shl, .shr => 5,
       .add, .add_wrap, .add_sat, .array_cat, .sub, .sub_wrap, .sub_sat => 6,
-      .div, .mul, .mul_sat, .mul_wrap, .mod, .array_mult, .merge_error_sets => 7,
+      .div, .mul, .mul_sat, .mul_wrap, .mod, .merge_error_sets => 7,
       .negation,
       .negation_wrap,
       .address_of,
@@ -1051,7 +1050,6 @@ pub const Translate = struct {
       .add_wrap,
       .add_sat,
       .array_cat,
-      .array_mult,
       .bit_and,
       .bit_or,
       .shl,
@@ -2781,19 +2779,6 @@ pub const Translate = struct {
         last_tkn = _tkn;
       },
       .one => {
-        // NOTE: adapted from (std) Render.zig:
-        // Since ** tokens exist and the same token is shared by two
-        // nested pointer types, we check to see if we are the parent
-        // in such a relationship. If so, skip rendering anything for
-        // this pointer type and rely on the child to render our asterisk
-        // as well when it renders the ** token.
-        if (
-          self.tree.tokenTag(tkn) == .asterisk_asterisk
-            and tkn == self.tree.nodeMainToken(ty.ast.child_type)
-        ) {
-          _ = sb.finish();
-          return self.t(ty.ast.child_type);
-        }
         sb.append(self.ttkn(tkn));
         last_tkn = tkn;
       },
@@ -3749,7 +3734,6 @@ pub const Translate = struct {
       .add_wrap,
       .add_sat,
       .array_cat,
-      .array_mult,
       .bang_equal,
       .bit_and,
       .bit_or,
@@ -3775,27 +3759,18 @@ pub const Translate = struct {
       .sub_sat => {
         return self.tBinaryExpr(n, tag);
       },
-      .@"try", .@"defer", .@"comptime", .@"suspend", .@"resume", .@"nosuspend" => {
+      .@"try",
+      .@"defer",
+      .@"comptime",
+      .@"suspend",
+      .@"resume",
+      .@"nosuspend",
+      .@"errdefer" => {
         const tkn = self.tree.nodeMainToken(n);
         const _n = self.tree.nodeData(n).node;
         var sb = self.db.seqb();
         sb.append(self.ttknWithSTL(tkn));
         sb.spaceIf(self.tknHasNoTC(tkn))._();
-        sb.append(self.t(_n));
-        return self.group(sb.finish());
-      },
-      .@"errdefer" => {
-        const tkn = self.tree.nodeMainToken(n);
-        const m_tkn, const _n = self.tree.nodeData(n).opt_token_and_node;
-        var sb = self.db.seqb();
-        sb.append(self.ttknWithSTL(tkn));
-        sb.spaceIf(self.tknHasNoTC(tkn))._();
-        if (m_tkn.unwrap()) |pl| {
-          sb.append(self.ttknWithSTL(pl - 1));
-          sb.append(self.ttknWithSTL(pl));
-          sb.append(self.ttknWithSTL(pl + 1));
-          sb.spaceIf(self.tknHasNoTC(pl + 1))._();
-        }
         sb.append(self.t(_n));
         return self.group(sb.finish());
       },
@@ -3957,7 +3932,7 @@ pub const Translate = struct {
     src: [:0]const u8,
     mode: Ast.Mode,
   ) !*Doc {
-    self.tree = try Ast.parse(self.al, src, mode);
+    self.tree = try Ast.parse(self.al, src, .{ .mode = mode });
     if (self.tree.errors.len > 0) {
       try self.writeErrors(filename);
       return error.ParseError;
