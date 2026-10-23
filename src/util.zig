@@ -68,7 +68,7 @@ pub inline fn getStatMTime(io: std.Io, f: []const u8) !std.Io.Timestamp {
 }
 
 pub inline fn getLoggerEnum(lit: @EnumLiteral()) @EnumLiteral() {
-  return if (builtin.mode == .Debug) lit else .mint;
+  return if (builtin.mode == .debug) lit else .mint;
 }
 
 pub fn todo(comptime s: []const u8) noreturn {

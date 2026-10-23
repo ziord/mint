@@ -46,7 +46,7 @@ pub const Project = struct {
   pub fn readFile(
     io: std.Io,
     filename: []const u8,
-    mode: std.Io.File.OpenFlags.Mode,
+    mode: std.Io.Dir.OpenFileOptions.Mode,
     al: Allocator,
   ) !struct { std.Io.File, [:0]const u8 } {
     var file = try std.Io.Dir.cwd().openFile(io, filename, .{ .mode = mode });
@@ -94,8 +94,11 @@ pub const Project = struct {
       arena.allocator(),
     );
     file.close(io);
-    var diag = std.zon.parse.Diagnostics{};
-    return std.zon.parse.fromSliceAlloc(MintConfig, al, src, &diag, .{});
+    var diag: std.zon.parse.Diagnostics = undefined;
+    return std.zon.parse.fromSlice(
+      MintConfig,
+      .{ .gpa = al, .arena = al, .source = src, .diagnostics = &diag },
+    );
   }
 
   pub fn loadConfig(self: *Project, io: std.Io, is_imm: bool, al: Allocator) !void {

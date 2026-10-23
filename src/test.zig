@@ -22279,10 +22279,6 @@ test "misc" {
   \\ defer {foo().?.bar.?.cat;}
   \\ errdefer foo().?.bar.?.cat;
   \\ errdefer // 1
-  \\ | // 2
-  \\ // xyz ok
-  \\ f // 3
-  \\ | // 4
   \\ foo().cat;
   \\ comptime var x = 5;
   \\ comptime  {
@@ -22373,10 +22369,6 @@ test "misc" {
     \\  }
     \\  errdefer foo().?.bar.?.cat;
     \\  errdefer // 1
-    \\  | // 2
-    \\  // xyz ok
-    \\  f // 3
-    \\  | // 4
     \\  foo().cat;
     \\  comptime var x = 5;
     \\  comptime {
@@ -22491,10 +22483,6 @@ test "misc" {
     \\    .?
     \\    .cat;
     \\  errdefer // 1
-    \\  | // 2
-    \\  // xyz ok
-    \\  f // 3
-    \\  | // 4
     \\  foo().cat;
     \\  comptime var x = 5;
     \\  comptime {
